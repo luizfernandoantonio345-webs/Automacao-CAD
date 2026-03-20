@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "automacao-cad"
+version = "0.1.0"
+description = "Sistema modular de automacao CAD com orquestracao multiagente"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools]
+packages = ["core", "cad", "app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
