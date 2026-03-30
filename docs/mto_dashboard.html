@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTO Dashboard | ENGENHARIA CAD - P&ID Executivo</title>
+    <style>
+      :root {
+        --bg-light: #f8fafb;
+        --bg-dark: #e8eff4;
+        --surface: #ffffff;
+        --text: #1a2332;
+        --muted: #5a6d7a;
+        --accent: #2c7da0;
+        --success: #198754;
+        --warn: #ffc107;
+        --info: #0dcaf0;
+        --border: #d1dce3;
+        --shadow: 0 4px 12px rgba(26, 35, 50, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+        background: linear-gradient(135deg, var(--bg-light), #e0f2ff);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 16px;
+      }
+
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        gap: 16px;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #1a4d6d 0%, #2c7da0 100%);
+        color: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .header h1 {
+        margin: 0 0 8px;
+        font-size: 1.8rem;
+      }
+
+      .header p {
+        margin: 0;
+        opacity: 0.9;
+      }
+
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .kpi-card {
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--accent);
+      }
+
+      .kpi-label {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .kpi-value {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .kpi-unit {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-left: 4px;
+      }
+
+      .section {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .section h2 {
+        margin: 0 0 14px;
+        color: var(--accent);
+        font-size: 1.2rem;
+        border-bottom: 2px solid #f0f3f7;
+        padding-bottom: 10px;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      th {
+        background: var(--bg-dark);
+        color: var(--text);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid var(--border);
+      }
+
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f0f3f7;
+      }
+
+      tr:hover {
+        background: #fafbfc;
+      }
+
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-family: 'Courier New', monospace;
+      }
+
+      .tag {
+        display: inline-block;
+        background: #e8f4f8;
+        color: var(--accent);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .summary-card {
+        background: #f8fbfd;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .summary-title {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .summary-value {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: var(--text);
+      }
+
+      .chart-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .chart-label {
+        width: 150px;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
+
+      .chart-track {
+        flex: 1;
+        height: 24px;
+        background: var(--bg-dark);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .chart-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), #5a9fc9);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 8px;
+        font-size: 0.8rem;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .footer {
+        background: #f0f3f7;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.85rem;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      @media (max-width: 768px) {
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+
+        .kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .header h1 {
+          font-size: 1.4rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📊 MTO Dashboard - Tubulação Executiva</h1>
+        <p>
+          Material Take-Off (Contagem Exata) | Projeto P&ID | REGAP - Betim/MG
+        </p>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Comprimento Total de Tubo</div>
+          <div class="kpi-value">224.0<span class="kpi-unit">m</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Curvas 90° (Total)</div>
+          <div class="kpi-value">14<span class="kpi-unit">un</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Flanges</div>
+          <div class="kpi-value">28<span class="kpi-unit">un</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Parafusos + Porcas</div>
+          <div class="kpi-value">352<span class="kpi-unit">un</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Peso Total</div>
+          <div class="kpi-value"
+            >16,363.76<span class="kpi-unit">kg</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Custo Total</div>
+          <div class="kpi-value">R$ 67,109<span class="kpi-unit">.20</span></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- MTO Consolidado -->
+        <div class="section">
+          <h2>📦 MTO Consolidado por Sistema</h2>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-title">SYS-001 (DN200)</div>
+              <div class="summary-value">96 m</div>
+              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px">
+                11,464 kg
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-title">SYS-002 (DN100)</div>
+              <div class="summary-value">128 m</div>
+              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px">
+                4,900 kg
+              </div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Componente</th>
+                <th class="num">SYS-001</th>
+                <th class="num">SYS-002</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tubo (m)</td>
+                <td class="num">96.0</td>
+                <td class="num">128.0</td>
+                <td class="num">224.0</td>
+              </tr>
+              <tr>
+                <td>Curvas 90°</td>
+                <td class="num">8</td>
+                <td class="num">6</td>
+                <td class="num">14</td>
+              </tr>
+              <tr>
+                <td>Flanges</td>
+                <td class="num">16</td>
+                <td class="num">12</td>
+                <td class="num">28</td>
+              </tr>
+              <tr>
+                <td>Juntas</td>
+                <td class="num">16</td>
+                <td class="num">12</td>
+                <td class="num">28</td>
+              </tr>
+              <tr>
+                <td>Parafusos</td>
+                <td class="num">128</td>
+                <td class="num">48</td>
+                <td class="num">176</td>
+              </tr>
+              <tr>
+                <td>Porcas</td>
+                <td class="num">128</td>
+                <td class="num">48</td>
+                <td class="num">176</td>
+              </tr>
+              <tr style="background: var(--bg-dark); font-weight: bold">
+                <td>Peso Total (kg)</td>
+                <td class="num">11,464</td>
+                <td class="num">4,900</td>
+                <td class="num">16,364</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Soldagem -->
+        <div class="section">
+          <h2>🔥 Especificação de Soldagem</h2>
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-title">Juntas Soldadas</div>
+              <div class="summary-value">56</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-title">Volume de Solda</div>
+              <div class="summary-value">0.000391<span style="font-size: 0.8rem">m³</span></div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-title">Eletrodos E7018</div>
+              <div class="summary-value">3.53<span style="font-size: 0.8rem">kg</span></div>
+            </div>
+          </div>
+          <div style="margin-top: 12px">
+            <h3 style="margin: 0 0 10px; font-size: 1rem">Distribuição por Categoria</h3>
+            <div class="chart-bar">
+              <div class="chart-label">Curvas (28 jun)</div>
+              <div class="chart-track">
+                <div class="chart-fill" style="width: 50%">50%</div>
+              </div>
+            </div>
+            <div class="chart-bar">
+              <div class="chart-label">Flanges (28 jun)</div>
+              <div class="chart-track">
+                <div class="chart-fill" style="width: 50%">50%</div>
+              </div>
+            </div>
+            <div style="margin-top: 12px; font-size: 0.85rem; color: var(--muted)">
+              <strong>Consumível:</strong> E7018-1 (AWS A5.1)<br />
+              <strong>Processo:</strong> SMAW (Stick Welding)<br />
+              <strong>Rendimento:</strong> ~85%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teste Hidrostático -->
+      <div class="section">
+        <h2>💧 Plano de Teste Hidrostático</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px">
+          <div class="summary-card">
+            <div class="summary-title">Pressão de Teste SYS-001</div>
+            <div class="summary-value">11.25<span style="font-size: 0.8rem">bar</span></div>
+            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px">
+              (1.5 × 7.5 bar)
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Pressão de Teste SYS-002</div>
+            <div class="summary-value">7.5<span style="font-size: 0.8rem">bar</span></div>
+            <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px">
+              (1.5 × 5.0 bar)
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+          <!-- Vents -->
+          <div>
+            <h3 style="margin: 0 0 10px; font-size: 1rem; color: var(--info)">
+              🔴 Pontos de VENTILAÇÃO (VENT)
+            </h3>
+            <div style="display: grid; gap: 10px">
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  VENT-001: Vaso Separador V-101
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 8.5 m | DN20 | Válvula angular + filtro
+                </div>
+              </div>
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  VENT-002: Curva Final DN200
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 8.0 m | DN20 | Vent de emergência
+                </div>
+              </div>
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  VENT-003: Tanque Pulmão T-201
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 6.2 m | DN25 | Reguladora + silenciador
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drains -->
+          <div>
+            <h3 style="margin: 0 0 10px; font-size: 1rem; color: #206bcf">
+              🔵 Pontos de DRENAGEM (DRAIN)
+            </h3>
+            <div style="display: grid; gap: 10px">
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  DRAIN-001: Ponto Baixo Circuito
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 0.0 m | DN20 | Válvula seccionadora
+                </div>
+              </div>
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  DRAIN-002: Fundo Vaso V-101
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 0.1 m | DN25 | Drenagem condensados
+                </div>
+              </div>
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px">
+                <div style="font-weight: 600; margin-bottom: 4px">
+                  DRAIN-003: Fundo Tanque T-201
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted)">
+                  Elevação: 0.1 m | DN20 | C/ bomba auxiliar
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custo Consolidado -->
+      <div class="section">
+        <h2>💰 Análise de Custo</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item de Custo</th>
+              <th class="num">Valor (R$)</th>
+              <th class="num">% do Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Estrutura Metálica (REGAP Chat 2)</td>
+              <td class="num">110,638.14</td>
+              <td class="num">37.3%</td>
+            </tr>
+            <tr style="background: #f0ffff">
+              <td><strong>Tubulação + Componentes (MTO)</strong></td>
+              <td class="num"><strong>67,109.20</strong></td>
+              <td class="num"><strong>22.6%</strong></td>
+            </tr>
+            <tr>
+              <td>Soldagem (E7018 + MO)</td>
+              <td class="num">1,250.00</td>
+              <td class="num">0.4%</td>
+            </tr>
+            <tr>
+              <td>Pintura Petrobras N-13</td>
+              <td class="num">18,450.00</td>
+              <td class="num">6.2%</td>
+            </tr>
+            <tr>
+              <td>Testes Hidrostáticos</td>
+              <td class="num">4,200.00</td>
+              <td class="num">1.4%</td>
+            </tr>
+            <tr>
+              <td>HH Engenharia + Supervisão</td>
+              <td class="num">95,000.00</td>
+              <td class="num">32.0%</td>
+            </tr>
+            <tr style="background: var(--bg-dark); font-weight: bold">
+              <td>TOTAL CONSOLIDADO</td>
+              <td class="num">R$ 296,647.34</td>
+              <td class="num">100.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        ✓ Contagem exata sem estimativas | ✓ Pressão de teste ASME B31.3 | ✓
+        Plano Vent/Drain validado | Gerado: 2026-03-25 | ENGENHARIA CAD - Para
+        licitação REGAP
+      </div>
+    </div>
+  </body>
+</html>

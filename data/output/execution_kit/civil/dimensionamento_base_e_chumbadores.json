@@ -1,0 +1,514 @@
+{
+  "bases": [
+    {
+      "portico_id": "P-001",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-a6f1896a99",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-001",
+        "data_criacao": "2026-03-25T16:57:26.581746+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-002",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-234bfe3f3f",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-002",
+        "data_criacao": "2026-03-25T16:57:26.582338+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-003",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-b55fc8f423",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-003",
+        "data_criacao": "2026-03-25T16:57:26.582677+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-004",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-8e2a50db64",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-004",
+        "data_criacao": "2026-03-25T16:57:26.582994+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-005",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-783aa1e8f3",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-005",
+        "data_criacao": "2026-03-25T16:57:26.583302+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-006",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-09410125a4",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-006",
+        "data_criacao": "2026-03-25T16:57:26.583845+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-007",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-f3bcc73276",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-007",
+        "data_criacao": "2026-03-25T16:57:26.584151+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-008",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-96bd53fe28",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-008",
+        "data_criacao": "2026-03-25T16:57:26.584456+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-009",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-e2472cf86d",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-009",
+        "data_criacao": "2026-03-25T16:57:26.584884+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    },
+    {
+      "portico_id": "P-010",
+      "placa_base": {
+        "material": "ASTM A36",
+        "dimensoes_mm": {
+          "largura": 400,
+          "comprimento": 400,
+          "espessura": 34
+        },
+        "massa_total_kg": 42.7
+      },
+      "chumbadores": {
+        "material": "ASTM F1554 Gr.36",
+        "quantidade": 8,
+        "diametro_mm": 30,
+        "comprimento_m": 0.9,
+        "massa_total_kg": 39.95
+      },
+      "solda": {
+        "consumivel": "E7018",
+        "processo": "SMAW",
+        "garganta_mm": 12.0,
+        "passes_minimos": 3,
+        "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+      },
+      "criterios": {
+        "pressao_admissivel_base_mpa": 8.0,
+        "carga_vertical_kn": 12.066,
+        "carga_horizontal_kn": 20.709,
+        "momento_base_kn_m": 165.672
+      },
+      "verificacao_chumbadores": {
+        "formulas": {
+          "tracao_solicitante": "N_t,sd = Msd/(n_ativo*z) + Hsd/n_total",
+          "resistencia": "N_t,Rd = phi*fy*A",
+          "utilizacao": "eta = N_t,sd/N_t,Rd"
+        },
+        "nt_sd_kn": 132.02,
+        "nt_rd_kn": 132.536,
+        "taxa_utilizacao_eta": 0.9961,
+        "status": "PASS"
+      },
+      "xdata": {
+        "trace_id": "SD-CIV-ddbfdddfae",
+        "categoria": "CIVIL_BASE",
+        "origem": "P-010",
+        "data_criacao": "2026-03-25T16:57:26.585349+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok"
+      }
+    }
+  ]
+}

@@ -1,0 +1,2008 @@
+{
+  "header": {
+    "project": "SMARTDESIGN_CORE_EXECUTION_PACKAGE",
+    "generated_at": "2026-03-25T16:57:27.945445+00:00",
+    "zero_real": "Zero Real",
+    "layers": [
+      "0",
+      "ESTR_PORTICOS",
+      "ESTR_LIGACOES",
+      "ESTR_COTAS",
+      "MEC_ESCADAS",
+      "PIPING",
+      "CIVIL_BASE",
+      "ANOTACOES"
+    ]
+  },
+  "objects": {
+    "porticos": [
+      {
+        "id": "P-001",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-001",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-53b742041e",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-001",
+              "data_criacao": "2026-03-25T16:57:26.581720+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-001-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 0.0
+            }
+          },
+          "right_column": {
+            "id": "P-001-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 0.0
+            }
+          },
+          "beam": {
+            "id": "P-001-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 0.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-3d7c9fe96d",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.581667+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-002",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 6000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-002",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-676ad37c24",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-002",
+              "data_criacao": "2026-03-25T16:57:26.582249+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-002-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 6000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 6000.0
+            }
+          },
+          "right_column": {
+            "id": "P-002-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 6000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 6000.0
+            }
+          },
+          "beam": {
+            "id": "P-002-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 6000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 6000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-9ec0f364c2",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.582032+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-003",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 12000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-003",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-c7519d92f3",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-003",
+              "data_criacao": "2026-03-25T16:57:26.582653+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-003-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 12000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 12000.0
+            }
+          },
+          "right_column": {
+            "id": "P-003-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 12000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 12000.0
+            }
+          },
+          "beam": {
+            "id": "P-003-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 12000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 12000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-4e277b6a6d",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.582617+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-004",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 18000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-004",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-2f7f9d6d99",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-004",
+              "data_criacao": "2026-03-25T16:57:26.582972+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-004-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 18000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 18000.0
+            }
+          },
+          "right_column": {
+            "id": "P-004-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 18000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 18000.0
+            }
+          },
+          "beam": {
+            "id": "P-004-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 18000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 18000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-8505f03da3",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.582943+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-005",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 24000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-005",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-c75625d359",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-005",
+              "data_criacao": "2026-03-25T16:57:26.583278+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-005-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 24000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 24000.0
+            }
+          },
+          "right_column": {
+            "id": "P-005-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 24000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 24000.0
+            }
+          },
+          "beam": {
+            "id": "P-005-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 24000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 24000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-fd15fa87dc",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.583248+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-006",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 30000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-006",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-5c9f226e61",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-006",
+              "data_criacao": "2026-03-25T16:57:26.583814+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-006-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 30000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 30000.0
+            }
+          },
+          "right_column": {
+            "id": "P-006-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 30000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 30000.0
+            }
+          },
+          "beam": {
+            "id": "P-006-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 30000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 30000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-2e6054bf8f",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.583781+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-007",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 36000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-007",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-c3693620a6",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-007",
+              "data_criacao": "2026-03-25T16:57:26.584125+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-007-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 36000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 36000.0
+            }
+          },
+          "right_column": {
+            "id": "P-007-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 36000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 36000.0
+            }
+          },
+          "beam": {
+            "id": "P-007-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 36000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 36000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-abd8862d31",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.584095+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-008",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 42000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-008",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-331a8e5494",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-008",
+              "data_criacao": "2026-03-25T16:57:26.584428+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-008-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 42000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 42000.0
+            }
+          },
+          "right_column": {
+            "id": "P-008-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 42000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 42000.0
+            }
+          },
+          "beam": {
+            "id": "P-008-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 42000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 42000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-ef3370e5cc",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.584400+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-009",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 48000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-009",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-6735862b02",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-009",
+              "data_criacao": "2026-03-25T16:57:26.584735+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-009-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 48000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 48000.0
+            }
+          },
+          "right_column": {
+            "id": "P-009-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 48000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 48000.0
+            }
+          },
+          "beam": {
+            "id": "P-009-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 48000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 48000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-e5fa1b51a5",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.584704+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      },
+      {
+        "id": "P-010",
+        "tipo": "PORTICO_COMPLETO",
+        "coordenadas": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 54000.0
+        },
+        "dimensoes": {
+          "vao_mm": 25000.0,
+          "altura_mm": 8000.0,
+          "espacamento_mm": 6000.0
+        },
+        "perfil": {
+          "designacao": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "fabricacao": "laminado",
+          "peso_kg_m": 60.0
+        },
+        "analise": {
+          "vento": {
+            "local": "Betim/MG - REGAP",
+            "velocidade_basica_m_s": 38.0,
+            "pressao_dinamica_kpa": 0.885,
+            "carga_total_kn": 41.418
+          },
+          "flecha": {
+            "criterio": "L/250",
+            "limite_mm": 100.0,
+            "calculada_mm": 81.865,
+            "adotada_mm": 81.865,
+            "status": "ok"
+          },
+          "verificacao_elu": {
+            "k_factor": 1.0,
+            "esbeltez_l_r": 31.873,
+            "flambagem": {
+              "fe_mpa": 1943.109,
+              "fcr_mpa": 320.291,
+              "pn_kn": 2203.187
+            },
+            "momento_resistente": {
+              "md_kn_m": 763.83
+            },
+            "solicitacao": {
+              "nsd_kn": 16.208,
+              "msd_kn_m": 165.672
+            },
+            "taxa_utilizacao_eta": 0.2243,
+            "taxa_utilizacao_componentes": {
+              "eta_n": 0.0074,
+              "eta_m": 0.2169,
+              "eta_interacao": 0.2243
+            },
+            "status": "PASS",
+            "formulas": {
+              "esbeltez": "L/r = (K*L)/r",
+              "flambagem": "Fe = pi^2*E/(KL/r)^2; Fcr conforme NBR 8800",
+              "momento_resistente": "Md = phi_b*fy*Zx",
+              "utilizacao": "eta = max(Nsd/Pn, Msd/Md, Nsd/Pn + Msd/Md)"
+            }
+          },
+          "redimensionamento_auto": {
+            "aplicado": false,
+            "motivo": null,
+            "perfil_origem": "W410x60"
+          },
+          "reacoes_apoio": {
+            "portico_id": "P-010",
+            "apoio_esquerdo": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "apoio_direito": {
+              "fx_kn": 0.0,
+              "fy_kn": 20.709,
+              "fz_kn": 12.066,
+              "mz_kn_m": 165.672
+            },
+            "xdata": {
+              "trace_id": "SD-REA-a733d8e04c",
+              "categoria": "REACAO_APOIO",
+              "origem": "P-010",
+              "data_criacao": "2026-03-25T16:57:26.585324+00:00",
+              "versao_norma_aplicada": "1.0.0",
+              "status_validacao_carga": "ok"
+            }
+          }
+        },
+        "ligacao_viga_pilar": {
+          "chapa_ligacao": {
+            "material": "ASTM A36",
+            "dimensoes_mm": {
+              "altura": 220,
+              "largura": 160,
+              "espessura": 12
+            },
+            "massa_total_kg": 3.32
+          },
+          "parafusos": {
+            "material": "ASTM A325",
+            "quantidade": 4,
+            "diametro_mm": 20,
+            "distancia_borda_mm": 35,
+            "gabarito_mm": 70,
+            "massa_total_kg": 2.6
+          },
+          "solda": {
+            "consumivel": "E7018",
+            "processo": "SMAW",
+            "garganta_mm": 8.4,
+            "passes_minimos": 2,
+            "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+          }
+        },
+        "geometria": {
+          "left_column": {
+            "id": "P-010-COL-L",
+            "start": {
+              "x": 0.0,
+              "y": 0.0,
+              "z": 54000.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 54000.0
+            }
+          },
+          "right_column": {
+            "id": "P-010-COL-R",
+            "start": {
+              "x": 25000.0,
+              "y": 0.0,
+              "z": 54000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 54000.0
+            }
+          },
+          "beam": {
+            "id": "P-010-VIGA",
+            "start": {
+              "x": 0.0,
+              "y": 8000.0,
+              "z": 54000.0
+            },
+            "end": {
+              "x": 25000.0,
+              "y": 8000.0,
+              "z": 54000.0
+            }
+          }
+        },
+        "xdata": {
+          "trace_id": "SD-POR-fbff08b868",
+          "categoria": "PORTICO_COMPLETO",
+          "origem": "generate_full_unit_project",
+          "data_criacao": "2026-03-25T16:57:26.585290+00:00",
+          "versao_norma_aplicada": "1.0.0",
+          "status_validacao_carga": "ok",
+          "perfil": "W410x60",
+          "material": "ASTM A572 Gr. 50",
+          "peso_estimado_kg": 2460.0,
+          "eta": 0.2243
+        }
+      }
+    ],
+    "escada": {
+      "id": "ESCADA-01",
+      "placement": {
+        "origin": {
+          "x": 800.0,
+          "y": 0.0,
+          "z": 900.0
+        },
+        "relocated": true
+      },
+      "geometry": {
+        "altura_total_mm": 8000,
+        "largura_mm": 450,
+        "diametro_gaiola_mm": 700
+      },
+      "xdata": {
+        "trace_id": "SD-ESC-0033783c61",
+        "categoria": "ESCADA_MARINHEIRO",
+        "origem": "generate_full_unit_project",
+        "data_criacao": "2026-03-25T16:57:27.945367+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok",
+        "norma": "N-1710/NR-12",
+        "peso_total_kg": 176.5
+      }
+    },
+    "tubulacao": {
+      "routing": {
+        "points": [
+          {
+            "x": 1500.0,
+            "y": 7000.0,
+            "z": 0.0
+          },
+          {
+            "x": 23500.0,
+            "y": 7000.0,
+            "z": 0.0
+          },
+          {
+            "x": 23500.0,
+            "y": 7000.0,
+            "z": 0.0
+          },
+          {
+            "x": 23500.0,
+            "y": 7000.0,
+            "z": 6000.0
+          }
+        ],
+        "segments": [
+          {
+            "id": "SEG-1",
+            "start": {
+              "x": 1500.0,
+              "y": 7000.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 23500.0,
+              "y": 7000.0,
+              "z": 0.0
+            },
+            "length_m": 22.0
+          },
+          {
+            "id": "SEG-2",
+            "start": {
+              "x": 23500.0,
+              "y": 7000.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 23500.0,
+              "y": 7000.0,
+              "z": 0.0
+            },
+            "length_m": 0.0
+          },
+          {
+            "id": "SEG-3",
+            "start": {
+              "x": 23500.0,
+              "y": 7000.0,
+              "z": 0.0
+            },
+            "end": {
+              "x": 23500.0,
+              "y": 7000.0,
+              "z": 6000.0
+            },
+            "length_m": 6.0
+          }
+        ],
+        "comprimento_total_m": 28.0,
+        "supports": [
+          {
+            "id": "SUP-1",
+            "type": "PIPE_SHOE",
+            "position_m": 0.0,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-2",
+            "type": "PIPE_SHOE",
+            "position_m": 3.111,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-3",
+            "type": "PIPE_SHOE",
+            "position_m": 6.222,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-4",
+            "type": "PIPE_SHOE",
+            "position_m": 9.333,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-5",
+            "type": "PIPE_SHOE",
+            "position_m": 12.444,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-6",
+            "type": "PIPE_SHOE",
+            "position_m": 15.556,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-7",
+            "type": "PIPE_SHOE",
+            "position_m": 18.667,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-8",
+            "type": "PIPE_SHOE",
+            "position_m": 21.778,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-9",
+            "type": "PIPE_SHOE",
+            "position_m": 24.889,
+            "norma": "N-1810"
+          },
+          {
+            "id": "SUP-10",
+            "type": "PIPE_SHOE",
+            "position_m": 28.0,
+            "norma": "N-1810"
+          }
+        ]
+      },
+      "xdata": {
+        "trace_id": "SD-TUB-f82c33e0f2",
+        "categoria": "TUBULACAO",
+        "origem": "generate_full_unit_project",
+        "data_criacao": "2026-03-25T16:57:27.945430+00:00",
+        "versao_norma_aplicada": "1.0.0",
+        "status_validacao_carga": "ok",
+        "material": "ASTM A106 Gr.B",
+        "schedule": "STD"
+      }
+    }
+  },
+  "detalhamento": {
+    "vistas": [
+      "planta_baixa",
+      "vista_frontal",
+      "vista_lateral",
+      "corte_a",
+      "corte_b"
+    ],
+    "cotas": {
+      "lineares": [
+        {
+          "id": "COTA-VAO",
+          "valor_mm": 25000.0,
+          "referencia": "Zero Real"
+        },
+        {
+          "id": "COTA-ALTURA",
+          "valor_mm": 8000.0,
+          "referencia": "Zero Real"
+        },
+        {
+          "id": "COTA-ESCADA",
+          "valor_mm": 8000,
+          "referencia": "Zero Real"
+        }
+      ],
+      "niveis": [
+        {
+          "id": "NIV-000",
+          "elevacao_mm": 0.0,
+          "label": "Zero Real"
+        },
+        {
+          "id": "NIV-BEAM",
+          "elevacao_mm": 8000.0,
+          "label": "+8.000"
+        }
+      ]
+    },
+    "ligacoes": [
+      {
+        "chapa_ligacao": {
+          "material": "ASTM A36",
+          "dimensoes_mm": {
+            "altura": 220,
+            "largura": 160,
+            "espessura": 12
+          },
+          "massa_total_kg": 3.32
+        },
+        "parafusos": {
+          "material": "ASTM A325",
+          "quantidade": 4,
+          "diametro_mm": 20,
+          "distancia_borda_mm": 35,
+          "gabarito_mm": 70,
+          "massa_total_kg": 2.6
+        },
+        "solda": {
+          "consumivel": "E7018",
+          "processo": "SMAW",
+          "garganta_mm": 8.4,
+          "passes_minimos": 2,
+          "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+        }
+      },
+      {
+        "chapa_ligacao": {
+          "material": "ASTM A36",
+          "dimensoes_mm": {
+            "altura": 220,
+            "largura": 160,
+            "espessura": 12
+          },
+          "massa_total_kg": 3.32
+        },
+        "parafusos": {
+          "material": "ASTM A325",
+          "quantidade": 4,
+          "diametro_mm": 20,
+          "distancia_borda_mm": 35,
+          "gabarito_mm": 70,
+          "massa_total_kg": 2.6
+        },
+        "solda": {
+          "consumivel": "E7018",
+          "processo": "SMAW",
+          "garganta_mm": 8.4,
+          "passes_minimos": 2,
+          "observacao": "Aplicar preparo e sequência conforme EPS de campo Petrobras."
+        }
+      }
+    ],
+    "notas_tecnicas": [
+      "Normas aplicadas: NBR 8800, NR-12, N-1710, N-1810 e N-13.",
+      "Aco laminado ASTM A36 e perfis soldados ASTM A572 Gr. 50.",
+      "Consumivel de solda minimo E7018.",
+      "Sistema de pintura conforme Petrobras N-13."
+    ],
+    "data_book": {
+      "aco_estrutural": [
+        "ASTM A36",
+        "ASTM A572 Gr. 50"
+      ],
+      "consumivel_solda": "E7018",
+      "pintura": "Petrobras N-13"
+    }
+  }
+}

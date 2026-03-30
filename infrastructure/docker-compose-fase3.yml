@@ -1,0 +1,29 @@
+# ====================================================================
+# FASE 3: Circuit Breaker + Dead Letter Queue
+# Isolamento de falhas + análise de erros
+# ====================================================================
+
+# ✓ Extensões para docker-compose.yml
+version: '3.9'
+
+services:
+  # ... serviços existentes ...
+
+  # ✓ Redis para Circuit Breaker state
+  redis-circuit:
+    image: redis:7-alpine
+    container_name: cad-redis-circuit
+    command: redis-server --requirepass circuit_password_123
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_circuit_data:/data
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+volumes:
+  redis_circuit_data:
+
+networks:
+  cad-network:

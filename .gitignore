@@ -1,0 +1,80 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Data files (may contain sensitive info)
+data/*.xlsx
+data/upload.xlsx
+
+# Build artifacts
+frontend/build/
+frontend/dist/
+
+# Node modules
+frontend/node_modules/
+node_modules/
+
+# System folders
+Microsoft/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Migration scripts (run once)
+migrate_*.py
+
+# Database files
+*.db
+*.sqlite3

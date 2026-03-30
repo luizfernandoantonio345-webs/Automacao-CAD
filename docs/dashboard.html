@@ -1,0 +1,780 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Engenharia CAD - Tempo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .metric-card {
+        transition: all 0.3s ease;
+      }
+      .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+      .event-log {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .event-item {
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+          Dashboard Engenharia CAD
+        </h1>
+        <p class="text-gray-600">Monitoramento em tempo real do sistema</p>
+        <div class="flex items-center mt-4">
+          <div
+            class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"
+          ></div>
+          <span class="text-sm text-gray-600">Sistema Online</span>
+        </div>
+      </header>
+
+      <!-- Métricas do Sistema -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="metric-card bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">CPU</p>
+              <p class="text-2xl font-bold text-gray-900" id="cpu-percent">
+                0%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">RAM</p>
+              <p class="text-2xl font-bold text-gray-900" id="ram-percent">
+                0%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Disco</p>
+              <p class="text-2xl font-bold text-gray-900" id="disk-percent">
+                0%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card bg-white rounded-lg shadow p-6">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-600">Projetos</p>
+              <p class="text-2xl font-bold text-gray-900" id="total-projects">
+                0
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log de Eventos em Tempo Real -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Telemetria -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2
+            class="text-xl font-semibold text-gray-800 mb-4 flex items-center"
+          >
+            <svg
+              class="w-5 h-5 mr-2 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              ></path>
+            </svg>
+            Telemetria em Tempo Real
+          </h2>
+          <div class="event-log space-y-2" id="telemetry-events">
+            <div class="text-gray-500 text-sm italic">
+              Aguardando eventos...
+            </div>
+          </div>
+        </div>
+
+        <!-- Notificações -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2
+            class="text-xl font-semibold text-gray-800 mb-4 flex items-center"
+          >
+            <svg
+              class="w-5 h-5 mr-2 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 17h5l-5 5v-5zM4.868 12.683A17.925 17.925 0 0112 21c7.962 0 12-1.21 12-2.683m-12 2.683a17.925 17.925 0 01-7.132-8.317M12 21c4.411 0 8-4.03 8-9s-3.589-9-8-9-8 4.03-8 9a9.06 9.06 0 001.832 5.445"
+              ></path>
+            </svg>
+            Notificações
+          </h2>
+          <div class="event-log space-y-2" id="notification-events">
+            <div class="text-gray-500 text-sm italic">
+              Aguardando notificações...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controles de Teste -->
+      <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+          Controles de Teste
+        </h2>
+        <div class="flex flex-wrap gap-4">
+          <button
+            onclick="testTelemetry()"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Testar Telemetria
+          </button>
+          <button
+            onclick="clearEvents()"
+            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+          >
+            Limpar Eventos
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+          Pacote Final CTO
+        </h2>
+        <p class="text-sm text-gray-600 mb-4">
+          Gera o Data-Book em zip com Memorial, Isométricos, MTO e Plano de
+          Pintura com auditoria de conformidade REGAP.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <button
+            id="btn-generate-databook"
+            class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+          >
+            Gerar Data-Book
+          </button>
+          <button
+            id="btn-run-quality-gate"
+            class="px-4 py-2 bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors"
+          >
+            Executar Quality Gate
+          </button>
+        </div>
+        <div id="databook-status" class="mt-4 text-sm text-gray-700">
+          Aguardando execução...
+        </div>
+        <pre
+          id="quality-gate-output"
+          class="mt-3 bg-gray-100 border p-3 rounded h-40 overflow-y-auto text-xs"
+        ></pre>
+      </div>
+
+      <!-- AI Chat -->
+      <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">AI CAD Chat</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input
+            id="ai-desc"
+            type="text"
+            placeholder="Descrição (ex: flange 4 furos)"
+            class="border p-2 rounded w-full"
+          />
+          <input
+            id="ai-diameter"
+            type="number"
+            placeholder="Diâmetro (mm)"
+            class="border p-2 rounded w-full"
+          />
+          <input
+            id="ai-length"
+            type="number"
+            placeholder="Comprimento (mm)"
+            class="border p-2 rounded w-full"
+          />
+          <input
+            id="ai-details"
+            type="text"
+            placeholder="Detalhes adicionais"
+            class="border p-2 rounded w-full"
+          />
+        </div>
+        <button
+          id="ai-send"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Enviar ao AI
+        </button>
+
+        <div class="mt-4">
+          <div class="font-medium text-gray-700 mb-2">Resposta do AI</div>
+          <pre
+            id="ai-response"
+            class="bg-gray-100 border p-3 rounded h-40 overflow-y-auto text-xs"
+          ></pre>
+        </div>
+        <div class="mt-3">
+          <div class="font-medium text-gray-700 mb-1">Status do Job</div>
+          <div id="ai-job-status" class="text-sm text-gray-600">
+            Aguardando envio...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Conexões SSE
+      let systemSource, telemetrySource, notificationSource;
+
+      // Inicializar conexões SSE
+      function initSSE() {
+        // Sistema
+        systemSource = new EventSource("/sse/system");
+        systemSource.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          updateSystemMetrics(data);
+        };
+        systemSource.onerror = function () {
+          console.error("Erro na conexão SSE do sistema");
+        };
+
+        // Telemetria
+        telemetrySource = new EventSource("/sse/telemetry");
+        telemetrySource.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          addTelemetryEvent(data);
+        };
+        telemetrySource.onerror = function () {
+          console.error("Erro na conexão SSE da telemetria");
+        };
+
+        // Notificações
+        notificationSource = new EventSource("/sse/notifications");
+        notificationSource.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          addNotification(data);
+        };
+        notificationSource.onerror = function () {
+          console.error("Erro na conexão SSE das notificações");
+        };
+      }
+
+      // Atualizar métricas do sistema
+      function updateSystemMetrics(data) {
+        if (data.type === "system_metrics") {
+          document.getElementById("cpu-percent").textContent =
+            Math.round(data.cpu) + "%";
+          document.getElementById("ram-percent").textContent =
+            Math.round(data.ram) + "%";
+          document.getElementById("disk-percent").textContent =
+            Math.round(data.disk) + "%";
+        }
+      }
+
+      // Adicionar evento de telemetria
+      function addTelemetryEvent(data) {
+        const container = document.getElementById("telemetry-events");
+        const eventDiv = document.createElement("div");
+        eventDiv.className =
+          "event-item p-3 bg-blue-50 border-l-4 border-blue-400 rounded";
+
+        let content = "";
+        if (data.event_type === "project_created") {
+          content = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-medium text-blue-900">${data.data.code}</div>
+                            <div class="text-sm text-blue-700">${data.data.company} - ${data.data.part_name}</div>
+                            <div class="text-xs text-blue-600">Ø${data.data.diameter} × ${data.data.length}mm</div>
+                        </div>
+                        <div class="text-xs text-blue-500">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `;
+        } else if (data.event_type === "feedback_recorded") {
+          content = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-medium text-green-900">Feedback: ${data.data.feedback}</div>
+                            <div class="text-sm text-green-700">${data.data.company} - ${data.data.part_name}</div>
+                        </div>
+                        <div class="text-xs text-green-500">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `;
+        }
+
+        eventDiv.innerHTML = content;
+        container.insertBefore(eventDiv, container.firstChild);
+
+        // Limitar número de eventos
+        while (container.children.length > 20) {
+          container.removeChild(container.lastChild);
+        }
+      }
+
+      // Adicionar notificação
+      function addNotification(data) {
+        const container = document.getElementById("notification-events");
+        const eventDiv = document.createElement("div");
+        eventDiv.className = `event-item p-3 border-l-4 rounded ${
+          data.level === "error"
+            ? "bg-red-50 border-red-400"
+            : data.level === "warning"
+              ? "bg-yellow-50 border-yellow-400"
+              : "bg-green-50 border-green-400"
+        }`;
+
+        eventDiv.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="font-medium">${data.message}</div>
+                        ${data.user ? `<div class="text-sm opacity-75">Usuário: ${data.user}</div>` : ""}
+                    </div>
+                    <div class="text-xs opacity-75">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                </div>
+            `;
+
+        container.insertBefore(eventDiv, container.firstChild);
+
+        // Limitar número de notificações
+        while (container.children.length > 10) {
+          container.removeChild(container.lastChild);
+        }
+      }
+
+      // Funções de teste
+      async function testTelemetry() {
+        try {
+          const response = await fetch("/telemetry/test", { method: "POST" });
+          if (response.ok) {
+            addNotification({
+              message: "Teste de telemetria enviado com sucesso",
+              level: "success",
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (error) {
+          console.error("Erro no teste:", error);
+        }
+      }
+
+      function clearEvents() {
+        document.getElementById("telemetry-events").innerHTML =
+          '<div class="text-gray-500 text-sm italic">Eventos limpos...</div>';
+        document.getElementById("notification-events").innerHTML =
+          '<div class="text-gray-500 text-sm italic">Notificações limpas...</div>';
+      }
+
+      let aiSource = null;
+      let currentAIJobId = null;
+      let aiPollingInterval = null;
+      let aiPollingAttempts = 0;
+      const MAX_AI_POLLING_ATTEMPTS = 300; // 5 minutos com polling de 1s
+
+      // ✓ PROBLEMA #3, #4: Inicializar SSE com tratamento de erro
+      function initAISSE() {
+        try {
+          if (aiSource) {
+            aiSource.close();
+          }
+          aiSource = new EventSource("/sse/ai-stream");
+          aiSource.onmessage = function (event) {
+            try {
+              const data = JSON.parse(event.data);
+              const aiResponse = document.getElementById("ai-response");
+              if (aiResponse) {
+                aiResponse.textContent = data.text || data.ai_response || "";
+              }
+              const aiStatus = document.getElementById("ai-job-status");
+              if (aiStatus) {
+                aiStatus.textContent = data.status || "Concluído";
+              }
+            } catch (err) {
+              console.error("Resumo SSE AI inválido", err);
+            }
+          };
+          aiSource.onerror = function (e) {
+            console.error("Erro na conexão SSE AI", e);
+            const aiStatus = document.getElementById("ai-job-status");
+            if (aiStatus) {
+              aiStatus.textContent = "⚠️ Conexão SSE interrompida";
+            }
+            // Tentar reconectar após 3 segundos
+            setTimeout(initAISSE, 3000);
+          };
+          console.log("SSE AI inicializado");
+        } catch (err) {
+          console.error("Erro ao iniciar SSE AI:", err);
+          setTimeout(initAISSE, 3000);
+        }
+      }
+
+      // ✓ PROBLEMA #4: Polling com retry, timeout e validação
+      async function pollAIJobStatus(jobId) {
+        const aiStatus = document.getElementById("ai-job-status");
+        if (!aiStatus) return;
+
+        aiPollingAttempts = 0;
+
+        const doPoll = async () => {
+          if (aiPollingAttempts >= MAX_AI_POLLING_ATTEMPTS) {
+            aiStatus.textContent = "⏱️ Timeout - job ainda processando";
+            return;
+          }
+
+          try {
+            const response = await fetch(`/jobs/${jobId}`, {
+              method: "GET",
+              headers: { Accept: "application/json" },
+              signal: AbortSignal.timeout(5000),
+            });
+
+            if (!response.ok) {
+              if (response.status === 404) {
+                aiStatus.textContent = "❌ Job não encontrado";
+                clearInterval(aiPollingInterval);
+                return;
+              }
+              throw new Error(`HTTP ${response.status}`);
+            }
+
+            const job = await response.json();
+
+            switch (job.status) {
+              case "pending":
+                aiStatus.textContent = "⏳ Job aguardando processamento...";
+                break;
+              case "processing":
+                aiStatus.textContent = "🔄 Processando...";
+                break;
+              case "completed":
+                aiStatus.textContent = "✅ Concluído";
+                if (job.result && job.result.lsp_path) {
+                  const aiResponse = document.getElementById("ai-response");
+                  if (aiResponse) {
+                    aiResponse.textContent =
+                      `✓ LSP salvo: ${job.result.lsp_path}\n` +
+                      `Tokens: ${job.result.tokens || 0}`;
+                  }
+                }
+                clearInterval(aiPollingInterval);
+                return;
+              case "failed":
+                aiStatus.textContent = `❌ Falha: ${job.error || "erro desconhecido"}`;
+                clearInterval(aiPollingInterval);
+                return;
+              default:
+                aiStatus.textContent = `Status: ${job.status}`;
+            }
+
+            aiPollingAttempts++;
+          } catch (err) {
+            console.error("Erro ao polir job:", err);
+            aiStatus.textContent = `⚠️ Erro ao consultar: ${err.message}`;
+            // Continuar tentando mesmo após erro
+          }
+        };
+
+        // Primeira tentativa imediatamente, depois a cada 1s
+        doPoll();
+        aiPollingInterval = setInterval(doPoll, 1000);
+      }
+
+      async function sendAIChat() {
+        // ✓ PROBLEMA #1: Validação de elementos DOM antes de acessar
+        const aiDesc = document.getElementById("ai-desc");
+        const aiDiameter = document.getElementById("ai-diameter");
+        const aiLength = document.getElementById("ai-length");
+        const aiDetails = document.getElementById("ai-details");
+        const aiSend = document.getElementById("ai-send");
+        const aiStatus = document.getElementById("ai-job-status");
+
+        if (!aiDesc || !aiStatus) {
+          console.error("Elementos AI não encontrados na página");
+          return;
+        }
+
+        const desc = aiDesc.value?.trim();
+        const diameter = aiDiameter?.value?.trim() || "0";
+        const length = aiLength?.value?.trim() || "0";
+        const details = aiDetails?.value?.trim() || "";
+
+        // ✓ PROBLEMA #1: Validação mais rigorosa
+        if (!desc) {
+          aiStatus.textContent = "❌ Descrição é obrigatória";
+          return;
+        }
+
+        if (desc.length > 500) {
+          aiStatus.textContent = "❌ Descrição não pode exceder 500 caracteres";
+          return;
+        }
+
+        // Validar números
+        const diameterNum = parseFloat(diameter);
+        const lengthNum = parseFloat(length);
+
+        if (isNaN(diameterNum) || diameterNum <= 0 || diameterNum > 1000000) {
+          aiStatus.textContent = "❌ Diâmetro inválido (0 - 1M)";
+          return;
+        }
+
+        if (isNaN(lengthNum) || lengthNum <= 0 || lengthNum > 10000000) {
+          aiStatus.textContent = "❌ Comprimento inválido (0 - 10M)";
+          return;
+        }
+
+        aiStatus.textContent = "📤 Enviando job...";
+        if (aiSend) aiSend.disabled = true;
+
+        try {
+          const response = await fetch("/jobs/ai/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              desc,
+              diameter: diameterNum,
+              length: lengthNum,
+              details,
+            }),
+            signal: AbortSignal.timeout(10000), // 10s timeout
+          });
+
+          if (!response.ok) {
+            const errBody = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errBody}`);
+          }
+
+          const data = await response.json();
+
+          if (!data.job_id) {
+            throw new Error("Servidor não retornou job_id");
+          }
+
+          currentAIJobId = data.job_id;
+          aiStatus.textContent = `✓ Job ${data.job_id} enviado. Aguardando resultado...`;
+
+          // ✓ PROBLEMA #4: Iniciar polling automático
+          pollAIJobStatus(data.job_id);
+        } catch (error) {
+          console.error("Erro no envio de AI:", error);
+          aiStatus.textContent = `❌ Erro: ${error.message || "falha desconhecida"}`;
+        } finally {
+          if (aiSend) aiSend.disabled = false;
+        }
+      }
+
+      // ✓ PROBLEMA #3: Validar antes de adicionar listener
+      const aiSendBtn = document.getElementById("ai-send");
+      if (aiSendBtn) {
+        aiSendBtn.addEventListener("click", sendAIChat);
+      }
+
+      function defaultDataBookPayload() {
+        return {
+          altura_torre_m: 8.0,
+          qtd_porticos: 50,
+          diametro_nominal_mm: 100.0,
+          ponto_succao: { x: 1500.0, y: 7600.0, z: 0.0 },
+          ponto_descarga: { x: 23500.0, y: 7600.0, z: 6000.0 },
+          stock_lengths_m: [6.0, 12.0],
+        };
+      }
+
+      async function generateDataBook() {
+        const statusEl = document.getElementById("databook-status");
+        const btn = document.getElementById("btn-generate-databook");
+        if (!statusEl || !btn) return;
+
+        statusEl.textContent = "Gerando Data-Book...";
+        btn.disabled = true;
+        try {
+          const response = await fetch("/factory/data-book/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(defaultDataBookPayload()),
+            signal: AbortSignal.timeout(120000),
+          });
+
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.detail || "Falha ao gerar Data-Book");
+          }
+
+          const zipPath = payload?.data_book?.zip_path || "n/d";
+          const regap = payload?.regap_audit?.status || "n/d";
+          statusEl.textContent = `Data-Book gerado com sucesso. ZIP: ${zipPath} | REGAP: ${regap}`;
+        } catch (error) {
+          statusEl.textContent = `Erro ao gerar Data-Book: ${error.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function runQualityGate() {
+        const output = document.getElementById("quality-gate-output");
+        const btn = document.getElementById("btn-run-quality-gate");
+        if (!output || !btn) return;
+
+        output.textContent = "Executando quality gate...";
+        btn.disabled = true;
+        try {
+          const response = await fetch("/factory/quality-gate/final", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(defaultDataBookPayload()),
+            signal: AbortSignal.timeout(120000),
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(JSON.stringify(payload.detail || payload));
+          }
+          output.textContent =
+            JSON.stringify(payload.final_gate, null, 2) +
+            "\n\n" +
+            "Solução técnica:\n- " +
+            (payload.technical_solution || []).join("\n- ");
+        } catch (error) {
+          output.textContent = `Erro no quality gate: ${error.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      const dataBookBtn = document.getElementById("btn-generate-databook");
+      if (dataBookBtn) {
+        dataBookBtn.addEventListener("click", generateDataBook);
+      }
+      const qualityGateBtn = document.getElementById("btn-run-quality-gate");
+      if (qualityGateBtn) {
+        qualityGateBtn.addEventListener("click", runQualityGate);
+      }
+
+      // Carregar estatísticas iniciais
+      async function loadInitialStats() {
+        try {
+          const response = await fetch("/system");
+          const data = await response.json();
+          document.getElementById("cpu-percent").textContent =
+            Math.round(data.cpu) + "%";
+          document.getElementById("ram-percent").textContent =
+            Math.round(data.ram) + "%";
+          document.getElementById("disk-percent").textContent =
+            Math.round(data.disk) + "%";
+        } catch (error) {
+          console.error("Erro ao carregar estatísticas iniciais:", error);
+        }
+      }
+
+      // Inicializar quando a página carregar
+      document.addEventListener("DOMContentLoaded", function () {
+        initSSE();
+        initAISSE(); // ✓ PROBLEMA #3: AGORA REALMENTE CHAMADO!
+        loadInitialStats();
+
+        // ✓ PROBLEMA #3: Limpar EventSource ao descarregar página
+        window.addEventListener("beforeunload", function () {
+          if (aiSource) {
+            aiSource.close();
+            aiSource = null;
+          }
+          if (aiPollingInterval) {
+            clearInterval(aiPollingInterval);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+# ====================================================================
+# Dockerfile.celery.gpu - GPU Workers para Kubernetes
+# ====================================================================
+
+FROM nvidia/cuda:11.8-runtime-ubuntu20.04
+
+# Instalar Python e dependências
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-pip \
+    python3.10-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Criar link simbólico para python
+RUN ln -s /usr/bin/python3.10 /usr/bin/python
+
+# Criar usuário não-root
+RUN useradd --create-home --shell /bin/bash celery
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar requirements primeiro para cache de layers
+COPY requirements-celery.txt .
+
+# Instalar dependências Python
+RUN pip install --no-cache-dir -r requirements-celery.txt
+
+# Instalar PyTorch GPU
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Copiar código da aplicação
+COPY . .
+
+# Mudar para usuário não-root
+USER celery
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import torch; print('CUDA available:', torch.cuda.is_available())" || exit 1
+
+# Comando padrão
+CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info", "-Q", "ai_cad"]

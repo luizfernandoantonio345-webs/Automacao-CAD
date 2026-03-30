@@ -1,0 +1,7 @@
+item;descricao;perfil;material;fabricacao;quantidade;comprimento_unitario_mm;comprimento_total_mm;massa_total_kg
+ARO_GAIOLA_PROTECAO;Aro conformado em barra chata 38x6 mm.;BARRA CHATA ASTM A36 38x6 mm;ASTM A36;laminado;5;2199;10995;19.68
+BRACO_SUPORTE_FIXACAO;Braco de fixacao da escada a estrutura existente.;BARRA CHATA ASTM A36 38x6 mm;ASTM A36;laminado;6;200;1200;2.15
+CHAPA_SUPORTE_FIXACAO;Chapa base 120x80x8 mm com 2 furos D14 mm.;CHAPA ASTM A36 120x80x8 mm;ASTM A36;chaparia;6;0;0;3.60
+DEGRAU_ANTI_DERRAPANTE;Degrau em barra redonda macica D19 mm.;BARRA REDONDA ASTM A36 D19 mm;ASTM A36;laminado;27;450;12150;27.11
+MONTANTE_GAIOLA;Montante vertical da gaiola de protecao em barra chata.;BARRA CHATA ASTM A36 38x6 mm;ASTM A36;laminado;4;5900;23600;42.24
+MONTANTE_LATERAL;Montante lateral com prolongamento acima do piso de saida.;TUBO ASTM A36 60.3x3.2 mm;ASTM A36;tubular;2;9100;18200;81.72

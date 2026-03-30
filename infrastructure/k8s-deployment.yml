@@ -1,0 +1,428 @@
+﻿# ====================================================================
+# k8s-deployment.yml - FASE 5: Kubernetes Manifests
+# Deployment completo para produção
+# ====================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: engcad
+  labels:
+    name: engcad
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: engcad-config
+  namespace: engcad
+data:
+  CELERY_BROKER_URL: "amqp://admin:changeme@rabbitmq-service:5672//"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
+  REDIS_URL: "redis://redis-service:6379/0"
+  DATABASE_URL: "postgresql://engcad:changeme@postgres-service:5432/engcad"
+  OLLAMA_URL: "http://ollama-service:11434"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: engcad-secrets
+  namespace: engcad
+type: Opaque
+data:
+  # Base64 encoded passwords
+  rabbitmq-password: Y2hhbmdlbWU=  # changeme
+  postgres-password: Y2hhbmdlbWU=  # changeme
+  grafana-password: YWRtaW4=      # admin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: engcad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          limits:
+            memory: "512Mi"
+          requests:
+            memory: "256Mi"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: engcad
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: engcad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management-alpine
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: "admin"
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: engcad-secrets
+              key: rabbitmq-password
+        resources:
+          limits:
+            memory: "1Gi"
+          requests:
+            memory: "512Mi"
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+        livenessProbe:
+          exec:
+            command: ["rabbitmq-diagnostics", "ping"]
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: rabbitmq-data
+        persistentVolumeClaim:
+          claimName: rabbitmq-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: engcad
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+  - name: management
+    port: 15672
+    targetPort: 15672
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: engcad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "engcad"
+        - name: POSTGRES_USER
+          value: "engcad"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: engcad-secrets
+              key: postgres-password
+        resources:
+          limits:
+            memory: "1Gi"
+          requests:
+            memory: "512Mi"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "engcad"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: engcad
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker-cpu
+  namespace: engcad
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: celery-worker-cpu
+  template:
+    metadata:
+      labels:
+        app: celery-worker-cpu
+    spec:
+      containers:
+      - name: celery-worker
+        image: engcad/celery-worker:latest
+        command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=4", "-Q", "cad_jobs,excel_batch"]
+        envFrom:
+        - configMapRef:
+            name: engcad-config
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+          requests:
+            memory: "1Gi"
+            cpu: "1"
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: engenharia-data
+          mountPath: /app/engenharia_automacao
+        livenessProbe:
+          exec:
+            command: ["python", "-c", "import redis; redis.Redis(host='redis-service', port=6379).ping()"]
+          initialDelaySeconds: 30
+          periodSeconds: 60
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+      - name: engenharia-data
+        persistentVolumeClaim:
+          claimName: engenharia-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker-gpu
+  namespace: engcad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker-gpu
+  template:
+    metadata:
+      labels:
+        app: celery-worker-gpu
+    spec:
+      containers:
+      - name: celery-worker-gpu
+        image: engcad/celery-worker-gpu:latest
+        command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=2", "-Q", "ai_cad"]
+        envFrom:
+        - configMapRef:
+            name: engcad-config
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        resources:
+          limits:
+            memory: "8Gi"
+            nvidia.com/gpu: 1
+          requests:
+            memory: "4Gi"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: engenharia-data
+          mountPath: /app/engenharia_automacao
+        livenessProbe:
+          exec:
+            command: ["python", "-c", "import torch; print(torch.cuda.is_available())"]
+          initialDelaySeconds: 60
+          periodSeconds: 120
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+      - name: engenharia-data
+        persistentVolumeClaim:
+          claimName: engenharia-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: engcad
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+    spec:
+      containers:
+      - name: api
+        image: engcad/api-server:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: engcad-config
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+          requests:
+            memory: "512Mi"
+            cpu: "0.5"
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: engcad
+spec:
+  selector:
+    app: api-server
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: engcad
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pvc
+  namespace: engcad
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: engcad
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data-pvc
+  namespace: engcad
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: engenharia-data-pvc
+  namespace: engcad
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi

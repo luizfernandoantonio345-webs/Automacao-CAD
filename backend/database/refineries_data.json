@@ -1,0 +1,42 @@
+{
+  "REGAP": {
+    "name": "REGAP Gabriel Passos",
+    "location": "Betim, MG",
+    "db": "SINCOR_REGAP_V2",
+    "clash_tol": 5,
+    "norms": ["N-58", "N-76", "N-115", "ASME B31.3"],
+    "material_database": "SINCOR_REGAP_V2",
+    "default_pressure_class": "150#",
+    "clash_detection_tolerance_mm": 5
+  },
+  "REPLAN": {
+    "name": "REPLAN Paulínia",
+    "location": "Paulínia, SP",
+    "db": "SINCOR_REPLAN_V1",
+    "clash_tol": 3,
+    "norms": ["N-58", "N-76", "ASME B31.3"],
+    "material_database": "SINCOR_REPLAN_V1",
+    "default_pressure_class": "300#",
+    "clash_detection_tolerance_mm": 3
+  },
+  "BRAAP": {
+    "name": "BRAAP São José dos Campos",
+    "location": "São José dos Campos, SP",
+    "db": "SINCOR_BRAAP_V1",
+    "clash_tol": 4,
+    "norms": ["N-58", "N-76", "ASME B31.3"],
+    "material_database": "SINCOR_BRAAP_V1",
+    "default_pressure_class": "150#",
+    "clash_detection_tolerance_mm": 4
+  },
+  "RECAP": {
+    "name": "RECAP Mauá",
+    "location": "Mauá, SP",
+    "db": "SINCOR_RECAP_V2",
+    "clash_tol": 3,
+    "norms": ["N-58", "N-76", "N-115", "ASME B31.3"],
+    "material_database": "SINCOR_RECAP_V2",
+    "default_pressure_class": "300#",
+    "clash_detection_tolerance_mm": 3
+  }
+}

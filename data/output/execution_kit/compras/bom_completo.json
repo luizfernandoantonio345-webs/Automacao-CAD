@@ -1,0 +1,1555 @@
+{
+  "linhas": [
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "quantidade": 160.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 799.0,
+      "custo_total_brl": 13583.0
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "quantidade": 20.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 854.0,
+      "custo_total_brl": 8369.2
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "quantidade": 20.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 66.4,
+      "custo_total_brl": 650.7
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "quantidade": 80.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 52.0,
+      "custo_total_brl": 936.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "quantidade": 20.0,
+      "comprimento_total_m": 160.0,
+      "massa_total_kg": 9600.0,
+      "custo_total_brl": 109440.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "quantidade": 10.0,
+      "comprimento_total_m": 250.0,
+      "massa_total_kg": 15000.0,
+      "custo_total_brl": 171000.0
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "ARO_GAIOLA_PROTECAO",
+      "descricao": "Aro conformado em barra chata 38x6 mm.",
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "quantidade": 5.0,
+      "comprimento_total_m": 10.995,
+      "massa_total_kg": 19.68,
+      "custo_total_brl": 192.86
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "BRACO_SUPORTE_FIXACAO",
+      "descricao": "Braco de fixacao da escada a estrutura existente.",
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "quantidade": 6.0,
+      "comprimento_total_m": 1.2,
+      "massa_total_kg": 2.15,
+      "custo_total_brl": 21.07
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "CHAPA_SUPORTE_FIXACAO",
+      "descricao": "Chapa base 120x80x8 mm com 2 furos D14 mm.",
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "quantidade": 6.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 3.6,
+      "custo_total_brl": 35.28
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "DEGRAU_ANTI_DERRAPANTE",
+      "descricao": "Degrau em barra redonda macica D19 mm.",
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "quantidade": 27.0,
+      "comprimento_total_m": 12.15,
+      "massa_total_kg": 27.11,
+      "custo_total_brl": 265.68
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "MONTANTE_GAIOLA",
+      "descricao": "Montante vertical da gaiola de protecao em barra chata.",
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "quantidade": 4.0,
+      "comprimento_total_m": 23.6,
+      "massa_total_kg": 42.24,
+      "custo_total_brl": 413.95
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "MONTANTE_LATERAL",
+      "descricao": "Montante lateral com prolongamento acima do piso de saida.",
+      "material": "ASTM A36",
+      "fabricacao": "tubular",
+      "quantidade": 2.0,
+      "comprimento_total_m": 18.2,
+      "massa_total_kg": 81.72,
+      "custo_total_brl": 800.86
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "quantidade": 10.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 327.2,
+      "custo_total_brl": 8834.4
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "ELBOW_90",
+      "descricao": "Curvas do auto-router",
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "industrializado",
+      "quantidade": 2.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 0.0,
+      "custo_total_brl": 0.0
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "PIPE_STRAIGHT",
+      "descricao": "Trecho total roteado automaticamente",
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "tubular",
+      "quantidade": 3.0,
+      "comprimento_total_m": 28.0,
+      "massa_total_kg": 0.0,
+      "custo_total_brl": 0.0
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "PIPE_SUPPORT",
+      "descricao": "Suportes calculados por espaçamento de norma",
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "industrializado",
+      "quantidade": 10.0,
+      "comprimento_total_m": 0.0,
+      "massa_total_kg": 0.0,
+      "custo_total_brl": 0.0
+    }
+  ],
+  "resumo": {
+    "itens": 16,
+    "massa_total_kg": 26875.1,
+    "custo_total_brl": 314543.0
+  },
+  "plano_corte_otimizado": {
+    "status": "ok",
+    "stock_length_m": 6.0,
+    "waste_percent": -21.601,
+    "waste_m": -18.145,
+    "bars": [
+      {
+        "barra_id": "BAR-001",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 12.0,
+        "sobra_m": -6.0,
+        "pecas": [
+          {
+            "item": "PIPE_STRAIGHT",
+            "material": "ASTM A106 Gr.B",
+            "comprimento_m": 12.0
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-002",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 12.0,
+        "sobra_m": -6.0,
+        "pecas": [
+          {
+            "item": "PIPE_STRAIGHT",
+            "material": "ASTM A106 Gr.B",
+            "comprimento_m": 12.0
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-003",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 12.0,
+        "sobra_m": -6.0,
+        "pecas": [
+          {
+            "item": "PIPE_STRAIGHT",
+            "material": "ASTM A106 Gr.B",
+            "comprimento_m": 12.0
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-004",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 9.1,
+        "sobra_m": -3.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_LATERAL",
+            "material": "ASTM A36",
+            "comprimento_m": 9.1
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-005",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 9.1,
+        "sobra_m": -3.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_LATERAL",
+            "material": "ASTM A36",
+            "comprimento_m": 9.1
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-006",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.9,
+        "sobra_m": 0.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_GAIOLA",
+            "material": "ASTM A36",
+            "comprimento_m": 5.9
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-007",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.9,
+        "sobra_m": 0.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_GAIOLA",
+            "material": "ASTM A36",
+            "comprimento_m": 5.9
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-008",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.9,
+        "sobra_m": 0.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_GAIOLA",
+            "material": "ASTM A36",
+            "comprimento_m": 5.9
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-009",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.9,
+        "sobra_m": 0.1,
+        "pecas": [
+          {
+            "item": "MONTANTE_GAIOLA",
+            "material": "ASTM A36",
+            "comprimento_m": 5.9
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-010",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.948,
+        "sobra_m": 0.052,
+        "pecas": [
+          {
+            "item": "ARO_GAIOLA_PROTECAO",
+            "material": "ASTM A36",
+            "comprimento_m": 2.199
+          },
+          {
+            "item": "ARO_GAIOLA_PROTECAO",
+            "material": "ASTM A36",
+            "comprimento_m": 2.199
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-011",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.948,
+        "sobra_m": 0.052,
+        "pecas": [
+          {
+            "item": "ARO_GAIOLA_PROTECAO",
+            "material": "ASTM A36",
+            "comprimento_m": 2.199
+          },
+          {
+            "item": "ARO_GAIOLA_PROTECAO",
+            "material": "ASTM A36",
+            "comprimento_m": 2.199
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-012",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.999,
+        "sobra_m": 0.001,
+        "pecas": [
+          {
+            "item": "ARO_GAIOLA_PROTECAO",
+            "material": "ASTM A36",
+            "comprimento_m": 2.199
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-013",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 5.85,
+        "sobra_m": 0.15,
+        "pecas": [
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          },
+          {
+            "item": "DEGRAU_ANTI_DERRAPANTE",
+            "material": "ASTM A36",
+            "comprimento_m": 0.45
+          }
+        ]
+      },
+      {
+        "barra_id": "BAR-014",
+        "comprimento_comercial_m": 6.0,
+        "aproveitamento_m": 0.6,
+        "sobra_m": 5.4,
+        "pecas": [
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          },
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          },
+          {
+            "item": "BRACO_SUPORTE_FIXACAO",
+            "material": "ASTM A36",
+            "comprimento_m": 0.2
+          }
+        ]
+      }
+    ],
+    "excluded": [
+      {
+        "item": "CHAPA_SUPORTE_FIXACAO",
+        "motivo": "fora_do_escopo_de_barra_padrao",
+        "fabricacao": "chaparia"
+      },
+      {
+        "item": "ELBOW_90",
+        "motivo": "fora_do_escopo_de_barra_padrao",
+        "fabricacao": "industrializado"
+      },
+      {
+        "item": "PIPE_SUPPORT",
+        "motivo": "fora_do_escopo_de_barra_padrao",
+        "fabricacao": "industrializado"
+      }
+    ],
+    "target_met": true
+  },
+  "itens_detalhados": [
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-001",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-002",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-003",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-004",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-005",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-006",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-007",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-008",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-009",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_COLUNA",
+      "descricao": "Coluna principal do pórtico",
+      "quantidade": 2,
+      "comprimento_unitario_m": 8.0,
+      "comprimento_total_m": 16.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 960.0,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 10944.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PORTICO_VIGA",
+      "descricao": "Viga principal do pórtico",
+      "quantidade": 1,
+      "comprimento_unitario_m": 25.0,
+      "comprimento_total_m": 25.0,
+      "material": "ASTM A572 Gr. 50",
+      "fabricacao": "laminado",
+      "massa_total_kg": 1500.0,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 17100.0
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "CHAPA_LIGACAO",
+      "descricao": "Chapa de ligação nó viga-pilar",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "calandrada",
+      "massa_total_kg": 6.64,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 65.07
+    },
+    {
+      "disciplina": "estrutura",
+      "item": "PARAFUSO_ESTRUTURAL",
+      "descricao": "Parafuso ASTM A325 das ligações",
+      "quantidade": 8,
+      "material": "ASTM A325",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 5.2,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 93.6
+    },
+    {
+      "disciplina": "civil",
+      "item": "PLACA_BASE",
+      "descricao": "Placa de base para apoio do pórtico",
+      "quantidade": 2,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 85.4,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 836.92
+    },
+    {
+      "disciplina": "civil",
+      "item": "CHUMBADOR",
+      "descricao": "Chumbador de fundação",
+      "quantidade": 16,
+      "material": "ASTM F1554 Gr.36",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 79.9,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 1358.3
+    },
+    {
+      "disciplina": "soldagem",
+      "item": "CONSUMIVEL_SOLDA",
+      "descricao": "Consumível de solda de fabricação e montagem",
+      "quantidade": 1,
+      "material": "E7018",
+      "fabricacao": "consumivel",
+      "massa_total_kg": 32.72,
+      "portico_id": "P-010",
+      "origem": "estrutura_core",
+      "custo_total_brl": 883.44
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "ARO_GAIOLA_PROTECAO",
+      "descricao": "Aro conformado em barra chata 38x6 mm.",
+      "quantidade": 5,
+      "comprimento_total_m": 10.995,
+      "comprimento_unitario_m": 2.199,
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "massa_total_kg": 19.68,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 192.86
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "BRACO_SUPORTE_FIXACAO",
+      "descricao": "Braco de fixacao da escada a estrutura existente.",
+      "quantidade": 6,
+      "comprimento_total_m": 1.2,
+      "comprimento_unitario_m": 0.2,
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "massa_total_kg": 2.15,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 21.07
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "CHAPA_SUPORTE_FIXACAO",
+      "descricao": "Chapa base 120x80x8 mm com 2 furos D14 mm.",
+      "quantidade": 6,
+      "comprimento_total_m": 0.0,
+      "comprimento_unitario_m": 0.0,
+      "material": "ASTM A36",
+      "fabricacao": "chaparia",
+      "massa_total_kg": 3.6,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 35.28
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "DEGRAU_ANTI_DERRAPANTE",
+      "descricao": "Degrau em barra redonda macica D19 mm.",
+      "quantidade": 27,
+      "comprimento_total_m": 12.15,
+      "comprimento_unitario_m": 0.45,
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "massa_total_kg": 27.11,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 265.68
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "MONTANTE_GAIOLA",
+      "descricao": "Montante vertical da gaiola de protecao em barra chata.",
+      "quantidade": 4,
+      "comprimento_total_m": 23.6,
+      "comprimento_unitario_m": 5.9,
+      "material": "ASTM A36",
+      "fabricacao": "laminado",
+      "massa_total_kg": 42.24,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 413.95
+    },
+    {
+      "disciplina": "mecanica",
+      "item": "MONTANTE_LATERAL",
+      "descricao": "Montante lateral com prolongamento acima do piso de saida.",
+      "quantidade": 2,
+      "comprimento_total_m": 18.2,
+      "comprimento_unitario_m": 9.1,
+      "material": "ASTM A36",
+      "fabricacao": "tubular",
+      "massa_total_kg": 81.72,
+      "origem": "escada_marinheiro",
+      "custo_total_brl": 800.86
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "PIPE_STRAIGHT",
+      "descricao": "Trecho total roteado automaticamente",
+      "quantidade": 3,
+      "comprimento_total_m": 28.0,
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "tubular",
+      "massa_total_kg": 0.0,
+      "comprimento_unitario_m": 12.0,
+      "origem": "piping_autorouter",
+      "custo_total_brl": 0.0
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "ELBOW_90",
+      "descricao": "Curvas do auto-router",
+      "quantidade": 2,
+      "comprimento_total_m": 0.0,
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 0.0,
+      "origem": "piping_autorouter",
+      "custo_total_brl": 0.0
+    },
+    {
+      "disciplina": "tubulacao",
+      "item": "PIPE_SUPPORT",
+      "descricao": "Suportes calculados por espaçamento de norma",
+      "quantidade": 10,
+      "comprimento_total_m": 0.0,
+      "material": "ASTM A106 Gr.B",
+      "fabricacao": "industrializado",
+      "massa_total_kg": 0.0,
+      "origem": "piping_autorouter",
+      "custo_total_brl": 0.0
+    }
+  ]
+}

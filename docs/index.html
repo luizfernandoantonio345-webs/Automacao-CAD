@@ -1,0 +1,3863 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- S#49: theme-color -->
+    <meta name="theme-color" content="#00e5ff" />
+    <!-- S#48: font-display swap -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap&font-display=swap"
+      rel="stylesheet"
+    />
+    <title>ENGENHARIA CAD · Acesso ao Sistema</title>
+    <style>
+      /* ── S#1: CSS custom properties ── */
+      :root {
+        --c: #00e5ff;
+        --amber: #ffaa00;
+        --green: #00ffaa;
+        --red: #ff3c66;
+        --card: rgba(3, 11, 34, 0.6);
+        --bd: rgba(0, 215, 255, 0.52);
+        --r: 14px;
+        --shadow-neon:
+          0 0 1px rgba(0, 238, 255, 0.95), 0 0 8px rgba(0, 210, 255, 0.72),
+          0 0 28px rgba(0, 175, 255, 0.48), 0 0 70px rgba(0, 125, 208, 0.28);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      body {
+        font-family: "Share Tech Mono", monospace;
+        cursor: crosshair;
+      }
+
+      /* ── S#44: CSS animation-play-state paused when tab hidden ── */
+      body.tab-hidden .aurora,
+      body.tab-hidden .scan,
+      body.tab-hidden .bloom,
+      body.tab-hidden .fog {
+        animation-play-state: paused !important;
+      }
+
+      /* ── S#45: GPU layer hints ── */
+      #bgCanvas {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        will-change: contents;
+        transform: translateZ(0);
+      }
+      #binCanvas {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.07;
+        transform: translateZ(0);
+      }
+
+      /* ── S#2 Ground fog ── */
+      .fog {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 32%;
+        z-index: 1;
+        pointer-events: none;
+        will-change: opacity;
+        transform: translateZ(0);
+        background: linear-gradient(
+          to top,
+          rgba(0, 80, 180, 0.09),
+          transparent
+        );
+        animation: fogPulse 6s ease-in-out infinite;
+        will-change: opacity;
+      }
+      @keyframes fogPulse {
+        0%,
+        100% {
+          opacity: 0.55;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* ── S#3 Aurora — static, no conic-gradient (fixes S#7 perf) ── */
+      .aurora {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 42%;
+        z-index: 1;
+        pointer-events: none;
+        background: linear-gradient(
+          180deg,
+          transparent 0%,
+          rgba(0, 255, 150, 0.022) 28%,
+          rgba(0, 180, 255, 0.028) 58%,
+          transparent 100%
+        );
+        animation: auroraS 14s ease-in-out infinite;
+        will-change: transform, opacity;
+      }
+      @keyframes auroraS {
+        0%,
+        100% {
+          opacity: 0.5;
+          transform: scaleX(1) translateX(0);
+        }
+        50% {
+          opacity: 1;
+          transform: scaleX(1.12) translateX(1%);
+        }
+      }
+
+      /* scan + bloom */
+      .scan {
+        position: fixed;
+        left: 0;
+        right: 0;
+        height: 1px;
+        z-index: 2;
+        pointer-events: none;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 215, 255, 0.07),
+          transparent
+        );
+        animation: sc 14s linear infinite;
+      }
+      @keyframes sc {
+        0% {
+          top: -1px;
+        }
+        100% {
+          top: 100vh;
+        }
+      }
+      .bloom {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        /* S#40: will-change:opacity hint */
+        will-change: opacity;
+        background: radial-gradient(
+          ellipse 55% 58% at 50% 49%,
+          rgba(0, 155, 255, 0.1),
+          rgba(0, 75, 195, 0.04) 52%,
+          transparent
+        );
+        animation: bp 5.5s ease-in-out infinite;
+      }
+      @keyframes bp {
+        0%,
+        100% {
+          opacity: 0.72;
+        }
+        50% {
+          opacity: 1.15;
+        }
+      }
+
+      /* CRT + vignette */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          rgba(0, 0, 0, 0.038) 0,
+          rgba(0, 0, 0, 0.038) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+        opacity: 0.5;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 76% 79% at 50% 48%,
+          transparent 22%,
+          rgba(0, 1, 5, 0.92) 100%
+        );
+      }
+
+      /* ── STAGE ── */
+      #stage {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ── S#11: Responsive breakpoints ── */
+      @media (max-width: 720px) {
+        .card {
+          grid-template-columns: 1fr !important;
+          width: 95vw !important;
+        }
+        .left {
+          display: none !important;
+        }
+        .scene {
+          transform: perspective(900px) rotateX(3deg) rotateY(-8deg) !important;
+        }
+      }
+      @media (max-width: 480px) {
+        .scene {
+          transform: none !important;
+        }
+        .card {
+          border-radius: 6px;
+        }
+      }
+
+      /* ── Scene 3D ── */
+      .scene {
+        position: relative;
+        transform-style: preserve-3d;
+        will-change: transform;
+        transform: perspective(1200px) rotateX(6deg) rotateY(-15deg);
+        animation:
+          sIn 1.9s cubic-bezier(0.16, 1, 0.3, 1) both,
+          sBob 10s ease-in-out 1.9s infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .scene {
+          animation: none !important;
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg);
+        }
+      }
+      @keyframes sIn {
+        0% {
+          opacity: 0;
+          filter: blur(22px) brightness(2.4);
+          transform: perspective(1200px) rotateX(26deg) rotateY(-32deg)
+            scale(0.8) translateY(72px);
+        }
+        65% {
+          filter: blur(1.5px) brightness(1.3);
+        }
+        100% {
+          opacity: 1;
+          filter: none;
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg) scale(1)
+            translateY(0);
+        }
+      }
+      @keyframes sBob {
+        0%,
+        100% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateY(0);
+        }
+        50% {
+          transform: perspective(1200px) rotateX(5deg) rotateY(-13deg)
+            translateY(-18px);
+        }
+      }
+      /* S#10: shake includes perspective so 3D is preserved */
+      @keyframes shake {
+        0%,
+        100% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateX(0);
+        }
+        20% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateX(-9px);
+        }
+        40% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateX(9px);
+        }
+        60% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateX(-6px);
+        }
+        80% {
+          transform: perspective(1200px) rotateX(6deg) rotateY(-15deg)
+            translateX(4px);
+        }
+      }
+      .scene.shake {
+        animation: shake 0.5s ease-in-out;
+      }
+
+      /* ── S#47: holograms — CSS filter via wrapper, not individual ── */
+      .holobar {
+        position: absolute;
+        bottom: calc(100% - 4px);
+        left: -28px;
+        right: -28px;
+        height: 138px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 18px;
+        pointer-events: none;
+        filter: drop-shadow(0 0 12px rgba(0, 215, 255, 0.65))
+          drop-shadow(0 0 35px rgba(0, 175, 255, 0.3));
+      }
+      /* S#20: holo labels */
+      .holo-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+      }
+      .holo-lbl {
+        font-size: 7px;
+        letter-spacing: 2px;
+        color: rgba(0, 200, 255, 0.45);
+        text-transform: uppercase;
+      }
+
+      /* ── CARD ── */
+      .card {
+        width: min(660px, 96vw);
+        display: grid;
+        grid-template-columns: 235px 1fr;
+        position: relative;
+        border-radius: var(--r);
+        overflow: hidden;
+        background: var(--card);
+        will-change: transform;
+        backdrop-filter: blur(38px) saturate(2.8) brightness(1.14)
+          contrast(1.04);
+        -webkit-backdrop-filter: blur(38px) saturate(2.8) brightness(1.14)
+          contrast(1.04);
+        border: 1px solid var(--bd);
+        box-shadow:
+          var(--shadow-neon),
+          0 1px 0 rgba(255, 255, 255, 0.1) inset,
+          0 80px 200px rgba(0, 0, 0, 1),
+          0 30px 80px rgba(0, 0, 0, 0.95);
+        /* S#24: border color transition */
+        transition:
+          border-color 0.4s,
+          box-shadow 0.4s;
+      }
+      .card.valid-state {
+        border-color: rgba(0, 255, 170, 0.5);
+        box-shadow:
+          var(--shadow-neon),
+          0 0 30px rgba(0, 255, 150, 0.2),
+          0 80px 200px rgba(0, 0, 0, 1);
+      }
+      .card.error-state {
+        border-color: rgba(255, 60, 100, 0.45);
+      }
+      /* S#10: pulse */
+      .card-pulse {
+        position: absolute;
+        inset: -1px;
+        border-radius: var(--r);
+        pointer-events: none;
+        z-index: 45;
+        animation: cpulse 3s ease-in-out infinite;
+      }
+      @keyframes cpulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 6px rgba(0, 225, 255, 0.28),
+            0 0 18px rgba(0, 185, 255, 0.12);
+        }
+        50% {
+          box-shadow:
+            0 0 14px rgba(0, 235, 255, 0.62),
+            0 0 44px rgba(0, 200, 255, 0.28),
+            0 0 90px rgba(0, 155, 220, 0.16);
+        }
+      }
+      /* Prismatic edge */
+      .cedge {
+        position: absolute;
+        top: 0;
+        left: 4%;
+        right: 4%;
+        height: 1px;
+        z-index: 46;
+        pointer-events: none;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(75, 200, 255, 0.18) 6%,
+          rgba(0, 238, 255, 0.9) 20%,
+          rgba(255, 255, 255, 1) 34%,
+          rgba(178, 240, 255, 0.55) 44%,
+          rgba(0, 238, 255, 0.9) 56%,
+          rgba(255, 255, 255, 0.7) 70%,
+          rgba(0, 218, 255, 0.45) 82%,
+          rgba(0, 178, 255, 0.12) 92%,
+          transparent
+        );
+        box-shadow:
+          0 0 4px rgba(0, 228, 255, 0.9),
+          0 0 14px rgba(0, 210, 255, 0.62),
+          0 0 38px rgba(0, 185, 255, 0.38);
+      }
+      /* S#21: mouse-driven highlight */
+      .chl {
+        position: absolute;
+        inset: 0;
+        z-index: 38;
+        pointer-events: none;
+        border-radius: var(--r);
+        background: radial-gradient(
+          circle 295px at var(--mx, 50%) var(--my, 30%),
+          rgba(0, 192, 255, 0.075),
+          transparent 65%
+        );
+      }
+      .cshadow {
+        position: absolute;
+        top: calc(100% + 2px);
+        left: 5%;
+        right: 5%;
+        height: 60px;
+        pointer-events: none;
+        z-index: 0;
+        background: radial-gradient(
+          ellipse 80% 60% at 50% 0%,
+          rgba(0, 150, 255, 0.16),
+          transparent 70%
+        );
+        filter: blur(8px);
+      }
+
+      /* ── LEFT ── */
+      .left {
+        padding: 28px 16px 24px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: linear-gradient(
+          155deg,
+          rgba(0, 25, 70, 0.46),
+          rgba(0, 5, 20, 0.7)
+        );
+        border-right: 1px solid rgba(0, 190, 255, 0.14);
+        position: relative;
+        z-index: 5;
+      }
+      .left::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 88% 70% at 50% 42%,
+          rgba(0, 92, 212, 0.07),
+          transparent
+        );
+      }
+      .section-marks {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        z-index: 3;
+      }
+      .sm {
+        font-size: 6.5px;
+        color: rgba(0, 180, 255, 0.28);
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .sm::before,
+      .sm::after {
+        content: "";
+        width: 10px;
+        height: 1px;
+        background: rgba(0, 180, 255, 0.28);
+      }
+      #cRadar {
+        position: relative;
+        z-index: 2;
+        will-change: transform;
+        filter: drop-shadow(0 0 16px rgba(0, 215, 255, 0.58))
+          drop-shadow(0 0 44px rgba(0, 175, 255, 0.28));
+      }
+      /* S#27: radar scale legend */
+      .radar-scale {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        font-size: 6px;
+        color: rgba(0, 170, 210, 0.35);
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+      }
+
+      .lstats {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 2;
+        position: relative;
+      }
+      .lst {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 9px;
+        border: 1px solid rgba(0, 172, 255, 0.1);
+        background: rgba(0, 17, 50, 0.38);
+        border-radius: 2px;
+        transition:
+          border-color 0.3s,
+          background 0.3s;
+        position: relative;
+        cursor: pointer;
+      }
+      .lst:hover {
+        border-color: rgba(0, 200, 255, 0.28);
+        background: rgba(0, 25, 65, 0.52);
+      }
+      .lst-tip {
+        position: absolute;
+        left: calc(100% + 8px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 10, 28, 0.96);
+        border: 1px solid rgba(0, 200, 255, 0.3);
+        padding: 4px 9px;
+        font-size: 7px;
+        color: rgba(0, 210, 255, 0.8);
+        letter-spacing: 1px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 100;
+        border-radius: 2px;
+      }
+      .lst:hover .lst-tip {
+        opacity: 1;
+      }
+      .lst-lbl {
+        font-size: 7px;
+        letter-spacing: 2px;
+        color: rgba(0, 168, 215, 0.48);
+        text-transform: uppercase;
+      }
+      .lst-r {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .lst-val {
+        font-size: 8px;
+        letter-spacing: 1px;
+        color: rgba(0, 205, 255, 0.72);
+      }
+      .pip {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        animation: blink 2.6s ease-in-out infinite;
+      }
+      .pip.ok {
+        background: #00ffaa;
+        box-shadow: 0 0 6px #00ffaa;
+      }
+      .pip.on {
+        background: #00e5ff;
+        box-shadow: 0 0 6px #00e5ff;
+      }
+      .pip.wn {
+        background: #ffaa00;
+        box-shadow: 0 0 6px #ffaa00;
+        animation-delay: 0.4s;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        55% {
+          opacity: 0.15;
+        }
+      }
+      /* S#38: status consulting animation */
+      .lst-val.consulting::after {
+        content: " ···";
+        animation: dots 1.5s steps(3, end) infinite;
+      }
+      @keyframes dots {
+        0%,
+        33% {
+          content: " ·";
+        }
+        34%,
+        66% {
+          content: " ··";
+        }
+        67%,
+        100% {
+          content: " ···";
+        }
+      }
+
+      .abnt-block {
+        width: 100%;
+        border: 1px solid rgba(0, 160, 200, 0.15);
+        padding: 4px 6px;
+        z-index: 2;
+        position: relative;
+      }
+      .abnt-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .abnt-cell {
+        font-size: 6px;
+        color: rgba(0, 155, 195, 0.38);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .abnt-val {
+        font-size: 7px;
+        color: rgba(0, 185, 225, 0.55);
+        letter-spacing: 1px;
+      }
+      .drawing-num {
+        font-size: 6.5px;
+        color: rgba(0, 160, 200, 0.28);
+        letter-spacing: 1.5px;
+        text-align: center;
+        z-index: 2;
+        position: relative;
+      }
+
+      /* ── RIGHT ── */
+      .right {
+        padding: 32px 28px 24px 24px;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(
+          155deg,
+          rgba(0, 13, 47, 0.42),
+          rgba(0, 4, 17, 0.67)
+        );
+        position: relative;
+        z-index: 5;
+      }
+      .right::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse 98% 52% at 50% -8%,
+          rgba(0, 142, 255, 0.055),
+          transparent
+        );
+      }
+      .proj-title {
+        font-size: 7px;
+        color: rgba(0, 180, 255, 0.33);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .proj-title::before {
+        content: "›";
+        color: rgba(0, 192, 255, 0.28);
+        font-size: 10px;
+      }
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 7.5px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: rgba(0, 190, 255, 0.4);
+        margin-bottom: 5px;
+      }
+      .eyebrow::before {
+        content: "";
+        width: 18px;
+        height: 1px;
+        background: rgba(0, 192, 255, 0.3);
+      }
+      .eyebrow::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 192, 255, 0.18),
+          transparent
+        );
+      }
+
+      /* ── S#13+S#14+S#16: TITLE — ENGENHARIA CAD ── */
+      .ftitle {
+        font-family: "Orbitron", sans-serif;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 22px;
+        min-height: 90px;
+        /* S#25: staggered entrance */
+        animation: titleIn 1s 2.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      @keyframes titleIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      /* glow pulse on CAD text */
+      @keyframes cadGlow {
+        0%,
+        100% {
+          text-shadow:
+            0 0 28px rgba(0, 205, 255, 0.52),
+            0 0 60px rgba(0, 152, 222, 0.26),
+            0 2px 6px rgba(0, 0, 0, 0.95);
+        }
+        50% {
+          text-shadow:
+            0 0 40px rgba(0, 215, 255, 0.7),
+            0 0 80px rgba(0, 162, 232, 0.4),
+            0 0 120px rgba(0, 120, 210, 0.2),
+            0 2px 6px rgba(0, 0, 0, 0.95);
+        }
+      }
+      .title-cad {
+        animation: cadGlow 4s ease-in-out 3.5s infinite;
+      }
+      /* S#16: ENGENHARIA em amber para contraste */
+      .title-eng {
+        display: block;
+        font-size: clamp(9px, 1.4vw, 13px);
+        font-weight: 600;
+        letter-spacing: 8px;
+        color: var(--amber);
+        text-shadow:
+          0 0 14px rgba(255, 170, 0, 0.6),
+          0 0 35px rgba(255, 140, 0, 0.25);
+        text-transform: uppercase;
+        /* decorative underline */
+        padding-bottom: 6px;
+        border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+        margin-bottom: 4px;
+        position: relative;
+      }
+      /* animated underline grow */
+      .title-eng::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 0;
+        height: 1px;
+        background: var(--amber);
+        box-shadow: 0 0 8px var(--amber);
+        animation: engLine 1s 1.8s ease-out forwards;
+      }
+      @keyframes engLine {
+        to {
+          width: 100%;
+        }
+      }
+      /* S#15: scan passes after type */
+      .title-eng.scanned::after {
+        content: "";
+        display: block;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 170, 0, 0.6),
+          transparent
+        );
+        animation: scanPass 0.8s ease-out forwards;
+        margin-top: 2px;
+      }
+      @keyframes scanPass {
+        from {
+          opacity: 1;
+          transform: scaleX(0);
+        }
+        to {
+          opacity: 0;
+          transform: scaleX(1);
+        }
+      }
+      .title-cad {
+        display: block;
+        font-size: clamp(38px, 5.5vw, 56px);
+        font-weight: 900;
+        /* Wide spacing — D separated from A, never looks like O */
+        letter-spacing: 16px;
+        color: rgba(215, 248, 255, 0.98);
+        /* -webkit-text-stroke makes letters crisp, sharp edges */
+        -webkit-text-stroke: 0.5px rgba(0, 220, 255, 0.4);
+        text-shadow:
+          0 0 28px rgba(0, 205, 255, 0.52),
+          0 0 60px rgba(0, 152, 222, 0.26),
+          0 0 100px rgba(0, 110, 200, 0.14),
+          0 2px 6px rgba(0, 0, 0, 0.95);
+        position: relative;
+        overflow: visible;
+        line-height: 0.9;
+      }
+      .title-cad .tcur {
+        display: inline-block;
+        width: 3px;
+        height: 0.85em;
+        background: var(--c);
+        vertical-align: middle;
+        margin-left: 2px;
+        box-shadow: 0 0 8px var(--c);
+        animation: tcb 0.72s step-end infinite;
+      }
+      @keyframes tcb {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+      .title-sub {
+        display: block;
+        font-size: 0.42em;
+        font-weight: 300;
+        letter-spacing: 4px;
+        color: rgba(0, 192, 255, 0.52);
+        margin-top: 4px;
+        min-height: 1em;
+        font-family: "Share Tech Mono", monospace;
+      }
+
+      /* ── FIELDS ── */
+      .fgrp {
+        margin-bottom: 16px;
+        position: relative;
+        /* S#25: staggered entrance */
+        opacity: 0;
+        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .fgrp:nth-child(3) {
+        animation-delay: 2.4s;
+      }
+      .fgrp:nth-child(4) {
+        animation-delay: 2.55s;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .flbl {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 7.5px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: rgba(0, 195, 255, 0.46);
+        margin-bottom: 7px;
+      }
+      .flbl::before {
+        content: "›";
+        color: rgba(0, 192, 255, 0.28);
+        font-size: 10px;
+      }
+      /* S#28: char counter */
+      .flbl .counter {
+        margin-left: auto;
+        font-size: 7px;
+        color: rgba(0, 180, 220, 0.35);
+        letter-spacing: 1px;
+      }
+      /* S#27: validation tag */
+      .flbl .vtag {
+        font-size: 7px;
+        letter-spacing: 1px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .flbl .vtag.ok {
+        color: #00ffaa;
+        opacity: 1;
+      }
+      .flbl .vtag.bad {
+        color: #ff3c66;
+        opacity: 1;
+      }
+
+      .fwrap {
+        position: relative;
+      }
+      .fwrap::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        pointer-events: none;
+        z-index: 2;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent 0,
+          transparent 11px,
+          rgba(0, 175, 255, 0.13) 11px,
+          rgba(0, 175, 255, 0.13) 12px
+        );
+      }
+      .fin {
+        width: 100%;
+        height: 46px;
+        background: rgba(0, 19, 60, 0.55);
+        border: 1px solid rgba(0, 175, 255, 0.26);
+        border-radius: 3px;
+        color: rgba(215, 245, 255, 0.95);
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        letter-spacing: 2px;
+        padding: 0 46px 0 16px;
+        outline: none;
+        transition:
+          border-color 0.28s,
+          box-shadow 0.28s,
+          background 0.28s;
+        caret-color: var(--c);
+        box-shadow:
+          inset 0 1px 0 rgba(0, 185, 255, 0.07),
+          inset 0 -1px 0 rgba(0, 72, 162, 0.12);
+      }
+      .fin::placeholder {
+        color: rgba(0, 158, 208, 0.16);
+      }
+      /* S#18: animated placeholder pulse */
+      @keyframes phPulse {
+        0%,
+        100% {
+          color: rgba(0, 158, 208, 0.16);
+        }
+        50% {
+          color: rgba(0, 158, 208, 0.28);
+        }
+      }
+      .fin:not(:focus)::placeholder {
+        animation: phPulse 3s ease-in-out infinite;
+      }
+      .fin:focus {
+        border-color: rgba(0, 222, 255, 0.7);
+        background: rgba(0, 32, 90, 0.58);
+        box-shadow:
+          0 0 0 1px rgba(0, 218, 255, 0.13),
+          0 0 18px rgba(0, 185, 255, 0.27),
+          inset 0 1px 0 rgba(0, 195, 255, 0.09);
+      }
+      .fin.err {
+        border-color: var(--red);
+      }
+      .fin.valid {
+        border-color: #00ffaa;
+        box-shadow:
+          0 0 0 1px rgba(0, 255, 170, 0.1),
+          0 0 12px rgba(0, 255, 140, 0.15);
+      }
+      /* S#17: animated focus underline */
+      .fline {
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .fline::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: -100%;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 222, 255, 0.9),
+          transparent
+        );
+        transition: left 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .fin:focus ~ .fline::after {
+        left: 0;
+      }
+      /* S#18: autocomplete ghost text */
+      .autocomplete {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 14px;
+        letter-spacing: 2px;
+        color: transparent;
+        white-space: nowrap;
+      }
+      .autocomplete .ghost {
+        color: rgba(0, 200, 255, 0.18);
+      }
+      .fbadge {
+        position: absolute;
+        right: 0;
+        top: -17px;
+        font-size: 7px;
+        color: rgba(0, 185, 255, 0.26);
+        letter-spacing: 1px;
+      }
+      .fico {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 46px;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(0, 168, 210, 0.42);
+        cursor: pointer;
+        border-left: 1px solid rgba(0, 168, 255, 0.13);
+        border-radius: 0 3px 3px 0;
+        transition:
+          color 0.2s,
+          background 0.2s;
+      }
+      .fico:hover {
+        color: var(--c);
+        background: rgba(0, 192, 255, 0.06);
+      }
+      .fico svg {
+        width: 15px;
+        height: 15px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.7;
+      }
+      .ferr {
+        font-size: 7.5px;
+        color: var(--red);
+        letter-spacing: 1.5px;
+        margin-top: 4px;
+        display: none;
+      }
+      .ferr.show {
+        display: block;
+      }
+
+      /* S#34: caps lock warning */
+      .caps-warn {
+        font-size: 7px;
+        color: var(--amber);
+        letter-spacing: 1.5px;
+        margin-top: 3px;
+        display: none;
+        align-items: center;
+        gap: 5px;
+      }
+      .caps-warn.show {
+        display: flex;
+      }
+
+      /* S#31: password strength bar */
+      .pw-strength {
+        margin-top: 5px;
+        height: 3px;
+        background: rgba(0, 50, 100, 0.4);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .pw-strength-bar {
+        height: 100%;
+        width: 0%;
+        border-radius: 2px;
+        transition:
+          width 0.3s,
+          background 0.3s;
+      }
+
+      /* S#19 attempts counter */
+      .attempts {
+        font-size: 7px;
+        color: var(--amber);
+        letter-spacing: 2px;
+        text-align: right;
+        margin-top: 2px;
+        display: none;
+      }
+      .attempts.show {
+        display: block;
+      }
+
+      /* ── REMEMBER ── */
+      .remrow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        cursor: pointer;
+        user-select: none;
+        width: fit-content;
+        opacity: 0;
+        animation: fadeUp 0.6s 2.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .chkb {
+        width: 15px;
+        height: 15px;
+        border: 1px solid rgba(0, 175, 255, 0.34);
+        background: rgba(0, 19, 60, 0.54);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.25s;
+        border-radius: 2px;
+      }
+      .chkb.on {
+        border-color: var(--c);
+        background: rgba(0, 175, 255, 0.18);
+        box-shadow: 0 0 8px rgba(0, 195, 255, 0.34);
+      }
+      .chkb.on::after {
+        content: "";
+        width: 7px;
+        height: 7px;
+        background: var(--c);
+        box-shadow: 0 0 7px var(--c);
+        border-radius: 1px;
+      }
+      .reml {
+        font-size: 8px;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: rgba(125, 188, 234, 0.56);
+      }
+
+      /* S#36: button disabled state */
+      .cta {
+        width: 100%;
+        height: 50px;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 50, 138, 0.54),
+          rgba(0, 33, 105, 0.6) 50%,
+          rgba(0, 50, 138, 0.54)
+        );
+        border: 1px solid rgba(0, 210, 255, 0.72);
+        border-radius: 3px;
+        color: rgba(0, 232, 255, 0.98);
+        font-family: "Orbitron", sans-serif;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.35s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        box-shadow:
+          0 0 2px rgba(0, 210, 255, 0.55),
+          0 0 16px rgba(0, 155, 255, 0.24),
+          inset 0 1px 0 rgba(0, 215, 255, 0.2);
+        margin-bottom: 12px;
+        opacity: 0;
+        animation: fadeUp 0.6s 2.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .cta::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(0, 222, 255, 0.22),
+          transparent
+        );
+        transform: translateX(-100%);
+        transition: transform 0.65s;
+      }
+      .cta:not(:disabled):hover {
+        background: linear-gradient(
+          90deg,
+          rgba(0, 90, 210, 0.64),
+          rgba(0, 52, 162, 0.7) 50%,
+          rgba(0, 90, 210, 0.64)
+        );
+        border-color: rgba(0, 232, 255, 0.96);
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow:
+          0 0 4px rgba(0, 222, 255, 0.75),
+          0 0 30px rgba(0, 188, 255, 0.56),
+          0 0 80px rgba(0, 138, 222, 0.36),
+          inset 0 1px 0 rgba(0, 225, 255, 0.28);
+      }
+      .cta:not(:disabled):hover::before {
+        transform: translateX(100%);
+      }
+      .cta:not(:disabled):active {
+        transform: translateY(0);
+      }
+      /* S#36: disabled look */
+      .cta:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+      /* S#17: ripple */
+      .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(0, 220, 255, 0.35);
+        transform: scale(0);
+        animation: rippleAnim 0.6s linear;
+        pointer-events: none;
+      }
+      @keyframes rippleAnim {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+      /* S#17: lock icon animation */
+      .cta svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2.2;
+        transition: transform 0.3s;
+      }
+      .cta:not(:disabled):hover svg {
+        transform: rotate(-20deg) scale(1.15);
+      }
+      .cta.loading span {
+        opacity: 0;
+      }
+      .cta.loading .ldots {
+        display: flex !important;
+      }
+      .ldots {
+        display: none;
+        position: absolute;
+        gap: 6px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .ldots i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--c);
+        animation: ld 0.65s ease-in-out infinite;
+      }
+      .ldots i:nth-child(2) {
+        animation-delay: 0.13s;
+      }
+      .ldots i:nth-child(3) {
+        animation-delay: 0.26s;
+      }
+      @keyframes ld {
+        0%,
+        80%,
+        100% {
+          transform: scale(0.3);
+          opacity: 0.18;
+        }
+        40% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .progress-wrap {
+        width: 100%;
+        height: 3px;
+        background: rgba(0, 50, 100, 0.4);
+        border-radius: 2px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        display: none;
+      }
+      .progress-wrap.show {
+        display: block;
+      }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--c), #00ffaa);
+        border-radius: 2px;
+        box-shadow: 0 0 8px var(--c);
+      }
+
+      .success-flash {
+        animation: successFlash 0.5s ease-out;
+      }
+      @keyframes successFlash {
+        0%,
+        100% {
+          box-shadow:
+            var(--shadow-neon),
+            0 80px 200px rgba(0, 0, 0, 1);
+        }
+        50% {
+          box-shadow:
+            0 0 60px rgba(0, 255, 150, 0.6),
+            0 0 120px rgba(0, 200, 120, 0.4),
+            0 80px 200px rgba(0, 0, 0, 1);
+        }
+      }
+
+      .foot-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ftr {
+        font-size: 7px;
+        letter-spacing: 2px;
+        color: rgba(0, 155, 200, 0.24);
+        text-transform: uppercase;
+      }
+      .export-btn {
+        font-size: 7px;
+        letter-spacing: 1.5px;
+        color: rgba(0, 180, 220, 0.32);
+        cursor: pointer;
+        text-transform: uppercase;
+        border: none;
+        background: none;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .export-btn:hover {
+        color: var(--c);
+      }
+      .export-btn svg {
+        width: 10px;
+        height: 10px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+      }
+
+      /* ── BLUEPRINT FRAME ── */
+      .bpf {
+        position: absolute;
+        inset: -58px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .bpf svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      /* ── REFLECTION ── */
+      .refl {
+        position: absolute;
+        top: calc(100% - 1px);
+        left: -48px;
+        right: -48px;
+        height: 125px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .refl::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0),
+          rgba(0, 0, 0, 0.97)
+        );
+        z-index: 1;
+      }
+      #cRefl {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform: scaleY(-1) scaleX(0.88) translateX(4%);
+        opacity: 0.2;
+        filter: blur(3px);
+      }
+
+      /* ── COORD LABELS ── */
+      .fco {
+        position: fixed;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 8px;
+        color: rgba(0, 165, 210, 0.22);
+        letter-spacing: 0.8px;
+        z-index: 6;
+        pointer-events: none;
+        line-height: 1.9;
+      }
+      .fco .v {
+        color: rgba(0, 208, 255, 0.44);
+        cursor: pointer;
+        transition: color 0.2s;
+        pointer-events: auto;
+        position: relative;
+      }
+      .fco .v[title]::after {
+        content: attr(title);
+        position: absolute;
+        left: 0;
+        top: 100%;
+        background: rgba(0, 8, 22, 0.95);
+        border: 1px solid rgba(0, 200, 255, 0.25);
+        padding: 3px 7px;
+        font-size: 6.5px;
+        color: rgba(0, 200, 255, 0.7);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        letter-spacing: 1px;
+        z-index: 50;
+      }
+      .fco .v[title]:hover::after {
+        opacity: 1;
+      }
+      .fco .v:hover {
+        color: var(--c);
+      }
+      .fc-tl {
+        top: 18px;
+        left: 18px;
+      }
+      .fc-tr {
+        top: 18px;
+        right: 18px;
+        text-align: right;
+      }
+      .fc-bl {
+        bottom: 36px;
+        left: 18px;
+      }
+      .fc-br {
+        bottom: 36px;
+        right: 18px;
+        text-align: right;
+      }
+
+      /* ── S#19: CLOCK in status bar ── */
+      .sbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        height: 26px;
+        background: rgba(0, 2, 10, 0.98);
+        border-top: 1px solid rgba(0, 165, 255, 0.09);
+        display: flex;
+        align-items: stretch;
+      }
+      .sbt {
+        padding: 0 11px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border-right: 1px solid rgba(0, 165, 255, 0.07);
+        font-size: 8px;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: rgba(0, 145, 188, 0.42);
+        cursor: default;
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+      .sbt:hover {
+        color: rgba(0, 205, 255, 0.78);
+        background: rgba(0, 80, 150, 0.08);
+      }
+      .sbt.on {
+        color: rgba(0, 205, 255, 0.7);
+      }
+      .sp2 {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #00ccff;
+        box-shadow: 0 0 4px #00ccff;
+        animation: blink 2.8s ease-in-out infinite;
+      }
+      .sp2.w {
+        background: #ffaa00;
+        box-shadow: 0 0 4px #ffaa00;
+        animation-delay: 0.6s;
+      }
+      .sbm {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8.5px;
+        color: rgba(0, 135, 175, 0.36);
+        letter-spacing: 0.5px;
+      }
+      .sbr {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 16px;
+        border-left: 1px solid rgba(0, 165, 255, 0.07);
+        font-size: 9px;
+        color: rgba(110, 185, 225, 0.85);
+        letter-spacing: 0.8px;
+      }
+      .sbr .l {
+        color: rgba(0, 152, 195, 0.4);
+      }
+      .sb-clock {
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        border-left: 1px solid rgba(0, 165, 255, 0.07);
+        font-size: 9px;
+        color: rgba(0, 200, 255, 0.55);
+        letter-spacing: 1px;
+      }
+
+      /* ── BRAND ── */
+      .brand {
+        position: fixed;
+        bottom: 34px;
+        right: 22px;
+        z-index: 15;
+        text-align: right;
+        line-height: 1.4;
+      }
+      .bn {
+        font-family: "Orbitron", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: rgba(0, 210, 255, 0.9);
+        text-shadow:
+          0 0 14px rgba(0, 195, 255, 0.55),
+          0 0 36px rgba(0, 155, 220, 0.3);
+      }
+      .bn .dia {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        background: linear-gradient(
+          135deg,
+          rgba(0, 232, 255, 0.95),
+          rgba(0, 152, 220, 0.72)
+        );
+        transform: rotate(45deg) translateY(-2px);
+        margin-left: 4px;
+        box-shadow:
+          0 0 12px rgba(0, 212, 255, 0.82),
+          0 0 28px rgba(0, 175, 255, 0.54);
+      }
+      .bs {
+        font-size: 7px;
+        letter-spacing: 4.5px;
+        color: rgba(0, 148, 194, 0.4);
+        text-transform: uppercase;
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        top: 22px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-84px);
+        z-index: 999;
+        background: rgba(0, 4, 16, 0.98);
+        border: 1px solid rgba(0, 205, 255, 0.38);
+        border-left: 3px solid var(--c);
+        padding: 12px 28px;
+        font-size: 10px;
+        color: var(--c);
+        letter-spacing: 2px;
+        white-space: nowrap;
+        box-shadow:
+          0 0 44px rgba(0, 128, 218, 0.5),
+          0 12px 45px rgba(0, 0, 0, 0.75);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast.err {
+        color: var(--red);
+        border-left-color: var(--red);
+        border-color: rgba(255, 35, 75, 0.38);
+      }
+      .toast.ok {
+        color: var(--green);
+        border-left-color: var(--green);
+        border-color: rgba(0, 252, 158, 0.38);
+      }
+      .toast.warn {
+        color: var(--amber);
+        border-left-color: var(--amber);
+        border-color: rgba(255, 170, 0, 0.38);
+      }
+
+      /* ── EASTER EGG ── */
+      .easter {
+        position: fixed;
+        inset: 0;
+        z-index: 500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(10px);
+      }
+      .easter.show {
+        display: flex;
+      }
+      .easter-inner {
+        text-align: center;
+        animation: easterIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        background: rgba(0, 10, 28, 0.95);
+        border: 1px solid rgba(0, 200, 255, 0.3);
+        padding: 32px 48px;
+        border-radius: 8px;
+      }
+      @keyframes easterIn {
+        from {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .easter h2 {
+        font-family: "Orbitron", sans-serif;
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--c);
+        letter-spacing: 3px;
+        text-shadow: 0 0 30px var(--c);
+        margin-bottom: 10px;
+      }
+      .easter p {
+        font-size: 10px;
+        color: rgba(0, 200, 255, 0.6);
+        letter-spacing: 2px;
+        margin-bottom: 20px;
+        line-height: 1.8;
+      }
+      .easter-close {
+        font-size: 9px;
+        color: rgba(0, 180, 220, 0.5);
+        letter-spacing: 2px;
+        cursor: pointer;
+        border: 1px solid rgba(0, 180, 220, 0.3);
+        padding: 7px 18px;
+        border-radius: 2px;
+        transition: all 0.2s;
+        display: inline-block;
+      }
+      .easter-close:hover {
+        color: var(--c);
+        border-color: var(--c);
+      }
+
+      /* ── DARK TOGGLE ── */
+      .dark-toggle {
+        position: fixed;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+        font-size: 7px;
+        color: rgba(0, 165, 210, 0.22);
+        letter-spacing: 2px;
+        cursor: pointer;
+        text-transform: uppercase;
+        border: 1px solid rgba(0, 165, 210, 0.1);
+        padding: 3px 10px;
+        border-radius: 2px;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+      .dark-toggle:hover {
+        color: rgba(0, 200, 255, 0.48);
+        border-color: rgba(0, 200, 255, 0.22);
+      }
+      body.ultra-dark #bgCanvas {
+        filter: brightness(0.38) contrast(1.2);
+      }
+
+      /* COPIED flash */
+      .copied {
+        position: fixed;
+        z-index: 998;
+        background: rgba(0, 10, 28, 0.95);
+        border: 1px solid var(--c);
+        padding: 7px 18px;
+        font-size: 9px;
+        color: var(--c);
+        letter-spacing: 2px;
+        pointer-events: none;
+        border-radius: 2px;
+        animation: copiedAnim 0.85s ease forwards;
+      }
+      @keyframes copiedAnim {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -80%) scale(0.9);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="binCanvas"></canvas>
+    <div class="fog"></div>
+    <div class="aurora"></div>
+    <div class="scan"></div>
+    <div class="bloom"></div>
+    <div class="dark-toggle" id="darkToggle" onclick="toggleDark()">
+      ⬛ MODO ESCURO EXTREMO
+    </div>
+
+    <!-- Easter egg -->
+    <div class="easter" id="easter">
+      <div class="easter-inner" onclick="event.stopPropagation()">
+        <h2>🛠 CAD MODE UNLOCKED</h2>
+        <p>
+          VOCÊ ENCONTROU O TERMINAL SECRETO<br />VERSÃO INTERNA · BUILD
+          2077-ALPHA<br />CLEARANCE: ENGENHEIRO SÊNIOR
+        </p>
+        <div class="easter-close" onclick="closeEaster()">FECHAR · ESC</div>
+      </div>
+    </div>
+
+    <!-- Coord labels -->
+    <div class="fco fc-tl">
+      <div>
+        SECTOR <span class="v" onclick="copyVal(this, 'ALPHA-7')">ALPHA-7</span>
+      </div>
+      <div>
+        LAT
+        <span
+          class="v"
+          id="fLat"
+          title="Latitude · Clique p/ copiar"
+          onclick="copyVal(this)"
+          >-23.5505</span
+        >
+      </div>
+      <div>
+        LON
+        <span
+          class="v"
+          id="fLon"
+          title="Longitude · Clique p/ copiar"
+          onclick="copyVal(this)"
+          >-46.6333</span
+        >
+      </div>
+      <div>ALT <span class="v">720.000m</span></div>
+    </div>
+    <div class="fco fc-tr">
+      <div>BUILD <span class="v">4.2.1-stable</span></div>
+      <div>ENC <span class="v">AES-256-GCM</span></div>
+      <div>NODE <span class="v">EN-09 · ONLINE</span></div>
+    </div>
+    <div class="fco fc-bl">
+      <div>PRECISION <span class="v">0.001mm</span></div>
+      <div>SNAP <span class="v">ON</span> · GRID <span class="v">ON</span></div>
+    </div>
+    <div class="fco fc-br">
+      <div>
+        X
+        <span
+          class="v"
+          id="cx"
+          title="Coord X · Clique p/ copiar"
+          onclick="copyVal(this)"
+          >142.042</span
+        >
+      </div>
+      <div>
+        Y
+        <span
+          class="v"
+          id="cy"
+          title="Coord Y · Clique p/ copiar"
+          onclick="copyVal(this)"
+          >89.210</span
+        >
+      </div>
+      <div>
+        Z
+        <span
+          class="v"
+          id="cz"
+          title="Coord Z · Clique p/ copiar"
+          onclick="copyVal(this)"
+          >720.000</span
+        >
+      </div>
+    </div>
+
+    <div id="stage">
+      <div class="scene" id="scene">
+        <!-- Blueprint frame -->
+        <div class="bpf">
+          <svg viewBox="0 0 780 388" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="gf">
+                <feGaussianBlur stdDeviation="1.8" result="b" />
+                <feMerge>
+                  <feMergeNode in="b" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <linearGradient id="dg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="rgba(0,198,255,0)" />
+                <stop offset="12%" stop-color="rgba(0,198,255,0.35)" />
+                <stop offset="88%" stop-color="rgba(0,198,255,0.35)" />
+                <stop offset="100%" stop-color="rgba(0,198,255,0)" />
+              </linearGradient>
+            </defs>
+            <g
+              stroke="rgba(0,222,255,.76)"
+              stroke-width="1.8"
+              fill="none"
+              filter="url(#gf)"
+            >
+              <polyline points="60,28 60,4 84,4" />
+              <polyline points="696,4 720,4 720,28" />
+              <polyline points="60,360 60,384 84,384" />
+              <polyline points="696,384 720,384 720,360" />
+            </g>
+            <g
+              stroke="rgba(0,195,255,.22)"
+              stroke-width=".8"
+              fill="none"
+              stroke-dasharray="5,4"
+            >
+              <line x1="60" y1="195" x2="720" y2="195" />
+            </g>
+            <g
+              font-family="Share Tech Mono,monospace"
+              font-size="8"
+              fill="rgba(0,195,255,.28)"
+            >
+              <text x="55" y="192">A</text>
+              <text x="722" y="192">A</text>
+            </g>
+            <line
+              x1="60"
+              y1="388"
+              x2="720"
+              y2="388"
+              stroke="url(#dg)"
+              stroke-width=".9"
+            />
+            <line
+              x1="60"
+              y1="381"
+              x2="60"
+              y2="395"
+              stroke="rgba(0,195,255,.42)"
+              stroke-width=".9"
+            />
+            <line
+              x1="720"
+              y1="381"
+              x2="720"
+              y2="395"
+              stroke="rgba(0,195,255,.42)"
+              stroke-width=".9"
+            />
+            <polygon
+              points="68,388 60,384.5 60,391.5"
+              fill="rgba(0,195,255,.4)"
+            />
+            <polygon
+              points="712,388 720,384.5 720,391.5"
+              fill="rgba(0,195,255,.4)"
+            />
+            <text
+              x="390"
+              y="406"
+              fill="rgba(0,195,255,.44)"
+              font-family="Share Tech Mono,monospace"
+              font-size="9"
+              text-anchor="middle"
+              letter-spacing="2"
+            >
+              660.000
+            </text>
+            <line
+              x1="732"
+              y1="4"
+              x2="732"
+              y2="384"
+              stroke="rgba(0,195,255,.2)"
+              stroke-width=".8"
+            />
+            <line
+              x1="726"
+              y1="4"
+              x2="738"
+              y2="4"
+              stroke="rgba(0,195,255,.3)"
+              stroke-width=".8"
+            />
+            <line
+              x1="726"
+              y1="384"
+              x2="738"
+              y2="384"
+              stroke="rgba(0,195,255,.3)"
+              stroke-width=".8"
+            />
+            <text
+              x="750"
+              y="198"
+              fill="rgba(0,195,255,.28)"
+              font-family="Share Tech Mono,monospace"
+              font-size="8.5"
+              text-anchor="middle"
+              transform="rotate(90,750,198)"
+              letter-spacing="2"
+            >
+              345.000
+            </text>
+            <g
+              fill="rgba(0,195,255,.2)"
+              font-family="Share Tech Mono,monospace"
+              font-size="8"
+            >
+              <text x="60" y="-2">A</text>
+              <text x="262" y="-2">B</text>
+              <text x="490" y="-2">C</text>
+              <text x="710" y="-2">D</text>
+              <text x="38" y="98">1</text>
+              <text x="38" y="208">2</text>
+              <text x="38" y="332">3</text>
+            </g>
+            <g stroke="rgba(0,195,255,.2)" fill="none" stroke-width=".78">
+              <polygon points="18,70 31,85 18,100 5,85" />
+              <polygon points="18,108 28,120 18,132 8,120" />
+              <line x1="41" y1="58" x2="41" y2="208" />
+              <line x1="36" y1="82" x2="46" y2="82" />
+              <line x1="36" y1="116" x2="46" y2="116" />
+              <text
+                x="50"
+                y="85"
+                fill="rgba(0,195,255,.3)"
+                font-family="Share Tech Mono,monospace"
+                font-size="7.5"
+              >
+                2Ω
+              </text>
+            </g>
+            <g stroke="rgba(0,195,255,.18)" fill="none" stroke-width=".75">
+              <line x1="746" y1="66" x2="746" y2="212" />
+              <polygon
+                points="746,61 742,73 750,73"
+                fill="rgba(0,195,255,.2)"
+                stroke="none"
+              />
+              <text
+                x="750"
+                y="74"
+                fill="rgba(0,195,255,.24)"
+                font-family="Share Tech Mono,monospace"
+                font-size="8"
+              >
+                Y
+              </text>
+              <polygon points="734,124 750,158 718,158" />
+              <polygon points="734,164 746,186 722,186" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- Holograms with labels -->
+        <div class="holobar">
+          <div class="holo-wrap">
+            <canvas id="cBridge" width="220" height="105"></canvas>
+            <div class="holo-lbl">PONTE-7A</div>
+          </div>
+          <div class="holo-wrap">
+            <canvas id="cPlan" width="130" height="105"></canvas>
+            <div class="holo-lbl">PLANTA-CAD</div>
+          </div>
+          <div class="holo-wrap">
+            <canvas id="cTurb" width="140" height="115"></canvas>
+            <div class="holo-lbl">TURBINA-3B</div>
+          </div>
+        </div>
+
+        <!-- CARD -->
+        <div class="card" id="theCard">
+          <div class="card-pulse"></div>
+          <div class="cedge"></div>
+          <div class="cco">
+            <span class="c-bl"></span><span class="c-br"></span>
+          </div>
+          <div class="cside"></div>
+          <div class="chl" id="chl"></div>
+          <div class="cshadow"></div>
+
+          <!-- LEFT -->
+          <div class="left">
+            <div class="section-marks">
+              <span class="sm">SEC A-A</span><span class="sm">SEC B-B</span>
+            </div>
+            <canvas id="cRadar" width="182" height="182"></canvas>
+            <div class="radar-scale">
+              <span>0km</span><span>50km</span><span>100km</span>
+            </div>
+            <div class="lstats">
+              <div class="lst">
+                <span class="lst-lbl">KERNEL</span>
+                <div class="lst-r">
+                  <div class="pip ok"></div>
+                  <span class="lst-val" id="sv1">ACTIVE</span>
+                </div>
+                <div class="lst-tip">Python Kernel VS.11 · Uptime 99.9%</div>
+              </div>
+              <div class="lst">
+                <span class="lst-lbl">API</span>
+                <div class="lst-r">
+                  <div class="pip on"></div>
+                  <span class="lst-val" id="sv2">VS.11</span>
+                </div>
+                <div class="lst-tip">REST API · Port 8443 · TLS 1.3</div>
+              </div>
+              <div class="lst">
+                <span class="lst-lbl">FIREWALL</span>
+                <div class="lst-r">
+                  <div class="pip wn"></div>
+                  <span class="lst-val" id="sv3">ARMED</span>
+                </div>
+                <div class="lst-tip">IDS Ativo · 0 Intrusões</div>
+              </div>
+            </div>
+            <div class="abnt-block">
+              <div class="abnt-row">
+                <span class="abnt-cell">NORMA</span
+                ><span class="abnt-val">ABNT NBR</span
+                ><span class="abnt-cell">ESC</span
+                ><span class="abnt-val">1:100</span>
+              </div>
+              <div class="abnt-row" style="margin-top: 3px">
+                <span class="abnt-cell">PROJ</span
+                ><span class="abnt-val">ISO E</span
+                ><span class="abnt-cell">REV</span
+                ><span class="abnt-val">D-04</span>
+              </div>
+            </div>
+            <div class="drawing-num">DESENHO Nº CAD-2077-001</div>
+          </div>
+
+          <!-- RIGHT -->
+          <div class="right">
+            <div class="proj-title">
+              PROJETO Nº CAD-2077-001 · ACESSO RESTRITO
+            </div>
+            <div class="eyebrow">Acesso ao Terminal Técnico</div>
+
+            <!-- S#13+S#14+S#16: TITLE — ENGENHARIA CAD with proper hierarchy -->
+            <div class="ftitle" id="ftitle">
+              <span class="title-eng" id="titleEng"></span>
+              <span class="title-cad" id="titleCad"
+                ><span id="tgt"></span><span class="tcur" id="tcur"></span
+              ></span>
+              <span class="title-sub" id="titleSub"></span>
+            </div>
+
+            <!-- S#19: attempts -->
+            <div class="attempts" id="attempts">
+              ⚠ TENTATIVAS RESTANTES: <span id="attCount">3</span>
+            </div>
+
+            <!-- Username -->
+            <div class="fgrp">
+              <label class="flbl" for="user"
+                >IDENTIFICAÇÃO <span class="vtag" id="utag"></span
+                ><span class="counter" id="ucount">0</span></label
+              >
+              <div class="fwrap">
+                <input
+                  class="fin"
+                  id="user"
+                  type="text"
+                  placeholder="X-7821..."
+                  autocomplete="off"
+                  spellcheck="false"
+                  tabindex="1"
+                  oninput="onUserInput(this)"
+                  onkeydown="onUserKey(event)"
+                />
+                <!-- S#18: autocomplete ghost -->
+                <div class="autocomplete" id="autoEl">
+                  <span id="autoTyped"></span
+                  ><span class="ghost" id="autoGhost"></span>
+                </div>
+                <div class="fline"></div>
+                <div class="fico" title="Identificação">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                </div>
+                <div class="fbadge">X:142.042 Y:089.210</div>
+              </div>
+              <div class="ferr" id="uerr">⚠ ID DE ENGENHEIRO INVÁLIDO</div>
+            </div>
+
+            <!-- Password -->
+            <div class="fgrp">
+              <label class="flbl" for="pass"
+                >CHAVE DE ACESSO <span class="vtag" id="ptag"></span
+              ></label>
+              <div class="fwrap">
+                <input
+                  class="fin"
+                  id="pass"
+                  type="password"
+                  placeholder="•••••••••••••"
+                  autocomplete="off"
+                  tabindex="2"
+                  oninput="onPassInput(this)"
+                  onkeydown="onPassKey(event)"
+                />
+                <div class="fline"></div>
+                <!-- S#32: password generator icon -->
+                <div
+                  class="fico"
+                  id="ey"
+                  title="Mostrar / Gerar senha"
+                  onclick="toggleEye()"
+                >
+                  <svg id="esvg" viewBox="0 0 24 24">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </div>
+                <div class="fbadge">ENCRYPT · AES-256-GCM</div>
+              </div>
+              <!-- S#34: caps lock -->
+              <div class="caps-warn" id="capsWarn">
+                <span>⚠</span> CAPS LOCK ATIVADO
+              </div>
+              <!-- S#31: strength bar -->
+              <div class="pw-strength">
+                <div class="pw-strength-bar" id="pwBar"></div>
+              </div>
+              <div class="ferr" id="perr">⚠ CHAVE DE ACESSO INVÁLIDA</div>
+            </div>
+
+            <label class="remrow" onclick="toggleRem()">
+              <div class="chkb on" id="chk"></div>
+              <span class="reml">Manter Sessão Ativa</span>
+            </label>
+
+            <!-- S#21: progress -->
+            <div class="progress-wrap" id="progWrap">
+              <div class="progress-bar" id="progBar"></div>
+            </div>
+
+            <!-- S#17: ACESSAR button with lock icon -->
+            <button class="cta" id="btn" tabindex="3" onclick="doLogin(event)">
+              <span style="display: flex; align-items: center; gap: 13px">
+                ACESSAR
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <div class="ldots"><i></i><i></i><i></i></div>
+            </button>
+
+            <div class="foot-row">
+              <div class="ftr">CORE v4.02 // AUTOCAD INTERFACE ACTIVE</div>
+              <button class="export-btn" tabindex="4" onclick="exportPNG()">
+                <svg viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                PNG
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="refl">
+          <canvas id="cRefl" width="756" height="125"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand">
+      <div class="bn">AERO-DYN<span class="dia"></span></div>
+      <div class="bs">Engineering</div>
+    </div>
+
+    <div class="sbar">
+      <div class="sbt on">
+        <div class="sp2"></div>
+        SNAP
+      </div>
+      <div class="sbt on">
+        <div class="sp2"></div>
+        GRADE
+      </div>
+      <div class="sbt">
+        <div class="sp2 w"></div>
+        ORTHO
+      </div>
+      <div class="sbt on">
+        <div class="sp2"></div>
+        POLAR
+      </div>
+      <div class="sbt on">
+        <div class="sp2"></div>
+        OSNAP
+      </div>
+      <div class="sbt">DYN</div>
+      <div class="sbm">[-] [Model Space] · PROJETO CAD-2077-001</div>
+      <div class="sbr">
+        <span><span class="l">X </span><span id="sbx">142.042</span></span>
+        <span><span class="l">Y </span><span id="sby">89.210</span></span>
+        <span><span class="l">Z </span><span id="sbz">720.000</span></span>
+      </div>
+      <!-- S#19 real-time clock -->
+      <div class="sb-clock" id="sbClock">00:00:00</div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      "use strict";
+      /* ════════════════════════════════════════════
+   RENDER ENGINE CONFIG
+════════════════════════════════════════════ */
+      const CFG = {
+        STARS: 320,
+        PARTS: 45,
+        MAGS: 40,
+        HLINES: 36,
+        VLINES: 30,
+        PR_MAX: 1.5 /* S#46: max PR 1.5 not 2 */,
+        BRIGHT: [
+          [0.1, 0.07, 0.5, 0.18],
+          [0.84, 0.05, 0.34, 0.1],
+          [0.56, 0.12, 0.58, 0.08],
+          [0.27, 0.19, 0.28, 0.09],
+          [0.7, 0.08, 0.28, 0.09],
+        ],
+      };
+
+      /* S#43: Stars as pre-rendered ImageData */
+      const sX = new Float32Array(CFG.STARS).map(() => Math.random());
+      const sY = new Float32Array(CFG.STARS).map(() => Math.random() * 0.6);
+      const sR = new Float32Array(CFG.STARS).map(
+        () => Math.random() * 1.2 + 0.12,
+      );
+      const sA = new Float32Array(CFG.STARS).map(
+        () => Math.random() * 0.7 + 0.1,
+      );
+      const sDp = new Float32Array(CFG.STARS).map(
+        () => Math.random() * 0.8 + 0.2,
+      );
+      const sPh = new Float32Array(CFG.STARS).map(() => Math.random() * 6.28);
+      const sFr = new Float32Array(CFG.STARS).map(
+        () => Math.random() * 0.55 + 0.18,
+      );
+
+      /* Nebula cache */
+      let nebC = null;
+      function buildNeb(W, H) {
+        if (!nebC) nebC = document.createElement("canvas");
+        nebC.width = Math.round(W * 0.45);
+        nebC.height = Math.round(H * 0.45);
+        const nc = nebC.getContext("2d"),
+          nW = nebC.width,
+          nH = nebC.height;
+        nc.clearRect(0, 0, nW, nH);
+        [
+          [0.5, 0.25, 0.5, 0.18],
+          [0.28, 0.16, 0.34, 0.1],
+          [0.74, 0.19, 0.28, 0.09],
+          [0.5, 0.42, 0.58, 0.08],
+        ].forEach(([nx, ny, nr, a]) => {
+          const n = nc.createRadialGradient(
+            nx * nW,
+            ny * nH,
+            0,
+            nx * nW,
+            ny * nH,
+            nr * nW,
+          );
+          n.addColorStop(0, `rgba(0,52,148,${a})`);
+          n.addColorStop(0.4, `rgba(0,25,85,${a * 0.3})`);
+          n.addColorStop(1, "rgba(0,0,0,0)");
+          nc.fillStyle = n;
+          nc.fillRect(0, 0, nW, nH);
+        });
+      }
+
+      /* Grid cache */
+      let gridC = null;
+      function buildGrid(W, H) {
+        if (!gridC) gridC = document.createElement("canvas");
+        gridC.width = W;
+        gridC.height = H;
+        const gc = gridC.getContext("2d"),
+          hor = H * 0.58,
+          VPx = W * 0.5;
+        gc.clearRect(0, 0, W, H);
+        gc.save();
+        gc.beginPath();
+        gc.rect(0, hor, W, H - hor);
+        gc.clip();
+        for (let i = 0; i <= CFG.VLINES; i++) {
+          const xr = i / CFG.VLINES - 0.5,
+            bx = VPx + xr * W * 0.97,
+            a = (0.5 - Math.abs(xr)) * 1.05;
+          if (a < 0.02) continue;
+          gc.beginPath();
+          gc.moveTo(VPx, hor);
+          gc.lineTo(bx, H);
+          gc.strokeStyle = `rgba(0,170,255,${a * 0.14})`;
+          gc.lineWidth = 4.5;
+          gc.stroke();
+          gc.beginPath();
+          gc.moveTo(VPx, hor);
+          gc.lineTo(bx, H);
+          gc.strokeStyle = `rgba(0,184,255,${a * 0.56})`;
+          gc.lineWidth = 0.78;
+          gc.stroke();
+        }
+        const hg = gc.createLinearGradient(0, hor - 28, 0, hor + 52);
+        hg.addColorStop(0, "rgba(0,66,185,0)");
+        hg.addColorStop(0.3, "rgba(0,170,255,.3)");
+        hg.addColorStop(0.62, "rgba(0,136,252,.14)");
+        hg.addColorStop(1, "rgba(0,50,165,0)");
+        gc.fillStyle = hg;
+        gc.fillRect(0, hor - 28, W, 80);
+        gc.restore();
+      }
+
+      /* Particles */
+      const parts = Array.from({ length: CFG.PARTS }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        vx: (Math.random() - 0.5) * 0.00011,
+        vy: (Math.random() - 0.5) * 0.00011,
+        r: Math.random() * 1.3 + 0.2,
+        a: Math.random() * 0.28 + 0.04,
+        h: 183 + Math.random() * 28,
+        life: Math.random(),
+        sp: Math.random() * 0.0022 + 0.001,
+      }));
+      /* S#41: magnetic particles — physics only every 2 frames */
+      const mags = Array.from({ length: CFG.MAGS }, () => {
+        const ang = Math.random() * Math.PI * 2,
+          d = 0.12 + Math.random() * 0.35;
+        return {
+          x: 0.5 + Math.cos(ang) * d * 0.6,
+          y: 0.46 + Math.sin(ang) * d * 0.38,
+          vx: (Math.random() - 0.5) * 0.0012,
+          vy: (Math.random() - 0.5) * 0.0012,
+          r: Math.random() * 1.1 + 0.25,
+          a: Math.random() * 0.32 + 0.04,
+          h: 182 + Math.random() * 27,
+          trail: [],
+        };
+      });
+
+      /* Shooting stars */
+      const shooters = [];
+      function spawnShooter() {
+        shooters.push({
+          x: Math.random() * 0.7,
+          y: Math.random() * 0.4,
+          vx: 0.008 + Math.random() * 0.006,
+          vy: 0.003 + Math.random() * 0.004,
+          life: 1,
+          trail: [],
+        });
+        setTimeout(spawnShooter, 6000 + Math.random() * 6000);
+      }
+      setTimeout(spawnShooter, 3000);
+
+      /* ════════════════════════════════════════════
+   MAIN CANVAS — single, alpha:false, desynchronized
+════════════════════════════════════════════ */
+      const bgC = document.getElementById("bgCanvas");
+      const bgCtx = bgC.getContext("2d", {
+        alpha: false,
+        desynchronized: true,
+      });
+      bgCtx.imageSmoothingEnabled = false;
+      let W = innerWidth,
+        H = innerHeight,
+        PR = Math.min(devicePixelRatio || 1, CFG.PR_MAX);
+      let lastT = 0,
+        fpsClock = 0,
+        fpsCount = 0,
+        curFPS = 60,
+        bgT = 0,
+        bgScroll = 0,
+        MX = 0.5,
+        MY = 0.4;
+      let magFrame = 0,
+        radarFrame = 0,
+        planFrame = 0; /* throttle counters */
+
+      function resize() {
+        W = innerWidth;
+        H = innerHeight;
+        bgC.width = W * PR;
+        bgC.height = H * PR;
+        bgC.style.width = W + "px";
+        bgC.style.height = H + "px";
+        bgCtx.scale(PR, PR);
+        bgCtx.imageSmoothingEnabled = false;
+        buildNeb(W, H);
+        buildGrid(W, H);
+      }
+      resize();
+      let rsT;
+      window.addEventListener("resize", () => {
+        clearTimeout(rsT);
+        rsT = setTimeout(resize, 150);
+      });
+
+      /* ════════════════════════════════════════════
+   S#48: tab visibility — pause CSS + canvas
+════════════════════════════════════════════ */
+      let paused = false;
+      document.addEventListener("visibilitychange", () => {
+        paused = document.hidden;
+        document.body.classList.toggle("tab-hidden", paused);
+      });
+
+      /* ════════════════════════════════════════════
+   S#6: BINARY RAIN — with proper resize
+════════════════════════════════════════════ */
+      (function () {
+        const C = document.getElementById("binCanvas"),
+          ctx = C.getContext("2d");
+        let W2, H2, drops, cols;
+        function init() {
+          W2 = C.width = innerWidth;
+          H2 = C.height = innerHeight;
+          cols = Math.floor(W2 / 14);
+          drops = new Array(cols).fill(0).map(() => Math.random() * 50);
+        }
+        init();
+        /* S#6 fix: recalculate on resize */
+        window.addEventListener("resize", init);
+        function draw() {
+          ctx.fillStyle = "rgba(0,0,0,.05)";
+          ctx.fillRect(0, 0, W2, H2);
+          ctx.fillStyle = "rgba(0,220,255,0.65)";
+          ctx.font = "11px Share Tech Mono,monospace";
+          for (let i = 0; i < drops.length; i++) {
+            ctx.fillText(
+              Math.random() > 0.5 ? "1" : "0",
+              i * 14,
+              drops[i] * 14,
+            );
+            if (drops[i] * 14 > H2 && Math.random() > 0.975) drops[i] = 0;
+            else drops[i] += 0.5;
+          }
+        }
+        setInterval(draw, 120);
+      })();
+
+      /* ════════════════════════════════════════════
+   MASTER LOOP — single rAF
+════════════════════════════════════════════ */
+      function masterLoop(ts) {
+        requestAnimationFrame(masterLoop);
+        if (paused) return;
+        const dt = Math.min((ts - lastT) / 1000, 0.05);
+        lastT = ts;
+        fpsCount++;
+        fpsClock += dt;
+        if (fpsClock >= 1) {
+          curFPS = fpsCount;
+          fpsCount = 0;
+          fpsClock = 0;
+          if (curFPS < 30 && PR > 1) {
+            PR = 1;
+            resize();
+          } else if (curFPS > 55 && PR < CFG.PR_MAX) {
+            PR = CFG.PR_MAX;
+            resize();
+          }
+        }
+        bgT += dt;
+        bgScroll += dt * 22;
+        drawWorld(dt);
+        drawBridge(dt);
+        drawTurbine(dt);
+        if (++planFrame % 3 === 0) drawPlan(); /* throttle plan to ~20fps */
+        if (++radarFrame % 2 === 0)
+          drawRadar(dt); /* throttle radar to ~30fps */
+        drawRefl(dt);
+      }
+      requestAnimationFrame((ts) => {
+        lastT = ts;
+        requestAnimationFrame(masterLoop);
+      });
+
+      /* ════════════════════════════════════════════
+   WORLD DRAW
+════════════════════════════════════════════ */
+      function drawWorld(dt) {
+        const ctx = bgCtx;
+        ctx.clearRect(0, 0, W, H);
+        /* Space */
+        const bg = ctx.createRadialGradient(
+          W * 0.5,
+          H * 0.33,
+          0,
+          W * 0.5,
+          H * 0.33,
+          Math.max(W, H) * 0.84,
+        );
+        bg.addColorStop(0, "#082032");
+        bg.addColorStop(0.15, "#050e22");
+        bg.addColorStop(0.5, "#020a12");
+        bg.addColorStop(1, "#000306");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+        /* Nebula */
+        if (nebC) {
+          ctx.globalAlpha = 0.82;
+          ctx.drawImage(
+            nebC,
+            MX * -16 + W * 0.06,
+            MY * -9 + H * 0.05,
+            W * 0.88,
+            H * 0.78,
+          );
+          ctx.globalAlpha = 1;
+        }
+        /* S#43: Stars — batched by similar alpha bucket to reduce fillStyle changes */
+        const hor = H * 0.58;
+        /* group into 4 alpha buckets */
+        const sBuckets = [[], [], [], []];
+        for (let i = 0; i < CFG.STARS; i++) {
+          if (sY[i] * H > hor) continue;
+          const f = Math.sin(bgT * sFr[i] * 36 + sPh[i]) * 0.16 + 0.84;
+          const alpha = sA[i] * f;
+          sBuckets[Math.min(3, Math.floor(alpha * 4))].push([
+            sX[i],
+            sY[i],
+            sR[i],
+            alpha,
+            sDp[i],
+          ]);
+        }
+        sBuckets.forEach((bucket, bi) => {
+          if (!bucket.length) return;
+          const baseA = 0.2 + bi * 0.22;
+          ctx.fillStyle = `rgba(195,225,255,${baseA})`;
+          ctx.beginPath();
+          bucket.forEach(([x, y, r, , dp]) => {
+            const ox = (MX - 0.5) * dp * 20,
+              oy = (MY - 0.5) * dp * 12;
+            ctx.moveTo(x * W + ox + r, y * H + oy);
+            ctx.arc(x * W + ox, y * H + oy, r, 0, Math.PI * 2);
+          });
+          ctx.fill();
+        });
+        /* Bright clusters */
+        for (const [px, py] of CFG.BRIGHT) {
+          if (py > 0.58) continue;
+          const b = Math.sin(bgT * 0.7 + px * 9) * 0.12 + 0.88;
+          const ox = (MX - 0.5) * px * 14,
+            oy = (MY - 0.5) * py * 9;
+          const g = ctx.createRadialGradient(
+            px * W + ox,
+            py * H + oy,
+            0,
+            px * W + ox,
+            py * H + oy,
+            8,
+          );
+          g.addColorStop(0, `rgba(213,235,255,${0.88 * b})`);
+          g.addColorStop(0.3, `rgba(140,198,255,${0.26 * b})`);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(px * W + ox, py * H + oy, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        /* Shooting stars */
+        for (let i = shooters.length - 1; i >= 0; i--) {
+          const s = shooters[i];
+          s.trail.push([s.x, s.y]);
+          if (s.trail.length > 12) s.trail.shift();
+          s.x += s.vx;
+          s.y += s.vy;
+          s.life -= dt * 0.8;
+          if (s.life <= 0 || s.x > 1) {
+            shooters.splice(i, 1);
+            continue;
+          }
+          s.trail.forEach(([tx, ty], j) => {
+            const a = (j / s.trail.length) * s.life * 0.75;
+            ctx.beginPath();
+            ctx.arc(tx * W, ty * H, 1.1 * (j / s.trail.length), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(200,228,255,${a})`;
+            ctx.fill();
+          });
+          ctx.beginPath();
+          ctx.arc(s.x * W, s.y * H, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${s.life})`;
+          ctx.fill();
+        }
+        /* S#41: magnetic particles — physics every 2 frames */
+        if (++magFrame % 2 === 0) {
+          mags.forEach((p) => {
+            const dx = 0.5 - p.x,
+              dy = 0.46 - p.y,
+              dist = Math.sqrt(dx * dx + dy * dy);
+            const f = 0.0000048 / Math.max(dist, 0.04);
+            p.vx += dx * f;
+            p.vy += dy * f;
+            p.vx *= 0.998;
+            p.vy *= 0.998;
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = 1;
+            if (p.x > 1) p.x = 0;
+            if (p.y < 0) p.y = 1;
+            if (p.y > 1) p.y = 0;
+            /* S#22: trail */
+            p.trail.push([p.x, p.y]);
+            if (p.trail.length > 3) p.trail.shift();
+          });
+        }
+        mags.forEach((p) => {
+          /* S#22: draw trail */
+          p.trail.forEach(([tx, ty], j) => {
+            const a = (j / p.trail.length) * p.a * 0.5;
+            const g2 = ctx.createRadialGradient(
+              tx * W,
+              ty * H,
+              0,
+              tx * W,
+              ty * H,
+              p.r * 3,
+            );
+            g2.addColorStop(0, `hsla(${p.h},90%,68%,${a})`);
+            g2.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = g2;
+            ctx.beginPath();
+            ctx.arc(tx * W, ty * H, p.r * 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          const pulse = Math.sin(bgT * 2.4 + p.h * 0.05) * 0.2 + 0.8;
+          const g = ctx.createRadialGradient(
+            p.x * W,
+            p.y * H,
+            0,
+            p.x * W,
+            p.y * H,
+            p.r * 5,
+          );
+          g.addColorStop(0, `hsla(${p.h},95%,70%,${p.a * pulse})`);
+          g.addColorStop(0.38, `hsla(${p.h},90%,63%,${p.a * pulse * 0.14})`);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x * W, p.y * H, p.r * 5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        /* Particles */
+        const pC = curFPS < 40 ? Math.floor(CFG.PARTS * 0.5) : CFG.PARTS;
+        for (let i = 0; i < pC; i++) {
+          const p = parts[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life += p.sp;
+          if (p.x < 0) p.x = 1;
+          if (p.x > 1) p.x = 0;
+          if (p.y < 0) p.y = 1;
+          if (p.y > 1) p.y = 0;
+          const pulse = Math.sin(p.life * Math.PI * 2) * 0.22 + 0.78;
+          const g = ctx.createRadialGradient(
+            p.x * W,
+            p.y * H,
+            0,
+            p.x * W,
+            p.y * H,
+            p.r * 4.5,
+          );
+          g.addColorStop(0, `hsla(${p.h},95%,70%,${p.a * pulse})`);
+          g.addColorStop(0.38, `hsla(${p.h},90%,63%,${p.a * pulse * 0.14})`);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x * W, p.y * H, p.r * 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        /* S#42: batched grid drawing */
+        if (gridC) ctx.drawImage(gridC, 0, 0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, hor - 2, W, H - hor + 2);
+        ctx.clip();
+        const norm = bgScroll / 108;
+        /* S#42: group same-style lines */
+        ctx.lineWidth = 6;
+        for (let i = 0; i <= CFG.HLINES; i++) {
+          const frac = (i / CFG.HLINES + (norm % 1)) % 1,
+            depth = Math.pow(frac, 1.45);
+          const py = hor + (H - hor) * depth,
+            pw = W * (0.015 + depth * 0.985);
+          const a = Math.min(0.74, depth * 0.86) * (0.3 + depth * 0.5);
+          if (a < 0.007) continue;
+          ctx.beginPath();
+          ctx.moveTo((W - pw) / 2, py);
+          ctx.lineTo((W + pw) / 2, py);
+          ctx.strokeStyle = `rgba(0,170,255,${a * 0.16})`;
+          ctx.stroke();
+        }
+        ctx.lineWidth = 0.85;
+        for (let i = 0; i <= CFG.HLINES; i++) {
+          const frac = (i / CFG.HLINES + (norm % 1)) % 1,
+            depth = Math.pow(frac, 1.45);
+          const py = hor + (H - hor) * depth,
+            pw = W * (0.015 + depth * 0.985);
+          const a = Math.min(0.74, depth * 0.86) * (0.3 + depth * 0.5);
+          if (a < 0.007) continue;
+          ctx.beginPath();
+          ctx.moveTo((W - pw) / 2, py);
+          ctx.lineTo((W + pw) / 2, py);
+          ctx.strokeStyle = `rgba(0,184,255,${a * 0.62})`;
+          ctx.stroke();
+        }
+        ctx.restore();
+        /* Dim lines */
+        ctx.font = "8px Share Tech Mono,monospace";
+        [
+          [0.07, 0.13, 0.43, 0.13, "748.50"],
+          [0.57, 0.78, 0.92, 0.78, "612.30"],
+        ].forEach((d) => {
+          const a = 0.1 + Math.sin(bgT * 0.65 + d[0] * 5) * 0.04;
+          ctx.strokeStyle = `rgba(0,178,255,${a})`;
+          ctx.lineWidth = 0.7;
+          ctx.fillStyle = `rgba(0,178,255,${a * 1.5})`;
+          const [x1, y1, x2, y2] = [d[0] * W, d[1] * H, d[2] * W, d[3] * H];
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x1, y1 - 5);
+          ctx.lineTo(x1, y1 + 5);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x2, y2 - 5);
+          ctx.lineTo(x2, y2 + 5);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x1 + 9, y1);
+          ctx.lineTo(x1, y1 - 3);
+          ctx.lineTo(x1, y1 + 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x2 - 9, y2);
+          ctx.lineTo(x2, y2 - 3);
+          ctx.lineTo(x2, y2 + 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillText(d[4], (x1 + x2) / 2 - 18, y1 - 8);
+        });
+      }
+
+      /* ════════════════════════════════════════════
+   HOLOGRAMS
+════════════════════════════════════════════ */
+      const bC = document.getElementById("cBridge"),
+        bX = bC.getContext("2d");
+      const tC = document.getElementById("cTurb"),
+        tX = tC.getContext("2d");
+      const pC2 = document.getElementById("cPlan"),
+        pX = pC2.getContext("2d");
+      const rC = document.getElementById("cRadar"),
+        rX = rC.getContext("2d");
+      const rfC = document.getElementById("cRefl"),
+        rfX = rfC.getContext("2d");
+
+      function drawBridge(dt) {
+        const pulse = Math.sin(bgT * 0.62) * 0.1 + 0.9,
+          flick = 0.97 + Math.sin(bgT * 5.1) * 0.03;
+        const c = (a) => `rgba(0,226,255,${a * pulse * flick})`;
+        const cg = (a) => `rgba(0,255,192,${a * pulse})`;
+        const WB = 220,
+          HB = 105;
+        bX.clearRect(0, 0, WB, HB);
+        bX.shadowColor = "rgba(0,212,255,0.72)";
+        const gs = bX.createLinearGradient(0, HB - 10, 0, HB);
+        gs.addColorStop(0, "rgba(0,178,255,.14)");
+        gs.addColorStop(1, "rgba(0,0,0,0)");
+        bX.fillStyle = gs;
+        bX.fillRect(8, HB - 10, WB - 16, 10);
+        const DK = 78,
+          TP = 14,
+          x0 = 4,
+          x1 = 216,
+          SP = 7,
+          sw = (x1 - x0) / SP;
+        const ef = (px) => Math.min(1, Math.min(px - x0, x1 - px) / 22);
+        bX.shadowBlur = 9;
+        bX.lineWidth = 1.7;
+        bX.strokeStyle = c(0.82);
+        bX.beginPath();
+        bX.moveTo(x0, DK);
+        bX.lineTo(x1, DK);
+        bX.stroke();
+        bX.lineWidth = 1.4;
+        bX.strokeStyle = c(0.65);
+        bX.beginPath();
+        bX.moveTo(x0 + sw * 0.5, TP);
+        bX.lineTo(x1 - sw * 0.5, TP);
+        bX.stroke();
+        bX.lineWidth = 1;
+        bX.shadowBlur = 5;
+        for (let i = 1; i < SP; i++) {
+          const px = x0 + i * sw;
+          bX.strokeStyle = c(0.44 * ef(px));
+          bX.beginPath();
+          bX.moveTo(px, TP);
+          bX.lineTo(px, DK);
+          bX.stroke();
+          if (i % 2 === 0) {
+            const a2 = rot + ((i + 1) / SP) * Math.PI * 2;
+            tX.strokeStyle = c(0.17);
+            tX.beginPath();
+            tX.arc(ox, oy, R * 0.88, a, a2);
+            tX.stroke();
+          }
+        }
+        for (let i = 0; i < 4; i++) {
+          const pa = rot + (i / 4) * Math.PI * 2,
+            pr = R * (0.95 + Math.sin(bgT * 3 + i) * 0.07);
+          tX.shadowBlur = 15;
+          tX.beginPath();
+          tX.arc(
+            ox + Math.cos(pa) * pr,
+            oy + Math.sin(pa) * pr,
+            1.6,
+            0,
+            Math.PI * 2,
+          );
+          tX.fillStyle = `rgba(0,218,255,${0.55 * pulse})`;
+          tX.fill();
+        }
+        tX.shadowBlur = 18;
+        const hg = tX.createRadialGradient(ox, oy, 0, ox, oy, R * 0.22);
+        hg.addColorStop(0, `rgba(0,246,255,${0.86 * pulse})`);
+        hg.addColorStop(0.4, `rgba(0,210,255,${0.34 * pulse})`);
+        hg.addColorStop(1, "rgba(0,0,0,0)");
+        tX.fillStyle = hg;
+        tX.beginPath();
+        tX.arc(ox, oy, R * 0.22, 0, Math.PI * 2);
+        tX.fill();
+        [
+          [46, 58, 38, 1],
+          [94, 58, 38, -1],
+        ].forEach(([ox, oy, R, dir]) => {
+          const rot = bgT * 0.58 * dir,
+            SP = 12;
+          tX.shadowBlur = 11;
+          tX.lineWidth = 1.5;
+          tX.strokeStyle = c(0.68);
+          tX.beginPath();
+          tX.arc(ox, oy, R, 0, Math.PI * 2);
+          tX.stroke();
+          tX.shadowBlur = 5;
+          tX.lineWidth = 0.9;
+          tX.strokeStyle = c(0.42);
+          tX.beginPath();
+          tX.arc(ox, oy, R * 0.6, 0, Math.PI * 2);
+          tX.stroke();
+          tX.lineWidth = 0.8;
+          tX.shadowBlur = 4;
+          for (let i = 0; i < SP; i++) {
+            const a = rot + (i / SP) * Math.PI * 2,
+              co = Math.cos(a),
+              si = Math.sin(a);
+            tX.strokeStyle = c(0.29 + Math.sin(a * 2 + bgT) * 0.05);
+            tX.beginPath();
+            tX.moveTo(ox + co * R * 0.21, oy + si * R * 0.21);
+            tX.lineTo(ox + co * R * 0.57, oy + si * R * 0.57);
+            tX.stroke();
+            if (i % 2 === 0) {
+              const a2 = rot + ((i + 1) / SP) * Math.PI * 2;
+              tX.strokeStyle = c(0.17);
+              tX.beginPath();
+              tX.arc(ox, oy, R * 0.88, a, a2);
+              tX.stroke();
+            }
+          }
+          for (let i = 0; i < 4; i++) {
+            const pa = rot + (i / 4) * Math.PI * 2,
+              pr = R * (0.95 + Math.sin(bgT * 3 + i) * 0.07);
+            tX.shadowBlur = 15;
+            tX.beginPath();
+            tX.arc(
+              ox + Math.cos(pa) * pr,
+              oy + Math.sin(pa) * pr,
+              1.6,
+              0,
+              Math.PI * 2,
+            );
+            tX.fillStyle = `rgba(0,218,255,${0.55 * pulse})`;
+            tX.fill();
+          }
+          tX.shadowBlur = 18;
+          const hg = tX.createRadialGradient(ox, oy, 0, ox, oy, R * 0.22);
+          hg.addColorStop(0, `rgba(0,246,255,${0.86 * pulse})`);
+          hg.addColorStop(0.4, `rgba(0,210,255,${0.34 * pulse})`);
+          hg.addColorStop(1, "rgba(0,0,0,0)");
+          tX.fillStyle = hg;
+          tX.beginPath();
+          tX.arc(ox, oy, R * 0.22, 0, Math.PI * 2);
+          tX.fill();
+        });
+        tX.shadowBlur = 8;
+        tX.lineWidth = 5;
+        tX.strokeStyle = c(0.22);
+        tX.beginPath();
+        tX.moveTo(46 + 38, 58);
+        tX.lineTo(94 - 38, 58);
+        tX.stroke();
+        tX.lineWidth = 2;
+        tX.strokeStyle = c(0.5);
+        tX.beginPath();
+        tX.moveTo(46 + 38, 58);
+        tX.lineTo(94 - 38, 58);
+        tX.stroke();
+        const gr = tX.createLinearGradient(0, HT - 14, 0, HT);
+        gr.addColorStop(0, "rgba(0,178,255,.1)");
+        gr.addColorStop(1, "rgba(0,0,0,0)");
+        tX.fillStyle = gr;
+        tX.fillRect(6, HT - 14, WT - 12, 14);
+        const fog3 = tX.createLinearGradient(0, 0, WT, 0);
+        fog3.addColorStop(0, "rgba(0,0,0,.5)");
+        fog3.addColorStop(0.13, "rgba(0,0,0,0)");
+        fog3.addColorStop(0.87, "rgba(0,0,0,0)");
+        fog3.addColorStop(1, "rgba(0,0,0,.43)");
+        tX.fillStyle = fog3;
+        tX.fillRect(0, 0, WT, HT);
+        tX.shadowBlur = 0;
+      }
+
+      function drawPlan() {
+        const WP = 130,
+          HP = 105,
+          pulse = Math.sin(bgT * 0.8) * 0.1 + 0.9;
+        pX.clearRect(0, 0, WP, HP);
+        pX.shadowColor = "rgba(0,255,150,.6)";
+        const c = (a) => `rgba(0,255,150,${a * pulse})`;
+        pX.shadowBlur = 7;
+        pX.lineWidth = 1.3;
+        pX.strokeStyle = c(0.62);
+        pX.strokeRect(12, 12, WP - 24, HP - 24);
+        pX.lineWidth = 0.88;
+        pX.strokeStyle = c(0.44);
+        pX.beginPath();
+        pX.moveTo(12, HP / 2);
+        pX.lineTo(WP - 24, HP / 2);
+        pX.stroke();
+        pX.beginPath();
+        pX.moveTo(WP * 0.5, 12);
+        pX.lineTo(WP * 0.5, HP / 2);
+        pX.stroke();
+        pX.lineWidth = 0.7;
+        pX.strokeStyle = c(0.34);
+        pX.beginPath();
+        pX.arc(12 + 16, 12, 16, 0, Math.PI / 2);
+        pX.stroke();
+        pX.beginPath();
+        pX.arc(WP * 0.5, HP / 2, 13, -Math.PI / 2, 0);
+        pX.stroke();
+        pX.shadowBlur = 10;
+        pX.lineWidth = 1;
+        pX.strokeStyle = c(0.48);
+        pX.beginPath();
+        pX.moveTo(WP - 22, 20);
+        pX.lineTo(WP - 22, 8);
+        pX.stroke();
+        pX.beginPath();
+        pX.moveTo(WP - 26, 13);
+        pX.lineTo(WP - 22, 8);
+        pX.lineTo(WP - 18, 13);
+        pX.stroke();
+        pX.fillStyle = c(0.48);
+        pX.font = "7px Share Tech Mono,monospace";
+        pX.fillText("N", WP - 25, 23);
+        pX.shadowBlur = 4;
+        pX.lineWidth = 0.6;
+        pX.strokeStyle = c(0.28);
+        pX.beginPath();
+        pX.moveTo(12, HP - 8);
+        pX.lineTo(WP - 24, HP - 8);
+        pX.stroke();
+        pX.fillStyle = c(0.38);
+        pX.font = "6px Share Tech Mono,monospace";
+        pX.fillText("12.00m", (WP - 12) / 2 - 13, HP - 3);
+        const sy = ((bgT * 0.06) % 1) * HP;
+        pX.setLineDash([2, 3]);
+        pX.lineWidth = 0.6;
+        pX.strokeStyle = `rgba(0,255,150,${0.22 * pulse})`;
+        pX.beginPath();
+        pX.moveTo(12, sy);
+        pX.lineTo(WP - 24, sy);
+        pX.stroke();
+        pX.setLineDash([]);
+        const fog2 = pX.createLinearGradient(0, 0, WP, 0);
+        fog2.addColorStop(0, "rgba(0,0,0,.44)");
+        fog2.addColorStop(0.1, "rgba(0,0,0,0)");
+        fog2.addColorStop(0.9, "rgba(0,0,0,0)");
+        fog2.addColorStop(1, "rgba(0,0,0,.37)");
+        pX.fillStyle = fog2;
+        pX.fillRect(0, 0, WP, HP);
+        pX.shadowBlur = 0;
+      }
+
+      let radarAngle = 0;
+      const rBlips = Array.from({ length: 7 }, () => ({
+        r: 14 + Math.random() * 62,
+        a: Math.random() * Math.PI * 2,
+        alpha: 0,
+        sz: 2.1 + Math.random() * 1.7,
+        col: Math.random() > 0.35 ? [0, 255, 195] : [0, 215, 255],
+      }));
+      function drawRadar(dt) {
+        radarAngle =
+          (radarAngle + dt * 2.04) %
+          (Math.PI * 2); /* compensate for 2x throttle */
+        const W2 = 182,
+          H2 = 182,
+          cx = 91,
+          cy = 91,
+          R = 86;
+        rX.clearRect(0, 0, W2, H2);
+        rX.save();
+        rX.transform(1, 0.04, -0.05, 0.96, cx * 0.05, cy * 0.04);
+        const bg = rX.createRadialGradient(cx, cy, 0, cx, cy, R);
+        bg.addColorStop(0, "rgba(0,17,48,.72)");
+        bg.addColorStop(0.7, "rgba(0,8,26,.6)");
+        bg.addColorStop(1, "rgba(0,3,13,.48)");
+        rX.fillStyle = bg;
+        rX.beginPath();
+        rX.arc(cx, cy, R, 0, Math.PI * 2);
+        rX.fill();
+        [R * 0.2, R * 0.4, R * 0.6, R * 0.8, R].forEach((r, i) => {
+          rX.beginPath();
+          rX.arc(cx, cy, r, 0, Math.PI * 2);
+          rX.strokeStyle = `rgba(0,180,255,${0.09 + i * 0.026})`;
+          rX.lineWidth = 0.7;
+          rX.stroke();
+        });
+        [
+          [cx - R - 3, cy, cx + R + 3, cy],
+          [cx, cy - R - 3, cx, cy + R + 3],
+        ].forEach(([x1, y1, x2, y2]) => {
+          rX.beginPath();
+          rX.moveTo(x1, y1);
+          rX.lineTo(x2, y2);
+          rX.strokeStyle = "rgba(0,176,255,.08)";
+          rX.lineWidth = 0.5;
+          rX.stroke();
+        });
+        /* Energy pulse ring */
+        const pR = R * (0.3 + ((bgT * 0.3) % 1) * 0.7),
+          pA = 1 - ((bgT * 0.3) % 1);
+        rX.beginPath();
+        rX.arc(cx, cy, pR, 0, Math.PI * 2);
+        rX.strokeStyle = `rgba(0,255,195,${pA * 0.32})`;
+        rX.lineWidth = 1.4;
+        rX.stroke();
+        for (let i = 0; i < 70; i++) {
+          const a = radarAngle - (i / 70) * Math.PI * 0.62;
+          const fade = Math.pow(1 - i / 70, 1.55);
+          rX.beginPath();
+          rX.moveTo(cx, cy);
+          rX.arc(cx, cy, R, a - Math.PI / 70, a, false);
+          rX.lineTo(cx, cy);
+          rX.fillStyle = `rgba(0,218,255,${fade * 0.08})`;
+          rX.fill();
+        }
+        rX.save();
+        rX.translate(cx, cy);
+        rX.rotate(radarAngle);
+        rX.shadowBlur = 15;
+        rX.shadowColor = "rgba(0,225,255,.85)";
+        const sg = rX.createLinearGradient(0, 0, R, 0);
+        sg.addColorStop(0, "rgba(0,245,255,.95)");
+        sg.addColorStop(1, "rgba(0,198,255,.04)");
+        rX.strokeStyle = sg;
+        rX.lineWidth = 1.7;
+        rX.stroke();
+        rX.shadowBlur = 0;
+        rX.restore();
+        rBlips.forEach((b) => {
+          const da =
+            (((radarAngle - b.a) % (Math.PI * 2)) + Math.PI * 2) %
+            (Math.PI * 2);
+          if (da < 0.09) b.alpha = 1;
+          b.alpha *= 0.975;
+          if (b.alpha > 0.01) {
+            const bx = cx + Math.cos(b.a) * b.r,
+              by = cy + Math.sin(b.a) * b.r;
+            rX.shadowBlur = 16;
+            rX.shadowColor = `rgba(${b.col.join(",")},1)`;
+            rX.beginPath();
+            rX.arc(bx, by, b.sz, 0, Math.PI * 2);
+            rX.fillStyle = `rgba(${b.col.join(",")},${b.alpha})`;
+            rX.fill();
+            if (b.alpha > 0.4) {
+              const hg = rX.createRadialGradient(bx, by, 0, bx, by, b.sz * 5);
+              hg.addColorStop(0, `rgba(${b.col.join(",")},${b.alpha * 0.2})`);
+              hg.addColorStop(1, "rgba(0,0,0,0)");
+              rX.fillStyle = hg;
+              rX.beginPath();
+              rX.arc(bx, by, b.sz * 5, 0, Math.PI * 2);
+              rX.fill();
+            }
+            rX.shadowBlur = 0;
+          }
+        });
+        rX.save();
+        rX.translate(cx, cy);
+        rX.rotate(radarAngle * 0.58);
+        rX.shadowBlur = 11;
+        rX.shadowColor = "rgba(0,215,255,.75)";
+        rX.beginPath();
+        rX.moveTo(0, 6);
+        rX.lineTo(0, -R * 0.55);
+        rX.strokeStyle = "rgba(0,218,255,.62)";
+        rX.lineWidth = 1.4;
+        rX.stroke();
+        rX.beginPath();
+        rX.moveTo(-4, -R * 0.5);
+        rX.lineTo(0, -R * 0.6);
+        rX.lineTo(4, -R * 0.5);
+        rX.strokeStyle = "rgba(0,218,255,.62)";
+        rX.lineWidth = 1.05;
+        rX.stroke();
+        rX.shadowBlur = 0;
+        rX.restore();
+        rX.shadowBlur = 20;
+        rX.shadowColor = "rgba(0,228,255,1)";
+        const ch = rX.createRadialGradient(cx, cy, 0, cx, cy, 11);
+        ch.addColorStop(0, "rgba(255,255,255,.98)");
+        ch.addColorStop(0.28, "rgba(0,245,255,.93)");
+        ch.addColorStop(0.65, "rgba(0,198,255,.4)");
+        ch.addColorStop(1, "rgba(0,148,255,0)");
+        rX.fillStyle = ch;
+        rX.beginPath();
+        rX.arc(cx, cy, 11, 0, Math.PI * 2);
+        rX.fill();
+        rX.shadowBlur = 0;
+        rX.beginPath();
+        rX.arc(cx, cy, R, 0, Math.PI * 2);
+        rX.strokeStyle = "rgba(0,208,255,.42)";
+        rX.lineWidth = 1.6;
+        rX.stroke();
+        rX.restore();
+      }
+
+      function drawRefl(dt) {
+        rfX.clearRect(0, 0, 756, 125);
+        const g = rfX.createLinearGradient(0, 0, 756, 0);
+        g.addColorStop(0, "rgba(0,0,0,0)");
+        g.addColorStop(0.1, "rgba(0,110,195,.06)");
+        g.addColorStop(0.5, "rgba(0,150,255,.09)");
+        g.addColorStop(0.9, "rgba(0,110,195,.06)");
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        rfX.fillStyle = g;
+        rfX.fillRect(0, 0, 756, 125);
+        rfX.beginPath();
+        rfX.moveTo(48, 2);
+        rfX.lineTo(708, 2);
+        rfX.strokeStyle = `rgba(0,218,255,${0.26 + Math.sin(bgT) * 0.08})`;
+        rfX.lineWidth = 1.1;
+        rfX.stroke();
+        [
+          [160, 8],
+          [378, 5],
+          [588, 8],
+        ].forEach(([px, py]) => {
+          const gr2 = rfX.createRadialGradient(px, py, 0, px, py, 44);
+          gr2.addColorStop(
+            0,
+            `rgba(0,195,255,${0.08 + Math.sin(bgT + px * 0.01) * 0.02})`,
+          );
+          gr2.addColorStop(1, "rgba(0,0,0,0)");
+          rfX.fillStyle = gr2;
+          rfX.beginPath();
+          rfX.arc(px, py, 44, 0, Math.PI * 2);
+          rfX.fill();
+        });
+      }
+
+      /* ════════════════════════════════════════════
+   TYPEWRITER — ENGENHARIA first, then CAD
+════════════════════════════════════════════ */
+      (function () {
+        const eng = document.getElementById("titleEng");
+        const cadEl = document.getElementById("tgt");
+        const subEl = document.getElementById("titleSub");
+        const cur = document.getElementById("tcur");
+        const ENG = "ENGENHARIA",
+          CAD = "CAD",
+          SUB = "Sistema de Automação v4.02";
+        let ei = 0,
+          ci = 0,
+          si = 0,
+          phase = 0;
+
+        function typeEng() {
+          eng.textContent = ENG.slice(0, ei);
+          ei++;
+          if (ei <= ENG.length) setTimeout(typeEng, 60);
+          else setTimeout(typeCAD, 200);
+        }
+        function typeCAD() {
+          cadEl.textContent = CAD.slice(0, ci);
+          ci++;
+          if (ci <= CAD.length) setTimeout(typeCAD, 80);
+          else {
+            /* S#15: scan effect after CAD finishes */
+            eng.classList.add("scanned");
+            cur.style.display = "none";
+            setTimeout(typeSub, 350);
+          }
+        }
+        function typeSub() {
+          subEl.textContent = SUB.slice(0, si);
+          si++;
+          if (si <= SUB.length) setTimeout(typeSub, 34);
+          else {
+            /* S#38: status consulting animation */
+            setTimeout(() => {
+              ["sv1", "sv2", "sv3"].forEach((id, i) => {
+                const el = document.getElementById(id);
+                const orig = el.textContent;
+                el.classList.add("consulting");
+                setTimeout(
+                  () => {
+                    el.classList.remove("consulting");
+                    el.textContent = orig;
+                  },
+                  1200 + i * 400,
+                );
+              });
+            }, 300);
+          }
+        }
+        setTimeout(typeEng, 1200);
+      })();
+
+      /* ════════════════════════════════════════════
+   MOUSE — throttled rAF
+════════════════════════════════════════════ */
+      const theCard = document.getElementById("theCard");
+      const chlEl = document.getElementById("chl");
+      let hlRaf = null;
+      document.addEventListener(
+        "mousemove",
+        (e) => {
+          MX = e.clientX / W;
+          MY = e.clientY / H;
+          if (hlRaf) return;
+          hlRaf = requestAnimationFrame(() => {
+            const r = theCard.getBoundingClientRect();
+            chlEl.style.setProperty(
+              "--mx",
+              (((e.clientX - r.left) / r.width) * 100).toFixed(1) + "%",
+            );
+            chlEl.style.setProperty(
+              "--my",
+              (((e.clientY - r.top) / r.height) * 100).toFixed(1) + "%",
+            );
+            const x = ((e.clientX / W) * 200).toFixed(3),
+              y = ((e.clientY / H) * 120).toFixed(3);
+            document.getElementById("cx").textContent = x;
+            document.getElementById("sbx").textContent = x;
+            document.getElementById("cy").textContent = y;
+            document.getElementById("sby").textContent = y;
+            hlRaf = null;
+          });
+        },
+        { passive: true },
+      );
+
+      /* ════════════════════════════════════════════
+   S#19: real-time clock
+════════════════════════════════════════════ */
+      function updateClock() {
+        const n = new Date();
+        document.getElementById("sbClock").textContent =
+          String(n.getHours()).padStart(2, "0") +
+          ":" +
+          String(n.getMinutes()).padStart(2, "0") +
+          ":" +
+          String(n.getSeconds()).padStart(2, "0");
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      /* ════════════════════════════════════════════
+   S#3: consolidated interval
+════════════════════════════════════════════ */
+      setInterval(() => {
+        const z = (719 + Math.random() * 3).toFixed(3);
+        document.getElementById("cz").textContent = z;
+        document.getElementById("sbz").textContent = z;
+        document.getElementById("fLat").textContent = (
+          -23.5505 +
+          Math.random() * 0.001 -
+          0.0005
+        ).toFixed(4);
+        document.getElementById("fLon").textContent = (
+          -46.6333 +
+          Math.random() * 0.001 -
+          0.0005
+        ).toFixed(4);
+      }, 3000);
+
+      /* ════════════════════════════════════════════
+   S#16: Web Audio beep
+════════════════════════════════════════════ */
+      let audioCtx = null;
+      function playBeep(freq = 800) {
+        try {
+          if (!audioCtx)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          /* S#8: resume if suspended */
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          const osc = audioCtx.createOscillator(),
+            gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = freq + Math.random() * 150;
+          osc.type = "square";
+          gain.gain.setValueAtTime(0.035, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.04,
+          );
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
+        } catch (e) {}
+      }
+
+      /* ════════════════════════════════════════════
+   S#27+S#28: input validation + counter
+════════════════════════════════════════════ */
+      const HINT = "proj@cad.corp";
+      function onUserInput(inp) {
+        const v = inp.value;
+        /* S#28: counter */
+        document.getElementById("ucount").textContent = v.length;
+        /* S#18: autocomplete ghost */
+        document.getElementById("autoTyped").textContent = v;
+        document.getElementById("autoGhost").textContent =
+          HINT.startsWith(v) && v.length > 0 && v.length < HINT.length
+            ? HINT.slice(v.length)
+            : "";
+        /* S#27: validation */
+        const tag = document.getElementById("utag");
+        if (v.length >= 3) {
+          inp.classList.add("valid");
+          inp.classList.remove("err");
+          tag.textContent = "✓";
+          tag.className = "vtag ok";
+        } else {
+          inp.classList.remove("valid");
+          tag.textContent = "";
+          tag.className = "vtag";
+        }
+        /* S#24: card border */
+        updateCardBorder();
+        /* S#25: easter egg */
+        if (v.toUpperCase() === "CAD") openEaster();
+      }
+      function onUserKey(e) {
+        /* S#30: Enter → go to password */
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("pass").focus();
+          return;
+        }
+        /* S#18: Tab to complete */
+        if (e.key === "Tab") {
+          e.preventDefault();
+          if (document.getElementById("autoGhost").textContent) {
+            document.getElementById("user").value = HINT;
+            onUserInput(document.getElementById("user"));
+          }
+          return;
+        }
+        /* S#37: Esc clears form */
+        if (e.key === "Escape") {
+          clearForm();
+          return;
+        }
+        if (
+          ![
+            "Shift",
+            "Control",
+            "Alt",
+            "Meta",
+            "ArrowLeft",
+            "ArrowRight",
+            "Backspace",
+            "Delete",
+          ].includes(e.key)
+        )
+          playBeep();
+      }
+
+      function onPassInput(inp) {
+        const v = inp.value;
+        /* S#31: password strength */
+        const bar = document.getElementById("pwBar");
+        let strength = 0;
+        if (v.length >= 6) strength++;
+        if (v.length >= 10) strength++;
+        if (/[A-Z]/.test(v)) strength++;
+        if (/[0-9]/.test(v)) strength++;
+        if (/[^a-zA-Z0-9]/.test(v)) strength++;
+        const colors = ["#ff3c66", "#ff8800", "#ffaa00", "#88dd00", "#00ffaa"];
+        const widths = [15, 32, 52, 72, 100];
+        bar.style.width = widths[Math.min(strength, 4)] + "%";
+        bar.style.background = colors[Math.min(strength, 4)];
+        bar.style.boxShadow = `0 0 6px ${colors[Math.min(strength, 4)]}`;
+        /* S#27: validation */
+        const tag = document.getElementById("ptag");
+        if (v.length >= 6) {
+          inp.classList.add("valid");
+          inp.classList.remove("err");
+          tag.textContent = "✓";
+          tag.className = "vtag ok";
+        } else if (v.length > 0) {
+          tag.textContent = `${v.length}/6`;
+          tag.className = "vtag bad";
+        } else {
+          inp.classList.remove("valid");
+          tag.textContent = "";
+          tag.className = "vtag";
+        }
+        updateCardBorder();
+      }
+      function onPassKey(e) {
+        if (e.key === "Escape") {
+          clearForm();
+          return;
+        }
+        /* S#34: caps lock */
+        const caps = e.getModifierState && e.getModifierState("CapsLock");
+        document.getElementById("capsWarn").classList.toggle("show", !!caps);
+        if (!["Shift", "Control", "Alt", "Meta"].includes(e.key)) playBeep(600);
+      }
+
+      /* S#24: card border state */
+      function updateCardBorder() {
+        const uOk = document.getElementById("user").classList.contains("valid");
+        const pOk = document.getElementById("pass").classList.contains("valid");
+        theCard.classList.toggle("valid-state", uOk && pOk);
+        theCard.classList.remove("error-state");
+        /* S#36: button disabled */
+        document.getElementById("btn").disabled = false;
+      }
+
+      /* S#37: Esc clears form */
+      function clearForm() {
+        ["user", "pass"].forEach((id) => {
+          const el = document.getElementById(id);
+          el.value = "";
+          el.classList.remove("valid", "err");
+        });
+        ["utag", "ptag"].forEach((id) => {
+          const el = document.getElementById(id);
+          el.textContent = "";
+          el.className = "vtag";
+        });
+        document.getElementById("ucount").textContent = "0";
+        document.getElementById("autoGhost").textContent = "";
+        document.getElementById("autoTyped").textContent = "";
+        document.getElementById("pwBar").style.width = "0%";
+        theCard.classList.remove("valid-state", "error-state");
+        showToast("CAMPOS LIMPOS · MODO SEGURO", "warn");
+      }
+
+      /* ════════════════════════════════════════════
+   INTERACTIONS
+════════════════════════════════════════════ */
+      let rem = true;
+      function toggleRem() {
+        rem = !rem;
+        document.getElementById("chk").classList.toggle("on", rem);
+      }
+
+      let eyeOn = false,
+        eyePressTimer = null;
+      function toggleEye() {
+        eyeOn = !eyeOn;
+        document.getElementById("pass").type = eyeOn ? "text" : "password";
+        document.getElementById("esvg").innerHTML = eyeOn
+          ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+          : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+      /* S#32: long press eye = generate strong password */
+      document.getElementById("ey").addEventListener("mousedown", () => {
+        eyePressTimer = setTimeout(() => {
+          const chars =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!$";
+          const pwd = Array.from(
+            { length: 14 },
+            () => chars[Math.floor(Math.random() * chars.length)],
+          ).join("");
+          const p = document.getElementById("pass");
+          p.value = pwd;
+          p.type = "text";
+          eyeOn = true;
+          onPassInput(p);
+          showToast("SENHA GERADA · CLIQUE PARA OCULTAR", "ok");
+          clearTimeout(eyePressTimer);
+        }, 600);
+      });
+      document
+        .getElementById("ey")
+        .addEventListener("mouseup", () => clearTimeout(eyePressTimer));
+      document
+        .getElementById("ey")
+        .addEventListener("mouseleave", () => clearTimeout(eyePressTimer));
+
+      /* S#22: dark mode */
+      function toggleDark() {
+        document.body.classList.toggle("ultra-dark");
+        document.getElementById("darkToggle").textContent =
+          document.body.classList.contains("ultra-dark")
+            ? "☀ MODO NORMAL"
+            : "⬛ MODO ESCURO EXTREMO";
+      }
+
+      /* S#25: easter egg — stopPropagation on inner */
+      function openEaster() {
+        document.getElementById("easter").classList.add("show");
+      }
+      function closeEaster() {
+        document.getElementById("easter").classList.remove("show");
+      }
+      document.getElementById("easter").addEventListener("click", closeEaster);
+      document.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.key === "Escape") {
+            closeEaster();
+            clearForm();
+          }
+          if (
+            e.key === "Enter" &&
+            document.activeElement.id !== "user" &&
+            document.activeElement.id !== "pass"
+          )
+            doLogin(null);
+        },
+        { passive: true },
+      );
+
+      /* S#26: copy coords */
+      function copyVal(el, override) {
+        const val = override || el.textContent;
+        navigator.clipboard.writeText(val).catch(() => {});
+        const d = document.createElement("div");
+        d.className = "copied";
+        d.style.cssText = "top:50%;left:50%;position:fixed;";
+        d.textContent = "COPIADO!";
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 900);
+      }
+
+      /* ════════════════════════════════════════════
+   LOGIN — attempts + shake + progress + success
+════════════════════════════════════════════ */
+      let attempts = 3;
+      function showToast(msg, type) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show " + (type || "");
+        setTimeout(() => t.classList.remove("show"), 3500);
+      }
+
+      function doLogin(e) {
+        /* S#17: ripple */
+        if (e) {
+          const btn = document.getElementById("btn");
+          const r = btn.getBoundingClientRect();
+          const rpl = document.createElement("span");
+          rpl.className = "ripple";
+          const sz = Math.max(r.width, r.height);
+          rpl.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz / 2}px;top:${e.clientY - r.top - sz / 2}px`;
+          btn.appendChild(rpl);
+          setTimeout(() => rpl.remove(), 700);
+        }
+        const u = document.getElementById("user").value.trim();
+        const p = document.getElementById("pass").value;
+        const btn = document.getElementById("btn");
+        ["uerr", "perr"].forEach((id) =>
+          document.getElementById(id).classList.remove("show"),
+        );
+        let err = false;
+        if (!u) {
+          document.getElementById("uerr").classList.add("show");
+          document.getElementById("user").classList.add("err");
+          err = true;
+        }
+        if (p.length < 3) {
+          document.getElementById("perr").classList.add("show");
+          document.getElementById("pass").classList.add("err");
+          err = true;
+        }
+        if (err) {
+          attempts--;
+          document.getElementById("attCount").textContent = attempts;
+          document
+            .getElementById("attempts")
+            .classList.toggle("show", attempts < 3);
+          /* S#20: shake with perspective preserved */
+          const sc = document.getElementById("scene");
+          sc.classList.remove("shake");
+          void sc.offsetWidth;
+          sc.classList.add("shake");
+          setTimeout(() => sc.classList.remove("shake"), 550);
+          /* S#24: error border */
+          theCard.classList.add("error-state");
+          theCard.classList.remove("valid-state");
+          playBeep(200);
+          if (attempts <= 0) {
+            btn.disabled = true;
+            showToast("TERMINAL BLOQUEADO · AGUARDE 10s", "err");
+            setTimeout(() => {
+              attempts = 3;
+              btn.disabled = false;
+              document.getElementById("attempts").classList.remove("show");
+              theCard.classList.remove("error-state");
+            }, 10000);
+          } else {
+            showToast(
+              `ACESSO NEGADO · ${attempts} TENTATIVA${attempts !== 1 ? "S" : ""} RESTANTE${attempts !== 1 ? "S" : ""}${attempts === 1 ? " ⚠" : ""}`,
+              "err",
+            );
+          }
+          return;
+        }
+        /* S#21: progress bar */
+        const pw = document.getElementById("progWrap"),
+          pb = document.getElementById("progBar");
+        pw.classList.add("show");
+        pb.style.width = "0%";
+        btn.classList.add("loading");
+        btn.disabled = true;
+        let prog = 0;
+        const iv = setInterval(() => {
+          prog += Math.random() * 16 + 4;
+          pb.style.width = Math.min(prog, 94) + "%";
+          if (prog >= 94) clearInterval(iv);
+        }, 100);
+        setTimeout(() => {
+          clearInterval(iv);
+          pb.style.width = "100%";
+          setTimeout(() => {
+            btn.classList.remove("loading");
+            btn.disabled = false;
+            pw.classList.remove("show");
+            pb.style.width = "0%";
+            attempts = 3;
+            document.getElementById("attempts").classList.remove("show");
+            /* S#49: localStorage — safe */
+            if (rem) {
+              try {
+                localStorage.setItem(
+                  "cad_user",
+                  document.getElementById("user").value.trim(),
+                );
+              } catch (e) {}
+            }
+            /* S#33: success flash */
+            theCard.classList.add("success-flash");
+            setTimeout(() => theCard.classList.remove("success-flash"), 600);
+            theCard.classList.remove("error-state", "valid-state");
+            playBeep(1200);
+            showToast("ACESSO AUTORIZADO · BEM-VINDO À ENGENHARIA CAD", "ok");
+          }, 400);
+        }, 2400);
+      }
+
+      /* S#49: restore session */
+      (function () {
+        try {
+          const saved = localStorage.getItem("cad_user");
+          if (saved) {
+            document.getElementById("user").value = saved;
+            onUserInput(document.getElementById("user"));
+          }
+        } catch (e) {}
+      })();
+
+      /* S#50: Export PNG — captures actual visible card area */
+      function exportPNG() {
+        const card = document.getElementById("theCard");
+        const r = card.getBoundingClientRect();
+        const W2 = Math.round(r.width),
+          H2 = Math.round(r.height);
+        const cv = document.createElement("canvas");
+        cv.width = W2 * 2;
+        cv.height = H2 * 2;
+        const ctx2 = cv.getContext("2d");
+        ctx2.scale(2, 2);
+        /* Capture bgCanvas region */
+        ctx2.drawImage(
+          bgC,
+          r.left * PR,
+          r.top * PR,
+          W2 * PR,
+          H2 * PR,
+          0,
+          0,
+          W2,
+          H2,
+        );
+        /* Overlay label */
+        ctx2.fillStyle = "rgba(0,0,0,.4)";
+        ctx2.fillRect(0, H2 - 22, W2, 22);
+        ctx2.font = "8px Share Tech Mono,monospace";
+        ctx2.fillStyle = "rgba(0,210,255,.7)";
+        ctx2.fillText(
+          "ENGENHARIA CAD · " +
+            new Date().toISOString().slice(0, 19).replace("T", " "),
+          8,
+          H2 - 8,
+        );
+        const a = document.createElement("a");
+        a.download = `engenharia-cad-${Date.now()}.png`;
+        a.href = cv.toDataURL("image/png");
+        a.click();
+        showToast("PNG EXPORTADO", "ok");
+      }
+
+      /* S#49: Service Worker for offline cache */
+      if ("serviceWorker" in navigator) {
+        const swBlob = new Blob(
+          [
+            `
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('fetch',e=>{e.respondWith(caches.open('cad-v1').then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}))).catch(()=>fetch(e.request)));});
+  `,
+          ],
+          { type: "application/javascript" },
+        );
+        const swURL = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swURL).catch(() => {});
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+# ====================================================================
+# FASE 2: Logs Estruturados + ELK Stack Básico
+# Adiciona logging JSON, Loki + Promtail, Elasticsearch básico
+# ====================================================================
+
+# ✓ Extensões para docker-compose.yml (adicionar ao existente)
+version: "3.9"
+
+services:
+  # ... serviços existentes ...
+
+  # ✓ Loki: Agregador de logs
+  loki:
+    image: grafana/loki:latest
+    container_name: cad-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./loki-config.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ✓ Promtail: Agente de coleta de logs
+  promtail:
+    image: grafana/promtail:latest
+    container_name: cad-promtail
+    volumes:
+      - ./logs:/var/log/cad
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - /var/log/containers:/var/log/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ✓ Elasticsearch: Busca de logs (básico)
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: cad-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ✓ Kibana: UI para Elasticsearch
+  kibana:
+    image: kibana:8.11.0
+    container_name: cad-kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+volumes:
+  # ... volumes existentes ...
+  loki_data:
+  elasticsearch_data:
+
+networks:
+  cad-network:
+    driver: bridge

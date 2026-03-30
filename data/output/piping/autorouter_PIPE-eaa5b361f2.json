@@ -1,0 +1,286 @@
+{
+  "header": {
+    "modulo": "piping_autorouter_1_0",
+    "timestamp": "2026-03-25T16:57:27.841995+00:00",
+    "trace_id": "PIPE-eaa5b361f2",
+    "normas": [
+      "N-1810"
+    ]
+  },
+  "entrada": {
+    "ponto_a": {
+      "x": 1500.0,
+      "y": 7000.0,
+      "z": 0.0
+    },
+    "ponto_b": {
+      "x": 23500.0,
+      "y": 7000.0,
+      "z": 6000.0
+    },
+    "diametro_nominal_mm": 100.0,
+    "material": "ASTM A106 Gr.B",
+    "schedule": "STD"
+  },
+  "routing": {
+    "points": [
+      {
+        "x": 1500.0,
+        "y": 7000.0,
+        "z": 0.0
+      },
+      {
+        "x": 23500.0,
+        "y": 7000.0,
+        "z": 0.0
+      },
+      {
+        "x": 23500.0,
+        "y": 7000.0,
+        "z": 0.0
+      },
+      {
+        "x": 23500.0,
+        "y": 7000.0,
+        "z": 6000.0
+      }
+    ],
+    "segments": [
+      {
+        "id": "SEG-1",
+        "start": {
+          "x": 1500.0,
+          "y": 7000.0,
+          "z": 0.0
+        },
+        "end": {
+          "x": 23500.0,
+          "y": 7000.0,
+          "z": 0.0
+        },
+        "length_m": 22.0
+      },
+      {
+        "id": "SEG-2",
+        "start": {
+          "x": 23500.0,
+          "y": 7000.0,
+          "z": 0.0
+        },
+        "end": {
+          "x": 23500.0,
+          "y": 7000.0,
+          "z": 0.0
+        },
+        "length_m": 0.0
+      },
+      {
+        "id": "SEG-3",
+        "start": {
+          "x": 23500.0,
+          "y": 7000.0,
+          "z": 0.0
+        },
+        "end": {
+          "x": 23500.0,
+          "y": 7000.0,
+          "z": 6000.0
+        },
+        "length_m": 6.0
+      }
+    ],
+    "comprimento_total_m": 28.0,
+    "supports": [
+      {
+        "id": "SUP-1",
+        "type": "PIPE_SHOE",
+        "position_m": 0.0,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-2",
+        "type": "PIPE_SHOE",
+        "position_m": 3.111,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-3",
+        "type": "PIPE_SHOE",
+        "position_m": 6.222,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-4",
+        "type": "PIPE_SHOE",
+        "position_m": 9.333,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-5",
+        "type": "PIPE_SHOE",
+        "position_m": 12.444,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-6",
+        "type": "PIPE_SHOE",
+        "position_m": 15.556,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-7",
+        "type": "PIPE_SHOE",
+        "position_m": 18.667,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-8",
+        "type": "PIPE_SHOE",
+        "position_m": 21.778,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-9",
+        "type": "PIPE_SHOE",
+        "position_m": 24.889,
+        "norma": "N-1810"
+      },
+      {
+        "id": "SUP-10",
+        "type": "PIPE_SHOE",
+        "position_m": 28.0,
+        "norma": "N-1810"
+      }
+    ]
+  },
+  "bom": [
+    {
+      "item": "PIPE_STRAIGHT",
+      "descricao": "Trecho total roteado automaticamente",
+      "quantidade": 1,
+      "comprimento_total_m": 28.0,
+      "dn_mm": 100.0,
+      "material": "ASTM A106 Gr.B",
+      "schedule": "STD"
+    },
+    {
+      "item": "ELBOW_90",
+      "descricao": "Curvas do auto-router",
+      "quantidade": 2,
+      "dn_mm": 100.0,
+      "material": "ASTM A106 Gr.B",
+      "schedule": "STD"
+    },
+    {
+      "item": "PIPE_SUPPORT",
+      "descricao": "Suportes calculados por espaçamento de norma",
+      "quantidade": 10,
+      "norma": "N-1810"
+    }
+  ],
+  "interference": {
+    "disciplina": "piping",
+    "components": [
+      {
+        "id": "SEG-1",
+        "bbox": {
+          "min_x": 1500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23500.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        }
+      },
+      {
+        "id": "SEG-2",
+        "bbox": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        }
+      },
+      {
+        "id": "SEG-3",
+        "bbox": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 6000.0
+        }
+      }
+    ],
+    "interferences": [
+      {
+        "component_a": "SEG-1",
+        "component_b": "SEG-2",
+        "bbox_a": {
+          "min_x": 1500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23500.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        },
+        "bbox_b": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        },
+        "clearance_mm": 150.0
+      },
+      {
+        "component_a": "SEG-1",
+        "component_b": "SEG-3",
+        "bbox_a": {
+          "min_x": 1500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23500.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        },
+        "bbox_b": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 6000.0
+        },
+        "clearance_mm": 150.0
+      },
+      {
+        "component_a": "SEG-2",
+        "component_b": "SEG-3",
+        "bbox_a": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 100.0
+        },
+        "bbox_b": {
+          "min_x": 23500.0,
+          "min_y": 7000.0,
+          "min_z": 0.0,
+          "max_x": 23600.0,
+          "max_y": 7100.0,
+          "max_z": 6000.0
+        },
+        "clearance_mm": 150.0
+      }
+    ],
+    "has_interference": true,
+    "count": 3
+  }
+}

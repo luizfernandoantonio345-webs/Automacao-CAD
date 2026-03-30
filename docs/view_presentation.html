@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ENGENHARIA CAD | Dashboard Executivo REGAP</title>
+    <style>
+      :root {
+        --bg-0: #f3f5f4;
+        --bg-1: #d9e1dd;
+        --ink: #1f2d2a;
+        --muted: #5a6a66;
+        --line: #c6d2cd;
+        --card: rgba(255, 255, 255, 0.92);
+        --oil: #1f4f46;
+        --steel: #5f6d75;
+        --safety: #d8890b;
+        --accent: #0f7d6b;
+        --ok: #23895f;
+        --warn: #cb7b13;
+        --alert: #b63b2f;
+        --radius: 14px;
+        --shadow: 0 10px 30px rgba(33, 60, 52, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: "Bahnschrift", "Trebuchet MS", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 8% 6%, rgba(34, 118, 97, 0.2), transparent 30%),
+          radial-gradient(circle at 92% 8%, rgba(202, 129, 17, 0.23), transparent 36%),
+          linear-gradient(150deg, var(--bg-0), var(--bg-1));
+        padding: 22px;
+      }
+
+      .wrap {
+        max-width: 1260px;
+        margin: 0 auto;
+        display: grid;
+        gap: 14px;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid rgba(57, 90, 81, 0.15);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(2px);
+      }
+
+      .hero {
+        padding: 18px 20px;
+        background:
+          linear-gradient(120deg, #1c413b 0%, #20564d 52%, #356f63 100%),
+          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07) 2px, transparent 2px, transparent 10px);
+        color: #f5f8f7;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(1.1rem, 2.8vw, 2rem);
+      }
+
+      .hero p {
+        margin: 8px 0 0;
+        color: rgba(245, 248, 247, 0.88);
+      }
+
+      .tags {
+        margin-top: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tag {
+        border: 1px solid rgba(245, 248, 247, 0.55);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        background: rgba(245, 248, 247, 0.1);
+      }
+
+      .kpi-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+      }
+
+      .kpi {
+        padding: 12px;
+        border-radius: 12px;
+        color: #fff;
+        min-height: 96px;
+      }
+
+      .kpi span {
+        display: block;
+        opacity: 0.92;
+        font-size: 0.82rem;
+      }
+
+      .kpi strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.22rem;
+      }
+
+      .k1 {
+        background: linear-gradient(135deg, #2f6f62, #26957f);
+      }
+
+      .k2 {
+        background: linear-gradient(135deg, #5d6870, #7a8994);
+      }
+
+      .k3 {
+        background: linear-gradient(135deg, #9b6510, #c48a23);
+      }
+
+      .k4 {
+        background: linear-gradient(135deg, #2b5258, #398a96);
+      }
+
+      .k5 {
+        background: linear-gradient(135deg, #6c332d, #b24a3c);
+      }
+
+      .body-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 12px;
+      }
+
+      .panel-pad {
+        padding: 14px;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        color: #214841;
+        font-size: 1rem;
+      }
+
+      .mini-note {
+        margin: 0 0 10px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .bar-wrap {
+        display: grid;
+        gap: 8px;
+      }
+
+      .bar-item {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px;
+        background: #f7faf8;
+      }
+
+      .bar-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.83rem;
+        color: var(--muted);
+      }
+
+      .bar-track {
+        margin-top: 7px;
+        height: 16px;
+        border-radius: 999px;
+        background: #e6ece9;
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #23806d, #4ca28d);
+        border-radius: 999px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .highlight {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: linear-gradient(180deg, #ffffff, #f0f6f3);
+      }
+
+      .highlight strong {
+        font-size: 1.1rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background: #edf3f0;
+        color: #345952;
+      }
+
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .ok {
+        color: var(--ok);
+        font-weight: 700;
+      }
+
+      .warn {
+        color: var(--warn);
+        font-weight: 700;
+      }
+
+      .alert {
+        color: var(--alert);
+        font-weight: 700;
+      }
+
+      .foot {
+        padding: 12px 14px;
+        border: 2px dashed #9ab0a8;
+        border-radius: 12px;
+        background: #f8fcfa;
+        color: #2f554d;
+        font-size: 0.86rem;
+      }
+
+      @media (max-width: 1050px) {
+        .kpi-grid {
+          grid-template-columns: repeat(3, minmax(120px, 1fr));
+        }
+
+        .body-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        body {
+          padding: 10px;
+        }
+
+        .kpi-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 460px) {
+        .kpi-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="panel hero">
+        <h1>Dashboard Executivo | ENGENHARIA CAD x REGAP</h1>
+        <p>
+          Viabilidade comercial, custo total e base civil para pacote de
+          automacao CAD industrial com rastreabilidade tecnica.
+        </p>
+        <div class="tags">
+          <span class="tag">Offline Ready</span>
+          <span class="tag">Pintura Petrobras N-13</span>
+          <span class="tag">Base Civil + ASTM A325</span>
+          <span class="tag">ROI &amp; Payback</span>
+        </div>
+      </section>
+
+      <section class="kpi-grid">
+        <article class="kpi k1">
+          <span>Custo Estimado Total</span>
+          <strong id="kpi-total">R$ 0,00</strong>
+        </article>
+        <article class="kpi k2">
+          <span>Area Total de Pintura N-13</span>
+          <strong id="kpi-area">0,00 m2</strong>
+        </article>
+        <article class="kpi k3">
+          <span>Consumo Tinta (Primer + PU)</span>
+          <strong id="kpi-tinta">0,0 L</strong>
+        </article>
+        <article class="kpi k4">
+          <span>ROI Anual</span>
+          <strong id="kpi-roi">0,0%</strong>
+        </article>
+        <article class="kpi k5">
+          <span>Payback</span>
+          <strong id="kpi-payback">0,0 meses</strong>
+        </article>
+      </section>
+
+      <section class="body-grid">
+        <article class="panel panel-pad">
+          <h2>Composicao de Custo Consolidado</h2>
+          <p class="mini-note">
+            Custo total = Material + Pintura (tintas) + HH (engenharia,
+            fabricacao e aplicacao).
+          </p>
+          <div class="bar-wrap" id="cost-bars"></div>
+          <div class="stack" style="margin-top: 12px">
+            <div class="highlight">
+              <div>Total Material</div>
+              <strong id="material-cost">R$ 0,00</strong>
+            </div>
+            <div class="highlight">
+              <div>Total Pintura (Primer + PU)</div>
+              <strong id="paint-cost">R$ 0,00</strong>
+            </div>
+            <div class="highlight">
+              <div>Total HH</div>
+              <strong id="hh-cost">R$ 0,00</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel-pad">
+          <h2>Resumo Executivo de Custos</h2>
+          <table>
+            <tbody>
+              <tr>
+                <th>Escopo</th>
+                <th class="num">Valor</th>
+              </tr>
+              <tr>
+                <td>Material estrutural + consumiveis</td>
+                <td class="num" id="tbl-material">R$ 0,00</td>
+              </tr>
+              <tr>
+                <td>Pintura Petrobras N-13</td>
+                <td class="num" id="tbl-paint">R$ 0,00</td>
+              </tr>
+              <tr>
+                <td>HH total (inclui pintura)</td>
+                <td class="num" id="tbl-hh">R$ 0,00</td>
+              </tr>
+              <tr>
+                <td><strong>Total estimado</strong></td>
+                <td class="num"><strong id="tbl-total">R$ 0,00</strong></td>
+              </tr>
+              <tr>
+                <td>Economia operacional anual estimada</td>
+                <td class="num" id="tbl-saving">R$ 0,00</td>
+              </tr>
+              <tr>
+                <td>ROI anual</td>
+                <td class="num" id="tbl-roi">0,0%</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="mini-note" style="margin-top: 10px">
+            Hipotese financeira: ROI = (Economia anual / Investimento total) x
+            100.
+          </p>
+        </article>
+      </section>
+
+      <section class="panel panel-pad">
+        <h2>Calculo de Pintura Petrobras N-13</h2>
+        <p class="mini-note">
+          Sistema especificado: Primer rico em zinco + acabamento PU cinza N-6.5.
+          Espessuras e solidos foram aplicados para consumo teorico com perdas.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Componente</th>
+              <th class="num">Area base (m2)</th>
+              <th class="num">Area com perdas (m2)</th>
+            </tr>
+          </thead>
+          <tbody id="paint-geometry-body"></tbody>
+        </table>
+        <div style="height: 10px"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Demao N-13</th>
+              <th class="num">DFT (um)</th>
+              <th class="num">Solidos (%)</th>
+              <th class="num">Cobertura teorica (m2/L)</th>
+              <th class="num">Litros finais</th>
+              <th class="num">Custo</th>
+            </tr>
+          </thead>
+          <tbody id="paint-system-body"></tbody>
+        </table>
+      </section>
+
+      <section class="panel panel-pad">
+        <h2>Tabela de Reacoes de Apoio e Torque ASTM A325</h2>
+        <p class="mini-note">
+          Convencao: forcas em kN no sentido global da base civil. Torque por
+          diametro calculado por T = K x D x Fpreload, com K = 0.20.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Apoio</th>
+              <th class="num">Fx (kN)</th>
+              <th class="num">Fy (kN)</th>
+              <th class="num">Fz (kN)</th>
+              <th>Conjunto de ancoragem</th>
+              <th class="num">Torque por parafuso (N.m)</th>
+            </tr>
+          </thead>
+          <tbody id="support-body"></tbody>
+          <tfoot>
+            <tr>
+              <th>Total</th>
+              <th class="num" id="sum-fx">0,00</th>
+              <th class="num" id="sum-fy">0,00</th>
+              <th class="num" id="sum-fz">0,00</th>
+              <th colspan="2" id="equilibrium-note">-</th>
+            </tr>
+          </tfoot>
+        </table>
+        <div style="height: 10px"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>ASTM A325</th>
+              <th class="num">Diametro (in)</th>
+              <th class="num">Area tracao At (in2)</th>
+              <th class="num">Pre-carga Fpreload (lbf)</th>
+              <th class="num">Torque (lbf.ft)</th>
+              <th class="num">Torque (N.m)</th>
+            </tr>
+          </thead>
+          <tbody id="bolt-body"></tbody>
+        </table>
+      </section>
+
+      <section class="panel foot">
+        Dados hardcoded para operacao offline e validacao executiva em reuniao.
+        Resultado preparado para apresentacao comercial ENGENHARIA CAD junto ao
+        cliente REGAP.
+      </section>
+    </main>
+
+    <script>
+      const money = (value) =>
+        value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+      const n2 = (value) =>
+        value.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+      const n1 = (value) =>
+        value.toLocaleString("pt-BR", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+
+      const geometry = [
+        {
+          name: "Tubulacao de processo DN200",
+          area: Math.PI * 0.2191 * 96.0,
+        },
+        {
+          name: "Tubulacao de utilidades DN100",
+          area: Math.PI * 0.1143 * 128.0,
+        },
+        {
+          name: "Vaso separador V-101 (cilindro fechado)",
+          area: 2 * Math.PI * 1.2 * (8.5 + 1.2),
+        },
+        {
+          name: "Tanque pulmao T-201 (cilindro fechado)",
+          area: 2 * Math.PI * 0.9 * (6.2 + 0.9),
+        },
+        {
+          name: "Estrutura metalica e bases auxiliares",
+          area: 185.0,
+        },
+      ];
+
+      const areaLossFactor = 1.08;
+      const primer = {
+        coat: "Primer rico em zinco",
+        dftMicrons: 75,
+        solidsPercent: 65,
+        lossFactor: 1.15,
+        unitPrice: 74,
+      };
+      const finish = {
+        coat: "Acabamento PU cinza N-6.5",
+        dftMicrons: 60,
+        solidsPercent: 55,
+        lossFactor: 1.15,
+        unitPrice: 96,
+      };
+
+      const materialCosts = [
+        { item: "Aco carbono ASTM A36 (10.437,56 kg)", value: 110638.14 },
+        { item: "Kit parafusos ASTM A325 (96 un)", value: 2784.0 },
+        { item: "Consumiveis de solda e corte", value: 18450.0 },
+      ];
+
+      const hhScopes = [
+        { scope: "Engenharia CAD e detalhamento", hh: 220, rate: 165 },
+        { scope: "Fabricacao e montagem", hh: 1280, rate: 132 },
+        { scope: "Inspecao e QA/QC", hh: 160, rate: 150 },
+      ];
+
+      const supports = [
+        {
+          name: "Apoio A",
+          fx: 22.0,
+          fy: -14.0,
+          fz: 310.0,
+          bolts: "4 x 3/4\" ASTM A325",
+          boltSize: 0.75,
+        },
+        {
+          name: "Apoio B",
+          fx: -18.0,
+          fy: -11.0,
+          fz: 295.0,
+          bolts: "4 x 7/8\" ASTM A325",
+          boltSize: 0.875,
+        },
+        {
+          name: "Apoio C",
+          fx: -16.0,
+          fy: 19.0,
+          fz: 278.0,
+          bolts: "4 x 1\" ASTM A325",
+          boltSize: 1.0,
+        },
+        {
+          name: "Apoio D",
+          fx: 12.0,
+          fy: 6.0,
+          fz: 265.0,
+          bolts: "4 x 5/8\" ASTM A325",
+          boltSize: 0.625,
+        },
+      ];
+
+      const a325 = [
+        { grade: "A325", dIn: 0.625, atIn2: 0.226 },
+        { grade: "A325", dIn: 0.75, atIn2: 0.334 },
+        { grade: "A325", dIn: 0.875, atIn2: 0.462 },
+        { grade: "A325", dIn: 1.0, atIn2: 0.606 },
+      ];
+
+      const fuKsi = 120;
+      const preloadRatio = 0.7;
+      const nutFactor = 0.2;
+
+      function theoreticalCoverage(solidsPercent, dftMicrons) {
+        return (solidsPercent * 10) / dftMicrons;
+      }
+
+      function boltTorqueNm(sizeIn) {
+        const bolt = a325.find((item) => item.dIn === sizeIn);
+        if (!bolt) return 0;
+        const preload = preloadRatio * fuKsi * 1000 * bolt.atIn2;
+        const torqueLbfIn = nutFactor * sizeIn * preload;
+        const torqueLbfFt = torqueLbfIn / 12;
+        return torqueLbfFt * 1.35582;
+      }
+
+      function buildCostBars(parts, total) {
+        const host = document.getElementById("cost-bars");
+        host.innerHTML = "";
+        parts.forEach((part) => {
+          const pct = (part.value / total) * 100;
+          const card = document.createElement("div");
+          card.className = "bar-item";
+          card.innerHTML =
+            '<div class="bar-label"><strong>' +
+            part.label +
+            "</strong><span>" +
+            money(part.value) +
+            " | " +
+            n1(pct) +
+            "%</span></div>" +
+            '<div class="bar-track"><div class="bar-fill" style="width:' +
+            pct.toFixed(2) +
+            '%"></div></div>';
+          host.appendChild(card);
+        });
+      }
+
+      function populateDashboard() {
+        const geometryBody = document.getElementById("paint-geometry-body");
+        let baseArea = 0;
+        let grossArea = 0;
+
+        geometry.forEach((row) => {
+          const withLoss = row.area * areaLossFactor;
+          baseArea += row.area;
+          grossArea += withLoss;
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            row.name +
+            "</td><td class='num'>" +
+            n2(row.area) +
+            "</td><td class='num'>" +
+            n2(withLoss) +
+            "</td>";
+          geometryBody.appendChild(tr);
+        });
+
+        const primerCoverage = theoreticalCoverage(
+          primer.solidsPercent,
+          primer.dftMicrons,
+        );
+        const finishCoverage = theoreticalCoverage(
+          finish.solidsPercent,
+          finish.dftMicrons,
+        );
+
+        const primerLiters = (grossArea / primerCoverage) * primer.lossFactor;
+        const finishLiters = (grossArea / finishCoverage) * finish.lossFactor;
+
+        const primerCost = primerLiters * primer.unitPrice;
+        const finishCost = finishLiters * finish.unitPrice;
+        const paintCost = primerCost + finishCost;
+
+        const paintHH = grossArea / 12 + grossArea / 10;
+        const paintHHRate = 118;
+        const paintHHCost = paintHH * paintHHRate;
+
+        const paintSystemBody = document.getElementById("paint-system-body");
+        [
+          {
+            row: primer,
+            coverage: primerCoverage,
+            liters: primerLiters,
+            cost: primerCost,
+          },
+          {
+            row: finish,
+            coverage: finishCoverage,
+            liters: finishLiters,
+            cost: finishCost,
+          },
+        ].forEach((item) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            item.row.coat +
+            "</td><td class='num'>" +
+            n2(item.row.dftMicrons) +
+            "</td><td class='num'>" +
+            n2(item.row.solidsPercent) +
+            "</td><td class='num'>" +
+            n2(item.coverage) +
+            "</td><td class='num'>" +
+            n2(item.liters) +
+            "</td><td class='num'>" +
+            money(item.cost) +
+            "</td>";
+          paintSystemBody.appendChild(tr);
+        });
+
+        const materialCost = materialCosts.reduce((sum, it) => sum + it.value, 0);
+
+        const hhCostBase = hhScopes.reduce(
+          (sum, it) => sum + it.hh * it.rate,
+          0,
+        );
+        const hhCost = hhCostBase + paintHHCost;
+
+        const totalCost = materialCost + paintCost + hhCost;
+        const annualSavings = 590000;
+        const roi = (annualSavings / totalCost) * 100;
+        const paybackMonths = (totalCost / annualSavings) * 12;
+
+        const parts = [
+          { label: "Material", value: materialCost },
+          { label: "Pintura", value: paintCost },
+          { label: "HH", value: hhCost },
+        ];
+        buildCostBars(parts, totalCost);
+
+        document.getElementById("kpi-total").textContent = money(totalCost);
+        document.getElementById("kpi-area").textContent = n2(grossArea) + " m2";
+        document.getElementById("kpi-tinta").textContent =
+          n1(primerLiters + finishLiters) + " L";
+        document.getElementById("kpi-roi").textContent = n1(roi) + "%";
+        document.getElementById("kpi-payback").textContent =
+          n1(paybackMonths) + " meses";
+
+        document.getElementById("material-cost").textContent = money(materialCost);
+        document.getElementById("paint-cost").textContent = money(paintCost);
+        document.getElementById("hh-cost").textContent = money(hhCost);
+
+        document.getElementById("tbl-material").textContent = money(materialCost);
+        document.getElementById("tbl-paint").textContent = money(paintCost);
+        document.getElementById("tbl-hh").textContent = money(hhCost);
+        document.getElementById("tbl-total").textContent = money(totalCost);
+        document.getElementById("tbl-saving").textContent = money(annualSavings);
+        document.getElementById("tbl-roi").textContent = n1(roi) + "%";
+
+        const supportBody = document.getElementById("support-body");
+        let sumFx = 0;
+        let sumFy = 0;
+        let sumFz = 0;
+
+        supports.forEach((s) => {
+          sumFx += s.fx;
+          sumFy += s.fy;
+          sumFz += s.fz;
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            s.name +
+            "</td><td class='num'>" +
+            n2(s.fx) +
+            "</td><td class='num'>" +
+            n2(s.fy) +
+            "</td><td class='num'>" +
+            n2(s.fz) +
+            "</td><td>" +
+            s.bolts +
+            "</td><td class='num'>" +
+            n2(boltTorqueNm(s.boltSize)) +
+            "</td>";
+          supportBody.appendChild(tr);
+        });
+
+        document.getElementById("sum-fx").textContent = n2(sumFx);
+        document.getElementById("sum-fy").textContent = n2(sumFy);
+        document.getElementById("sum-fz").textContent = n2(sumFz);
+
+        const equilibriumState =
+          Math.abs(sumFx) < 0.1 && Math.abs(sumFy) < 0.1 ? "Balanceado" : "Revisar";
+        const noteClass = equilibriumState === "Balanceado" ? "ok" : "alert";
+        const note =
+          "Equilibrio horizontal: " + equilibriumState +
+          " | Carga vertical total: " + n2(sumFz) + " kN";
+        document.getElementById("equilibrium-note").innerHTML =
+          "<span class='" + noteClass + "'>" + note + "</span>";
+
+        const boltBody = document.getElementById("bolt-body");
+        a325.forEach((bolt) => {
+          const preload = preloadRatio * fuKsi * 1000 * bolt.atIn2;
+          const torqueLbfIn = nutFactor * bolt.dIn * preload;
+          const torqueLbfFt = torqueLbfIn / 12;
+          const torqueNm = torqueLbfFt * 1.35582;
+
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            bolt.grade +
+            "</td><td class='num'>" +
+            n2(bolt.dIn) +
+            "</td><td class='num'>" +
+            n2(bolt.atIn2) +
+            "</td><td class='num'>" +
+            n2(preload) +
+            "</td><td class='num'>" +
+            n2(torqueLbfFt) +
+            "</td><td class='num'>" +
+            n2(torqueNm) +
+            "</td>";
+          boltBody.appendChild(tr);
+        });
+      }
+
+      populateDashboard();
+    </script>
+  </body>
+</html>

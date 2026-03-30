@@ -1,0 +1,373 @@
+{
+  "status": "ok",
+  "stock_length_m": 6.0,
+  "waste_percent": -21.601,
+  "waste_m": -18.145,
+  "bars": [
+    {
+      "barra_id": "BAR-001",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 12.0,
+      "sobra_m": -6.0,
+      "pecas": [
+        {
+          "item": "PIPE_STRAIGHT",
+          "material": "ASTM A106 Gr.B",
+          "comprimento_m": 12.0
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-002",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 12.0,
+      "sobra_m": -6.0,
+      "pecas": [
+        {
+          "item": "PIPE_STRAIGHT",
+          "material": "ASTM A106 Gr.B",
+          "comprimento_m": 12.0
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-003",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 12.0,
+      "sobra_m": -6.0,
+      "pecas": [
+        {
+          "item": "PIPE_STRAIGHT",
+          "material": "ASTM A106 Gr.B",
+          "comprimento_m": 12.0
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-004",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 9.1,
+      "sobra_m": -3.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_LATERAL",
+          "material": "ASTM A36",
+          "comprimento_m": 9.1
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-005",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 9.1,
+      "sobra_m": -3.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_LATERAL",
+          "material": "ASTM A36",
+          "comprimento_m": 9.1
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-006",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.9,
+      "sobra_m": 0.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_GAIOLA",
+          "material": "ASTM A36",
+          "comprimento_m": 5.9
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-007",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.9,
+      "sobra_m": 0.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_GAIOLA",
+          "material": "ASTM A36",
+          "comprimento_m": 5.9
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-008",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.9,
+      "sobra_m": 0.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_GAIOLA",
+          "material": "ASTM A36",
+          "comprimento_m": 5.9
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-009",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.9,
+      "sobra_m": 0.1,
+      "pecas": [
+        {
+          "item": "MONTANTE_GAIOLA",
+          "material": "ASTM A36",
+          "comprimento_m": 5.9
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-010",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.948,
+      "sobra_m": 0.052,
+      "pecas": [
+        {
+          "item": "ARO_GAIOLA_PROTECAO",
+          "material": "ASTM A36",
+          "comprimento_m": 2.199
+        },
+        {
+          "item": "ARO_GAIOLA_PROTECAO",
+          "material": "ASTM A36",
+          "comprimento_m": 2.199
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-011",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.948,
+      "sobra_m": 0.052,
+      "pecas": [
+        {
+          "item": "ARO_GAIOLA_PROTECAO",
+          "material": "ASTM A36",
+          "comprimento_m": 2.199
+        },
+        {
+          "item": "ARO_GAIOLA_PROTECAO",
+          "material": "ASTM A36",
+          "comprimento_m": 2.199
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-012",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.999,
+      "sobra_m": 0.001,
+      "pecas": [
+        {
+          "item": "ARO_GAIOLA_PROTECAO",
+          "material": "ASTM A36",
+          "comprimento_m": 2.199
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-013",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 5.85,
+      "sobra_m": 0.15,
+      "pecas": [
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        },
+        {
+          "item": "DEGRAU_ANTI_DERRAPANTE",
+          "material": "ASTM A36",
+          "comprimento_m": 0.45
+        }
+      ]
+    },
+    {
+      "barra_id": "BAR-014",
+      "comprimento_comercial_m": 6.0,
+      "aproveitamento_m": 0.6,
+      "sobra_m": 5.4,
+      "pecas": [
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        },
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        },
+        {
+          "item": "BRACO_SUPORTE_FIXACAO",
+          "material": "ASTM A36",
+          "comprimento_m": 0.2
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "item": "CHAPA_SUPORTE_FIXACAO",
+      "motivo": "fora_do_escopo_de_barra_padrao",
+      "fabricacao": "chaparia"
+    },
+    {
+      "item": "ELBOW_90",
+      "motivo": "fora_do_escopo_de_barra_padrao",
+      "fabricacao": "industrializado"
+    },
+    {
+      "item": "PIPE_SUPPORT",
+      "motivo": "fora_do_escopo_de_barra_padrao",
+      "fabricacao": "industrializado"
+    }
+  ],
+  "target_met": true
+}

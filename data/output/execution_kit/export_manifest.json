@@ -1,0 +1,78 @@
+{
+  "status": "ok",
+  "root_dir": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit",
+  "artifacts": {
+    "drawing_json": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\desenhos\\smartdesign_execution_package.json",
+    "drawing_dxf": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\desenhos\\smartdesign_execution_package.dxf",
+    "master_technical_spec": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\master_technical_spec.json",
+    "bom_completo": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\bom_completo.json",
+    "plano_corte_otimizado": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\plano_corte_otimizado.json",
+    "plano_de_corte_master_txt": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\plano_de_corte_master.txt",
+    "reacoes_apoio": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\civil\\reacoes_apoio_porticos.json",
+    "dimensionamento_base": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\civil\\dimensionamento_base_e_chumbadores.json",
+    "memorial_md": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\calculos\\memorial_calculo_simplificado.md",
+    "memorial_txt": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\calculos\\memorial_calculo_simplificado.txt",
+    "memorial_pdf": null,
+    "roi_json": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\reports\\business_impact.json",
+    "roi_markdown": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\reports\\business_impact.md",
+    "isometrico_json": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\isometrico_tubulacao_regap.json",
+    "mto_csv": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\mto_regap.csv",
+    "plano_pintura_md": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\plano_pintura_n13.md"
+  },
+  "data_book": {
+    "zip_path": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\data_book\\REGAP_DataBook.zip",
+    "documents": {
+      "memorial": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\calculos\\memorial_calculo_simplificado.md",
+      "isometricos": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\isometrico_tubulacao_regap.json",
+      "mto": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\mto_regap.csv",
+      "plano_pintura": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\plano_pintura_n13.md"
+    },
+    "seal": {
+      "selo": "REGAP-CONFORME",
+      "unit": "REGAP",
+      "cidade": "Betim",
+      "estado": "MG",
+      "timestamp_utc": "2026-03-25T16:57:28.612475+00:00"
+    }
+  },
+  "regap_audit": {
+    "status": "ok",
+    "total": 4,
+    "conformes": 4,
+    "nao_conformes": 0,
+    "detalhes": [
+      {
+        "documento": "memorial",
+        "path": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\calculos\\memorial_calculo_simplificado.md",
+        "exists": true,
+        "token_required": "REGAP",
+        "token_found": true,
+        "status": "ok"
+      },
+      {
+        "documento": "isometricos",
+        "path": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\isometrico_tubulacao_regap.json",
+        "exists": true,
+        "token_required": "REGAP-CONFORME",
+        "token_found": true,
+        "status": "ok"
+      },
+      {
+        "documento": "mto",
+        "path": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\compras\\mto_regap.csv",
+        "exists": true,
+        "token_required": "REGAP-CONFORME",
+        "token_found": true,
+        "status": "ok"
+      },
+      {
+        "documento": "plano_pintura",
+        "path": "C:\\Users\\Sueli\\Desktop\\Automação CAD\\data\\output\\execution_kit\\relatorios\\plano_pintura_n13.md",
+        "exists": true,
+        "token_required": "REGAP-CONFORME",
+        "token_found": true,
+        "status": "ok"
+      }
+    ]
+  }
+}

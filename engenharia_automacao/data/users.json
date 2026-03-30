@@ -1,0 +1,16 @@
+[
+  {
+    "email": "admin@empresa.com",
+    "senha": "$2b$12$UBDw/8mAdbyQm19FEwd0m.0ZyUETh.CkLmlgjlu4GQARNsTxx6Vqi",
+    "empresa": "Empresa Teste",
+    "limite": 100,
+    "usado": 6
+  },
+  {
+    "email": "luizfernandoantonio345@gmail.com",
+    "senha": "$2b$12$ZX9uuzkvYHrWmizgO5o4Fem5CZd81anHJMMqEv6N/rtpE1Lz8n5PS",
+    "empresa": "Usuário Luiz Fernando",
+    "limite": 200,
+    "usado": 0
+  }
+]

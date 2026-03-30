@@ -1,0 +1,786 @@
+{
+  "header": {
+    "project_name": "ENGENHARIA CAD - Projeto Executivo P&ID",
+    "generated_at": "2026-03-25T16:54:28.608803Z",
+    "version": "1.0.0",
+    "status": "LOCKED_FOR_EXECUTION"
+  },
+  "summary": {
+    "total_tube_length_m": 224.0,
+    "total_curves": 2,
+    "total_flanges": 28,
+    "total_joints": 28,
+    "total_bolts_fasteners": 352,
+    "total_weight_kg": 16363.76,
+    "total_cost_brl": 67109.2,
+    "weld_joints_count": 56,
+    "weld_volume_m3": 0.000391,
+    "electrode_consumption_kg": 3.53,
+    "hydro_test_vent_points": 3,
+    "hydro_test_drain_points": 3
+  },
+  "systems": [
+    {
+      "system_id": "SYS-001",
+      "description": "Tubulação de processo - entrada DN200 (P-001)",
+      "design_pressure_bar": 7.5,
+      "design_temperature_c": 60,
+      "total_length_m": 96.0,
+      "total_weight_kg": 11464.064,
+      "total_cost_brl": 51497.6,
+      "components": [
+        {
+          "component_id": "TB-001-001",
+          "component_type": "TUBE",
+          "designation": "DN200 (8in) Sch.40 ASTM A106",
+          "material": "ASTM A106 Gr.B",
+          "quantity": 96.0,
+          "unit": "m",
+          "weight_kg": 10531.2,
+          "cost_brl": 26880.0
+        },
+        {
+          "component_id": "CV-001-001",
+          "component_type": "CURVE",
+          "designation": "Curva 90° DN200 Sch.40 Raio Longo",
+          "material": "ASTM A106 Gr.B",
+          "quantity": 8.0,
+          "unit": "un",
+          "weight_kg": 673.6,
+          "cost_brl": 15600.0
+        },
+        {
+          "component_id": "FL-001-001",
+          "component_type": "FLANGE",
+          "designation": "Flange DN200 Class 150 ASTM A105 RF",
+          "material": "ASTM A105",
+          "quantity": 16.0,
+          "unit": "un",
+          "weight_kg": 196.8,
+          "cost_brl": 5440.0
+        },
+        {
+          "component_id": "JT-001-001",
+          "component_type": "JOINT",
+          "designation": "Junta de neoprene DN200",
+          "material": "Neoprene",
+          "quantity": 16.0,
+          "unit": "un",
+          "weight_kg": 4.48,
+          "cost_brl": 672.0
+        },
+        {
+          "component_id": "PF-001-001",
+          "component_type": "NUT_BOLT",
+          "designation": "Parafuso ASTM A325 M24×90",
+          "material": "ASTM A325",
+          "quantity": 128.0,
+          "unit": "un",
+          "weight_kg": 46.08,
+          "cost_brl": 2368.0
+        },
+        {
+          "component_id": "PF-001-002",
+          "component_type": "NUT_BOLT",
+          "designation": "Porca ASTM A325 M24",
+          "material": "ASTM A325",
+          "quantity": 128.0,
+          "unit": "un",
+          "weight_kg": 11.904,
+          "cost_brl": 537.6
+        }
+      ]
+    },
+    {
+      "system_id": "SYS-002",
+      "description": "Tubulação de utilidades - retorno DN100 (P-002)",
+      "design_pressure_bar": 5.0,
+      "design_temperature_c": 50,
+      "total_length_m": 128.0,
+      "total_weight_kg": 4899.696,
+      "total_cost_brl": 15611.6,
+      "components": [
+        {
+          "component_id": "TB-002-001",
+          "component_type": "TUBE",
+          "designation": "DN100 (4in) Sch.40 ASTM A106",
+          "material": "ASTM A106 Gr.B",
+          "quantity": 128.0,
+          "unit": "m",
+          "weight_kg": 4723.2,
+          "cost_brl": 10880.0
+        },
+        {
+          "component_id": "CV-002-001",
+          "component_type": "CURVE",
+          "designation": "Curva 90° DN100 Sch.40 Raio Longo",
+          "material": "ASTM A106 Gr.B",
+          "quantity": 6.0,
+          "unit": "un",
+          "weight_kg": 112.19999999999999,
+          "cost_brl": 2310.0
+        },
+        {
+          "component_id": "FL-002-001",
+          "component_type": "FLANGE",
+          "designation": "Flange DN100 Class 150 ASTM A105 RF",
+          "material": "ASTM A105",
+          "quantity": 12.0,
+          "unit": "un",
+          "weight_kg": 52.199999999999996,
+          "cost_brl": 1620.0
+        },
+        {
+          "component_id": "JT-002-001",
+          "component_type": "JOINT",
+          "designation": "Junta de neoprene DN100",
+          "material": "Neoprene",
+          "quantity": 12.0,
+          "unit": "un",
+          "weight_kg": 1.44,
+          "cost_brl": 216.0
+        },
+        {
+          "component_id": "PF-002-001",
+          "component_type": "NUT_BOLT",
+          "designation": "Parafuso ASTM A325 M20×75",
+          "material": "ASTM A325",
+          "quantity": 48.0,
+          "unit": "un",
+          "weight_kg": 8.016,
+          "cost_brl": 470.40000000000003
+        },
+        {
+          "component_id": "PF-002-002",
+          "component_type": "NUT_BOLT",
+          "designation": "Porca ASTM A325 M20",
+          "material": "ASTM A325",
+          "quantity": 48.0,
+          "unit": "un",
+          "weight_kg": 2.64,
+          "cost_brl": 115.19999999999999
+        }
+      ]
+    }
+  ],
+  "weld_joints": [
+    {
+      "weld_id": "WLD-001-01",
+      "location": "Curva DN200 #1 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-02",
+      "location": "Curva DN200 #1 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-03",
+      "location": "Curva DN200 #2 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-04",
+      "location": "Curva DN200 #2 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-05",
+      "location": "Curva DN200 #3 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-06",
+      "location": "Curva DN200 #3 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-07",
+      "location": "Curva DN200 #4 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-08",
+      "location": "Curva DN200 #4 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-09",
+      "location": "Curva DN200 #5 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-10",
+      "location": "Curva DN200 #5 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-11",
+      "location": "Curva DN200 #6 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-12",
+      "location": "Curva DN200 #6 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-13",
+      "location": "Curva DN200 #7 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-14",
+      "location": "Curva DN200 #7 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-15",
+      "location": "Curva DN200 #8 - Lado entrada",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-001-16",
+      "location": "Curva DN200 #8 - Lado saída",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 7.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-01",
+      "location": "Curva DN100 #1 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-02",
+      "location": "Curva DN100 #1 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-03",
+      "location": "Curva DN100 #2 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-04",
+      "location": "Curva DN100 #2 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-05",
+      "location": "Curva DN100 #3 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-06",
+      "location": "Curva DN100 #3 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-07",
+      "location": "Curva DN100 #4 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-08",
+      "location": "Curva DN100 #4 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-09",
+      "location": "Curva DN100 #5 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-10",
+      "location": "Curva DN100 #5 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-11",
+      "location": "Curva DN100 #6 - Lado entrada",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-002-12",
+      "location": "Curva DN100 #6 - Lado saída",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 5.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-01",
+      "location": "Flange→Tubo DN200 #1",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-02",
+      "location": "Flange→Tubo DN200 #2",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-03",
+      "location": "Flange→Tubo DN200 #3",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-04",
+      "location": "Flange→Tubo DN200 #4",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-05",
+      "location": "Flange→Tubo DN200 #5",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-06",
+      "location": "Flange→Tubo DN200 #6",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-07",
+      "location": "Flange→Tubo DN200 #7",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-08",
+      "location": "Flange→Tubo DN200 #8",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-09",
+      "location": "Flange→Tubo DN200 #9",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-10",
+      "location": "Flange→Tubo DN200 #10",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-11",
+      "location": "Flange→Tubo DN200 #11",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-12",
+      "location": "Flange→Tubo DN200 #12",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-13",
+      "location": "Flange→Tubo DN200 #13",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-14",
+      "location": "Flange→Tubo DN200 #14",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-15",
+      "location": "Flange→Tubo DN200 #15",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN200-16",
+      "location": "Flange→Tubo DN200 #16",
+      "connected_pipes": "DN200",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 4.0,
+      "weld_length_mm": 628,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-01",
+      "location": "Flange→Tubo DN100 #1",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-02",
+      "location": "Flange→Tubo DN100 #2",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-03",
+      "location": "Flange→Tubo DN100 #3",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-04",
+      "location": "Flange→Tubo DN100 #4",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-05",
+      "location": "Flange→Tubo DN100 #5",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-06",
+      "location": "Flange→Tubo DN100 #6",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-07",
+      "location": "Flange→Tubo DN100 #7",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-08",
+      "location": "Flange→Tubo DN100 #8",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-09",
+      "location": "Flange→Tubo DN100 #9",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-10",
+      "location": "Flange→Tubo DN100 #10",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-11",
+      "location": "Flange→Tubo DN100 #11",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    },
+    {
+      "weld_id": "WLD-FL-DN100-12",
+      "location": "Flange→Tubo DN100 #12",
+      "connected_pipes": "DN100",
+      "weld_process": "SMAW",
+      "weld_throat_mm": 3.0,
+      "weld_length_mm": 314,
+      "passes_count": 1,
+      "wire_consumable": "E7018-1"
+    }
+  ],
+  "hydro_test_plan": [
+    {
+      "point_id": "VENT-001",
+      "location": "Topo do Vaso Separador V-101 (8.5 m de altura)",
+      "elevation_m": 8.5,
+      "point_type": "VENT",
+      "connection_size": "DN20",
+      "description": "Ponto de ventilação para desgaseificação. Instalado com válvula angular de 1/2 in."
+    },
+    {
+      "point_id": "VENT-002",
+      "location": "Topo da tubulação de processo (curvatura final DN200)",
+      "elevation_m": 8.0,
+      "point_type": "VENT",
+      "connection_size": "DN20",
+      "description": "Vent de emergência nas extremidades do loop de processo."
+    },
+    {
+      "point_id": "VENT-003",
+      "location": "Topo do Tanque pulmão T-201 (6.2 m de altura)",
+      "elevation_m": 6.2,
+      "point_type": "VENT",
+      "connection_size": "DN25",
+      "description": "Ventilação de tanque de armazenagem com filtro de ar."
+    },
+    {
+      "point_id": "DRAIN-001",
+      "location": "Ponto baixo do circuito de processo (0.0 m - piso)",
+      "elevation_m": 0.0,
+      "point_type": "DRAIN",
+      "connection_size": "DN20",
+      "description": "Drenagem principal por gravidade com válvula seccionadora integrada."
+    },
+    {
+      "point_id": "DRAIN-002",
+      "location": "Fundo do Vaso separador V-101",
+      "elevation_m": 0.1,
+      "point_type": "DRAIN",
+      "connection_size": "DN25",
+      "description": "Drenagem de condensados e impurezas decantadas."
+    },
+    {
+      "point_id": "DRAIN-003",
+      "location": "Fundo do Tanque pulmão T-201",
+      "elevation_m": 0.1,
+      "point_type": "DRAIN",
+      "connection_size": "DN20",
+      "description": "Drenagem de água de lastro para limpeza pré-operacional."
+    },
+    {
+      "point_id": "INST-001",
+      "location": "Saída de pressão (meio da tubulação DN200)",
+      "elevation_m": 4.0,
+      "point_type": "INSTRUMENT",
+      "connection_size": "1/2in Class 300",
+      "description": "Tomada de pressão para manômetro e transmissor de pressão."
+    }
+  ]
+}

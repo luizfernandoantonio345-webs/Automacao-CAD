@@ -1,0 +1,17 @@
+SELO_REGAP;DISCIPLINA;ITEM;DESCRICAO;MATERIAL;FABRICACAO;QUANTIDADE;COMPRIMENTO_TOTAL_M;MASSA_TOTAL_KG;CUSTO_TOTAL_BRL
+REGAP-CONFORME;civil;CHUMBADOR;Chumbador de fundação;ASTM F1554 Gr.36;industrializado;160.0;0.0;799.0;13583.0
+REGAP-CONFORME;civil;PLACA_BASE;Placa de base para apoio do pórtico;ASTM A36;chaparia;20.0;0.0;854.0;8369.2
+REGAP-CONFORME;estrutura;CHAPA_LIGACAO;Chapa de ligação nó viga-pilar;ASTM A36;calandrada;20.0;0.0;66.4;650.7
+REGAP-CONFORME;estrutura;PARAFUSO_ESTRUTURAL;Parafuso ASTM A325 das ligações;ASTM A325;industrializado;80.0;0.0;52.0;936.0
+REGAP-CONFORME;estrutura;PORTICO_COLUNA;Coluna principal do pórtico;ASTM A572 Gr. 50;laminado;20.0;160.0;9600.0;109440.0
+REGAP-CONFORME;estrutura;PORTICO_VIGA;Viga principal do pórtico;ASTM A572 Gr. 50;laminado;10.0;250.0;15000.0;171000.0
+REGAP-CONFORME;mecanica;ARO_GAIOLA_PROTECAO;Aro conformado em barra chata 38x6 mm.;ASTM A36;laminado;5.0;10.995;19.68;192.86
+REGAP-CONFORME;mecanica;BRACO_SUPORTE_FIXACAO;Braco de fixacao da escada a estrutura existente.;ASTM A36;laminado;6.0;1.2;2.15;21.07
+REGAP-CONFORME;mecanica;CHAPA_SUPORTE_FIXACAO;Chapa base 120x80x8 mm com 2 furos D14 mm.;ASTM A36;chaparia;6.0;0.0;3.6;35.28
+REGAP-CONFORME;mecanica;DEGRAU_ANTI_DERRAPANTE;Degrau em barra redonda macica D19 mm.;ASTM A36;laminado;27.0;12.15;27.11;265.68
+REGAP-CONFORME;mecanica;MONTANTE_GAIOLA;Montante vertical da gaiola de protecao em barra chata.;ASTM A36;laminado;4.0;23.6;42.24;413.95
+REGAP-CONFORME;mecanica;MONTANTE_LATERAL;Montante lateral com prolongamento acima do piso de saida.;ASTM A36;tubular;2.0;18.2;81.72;800.86
+REGAP-CONFORME;soldagem;CONSUMIVEL_SOLDA;Consumível de solda de fabricação e montagem;E7018;consumivel;10.0;0.0;327.2;8834.4
+REGAP-CONFORME;tubulacao;ELBOW_90;Curvas do auto-router;ASTM A106 Gr.B;industrializado;2.0;0.0;0.0;0.0
+REGAP-CONFORME;tubulacao;PIPE_STRAIGHT;Trecho total roteado automaticamente;ASTM A106 Gr.B;tubular;3.0;28.0;0.0;0.0
+REGAP-CONFORME;tubulacao;PIPE_SUPPORT;Suportes calculados por espaçamento de norma;ASTM A106 Gr.B;industrializado;10.0;0.0;0.0;0.0

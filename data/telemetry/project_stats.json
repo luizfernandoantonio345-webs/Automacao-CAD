@@ -1,0 +1,63 @@
+﻿{
+  "total_projects": 1200,
+  "top_part_names": [
+    [
+      "Curva",
+      200
+    ],
+    [
+      "Tee",
+      200
+    ],
+    [
+      "Flange",
+      200
+    ],
+    [
+      "Reducer",
+      200
+    ],
+    [
+      "Valve",
+      200
+    ],
+    [
+      "Tubo",
+      200
+    ]
+  ],
+  "top_companies": [
+    [
+      "Engenharia CAD Labs",
+      200
+    ],
+    [
+      "Norte Tubulacoes",
+      200
+    ],
+    [
+      "Sul Processos",
+      200
+    ],
+    [
+      "Montreal Plantas",
+      200
+    ],
+    [
+      "Omega Piping",
+      200
+    ],
+    [
+      "Atlas Engenharia",
+      200
+    ]
+  ],
+  "diameter_range": [
+    50.0,
+    537.5
+  ],
+  "length_range": [
+    120.0,
+    2010.0
+  ]
+}

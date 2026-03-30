@@ -1,0 +1,14 @@
+NOTAS DE SOLDAGEM - ESCADA MARINHEIRO
+Consumivel: E7018
+Processo: SMAW
+Garganta minima de filete: 6 mm
+
+JUNTAS:
+1. Degrau x montante: filete duplo continuo, 54 juntas, 40 mm por extremidade.
+2. Aro da gaiola x montante da gaiola: filete intermitente alternado, 20 juntas, 35 mm por encontro.
+3. Suporte x montante lateral: filete duplo continuo, 12 juntas, 60 mm por encontro.
+
+CONTROLE:
+- Remover escoria entre passes.
+- Conferir alinhamento final e abertura livre da escada antes da liberacao.
+- Aplicar EPS de campo Petrobras para sequencia de soldagem.
