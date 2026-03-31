@@ -21,6 +21,7 @@ logger = logging.getLogger("engcad.db")
 # ── Engine selection ─────────────────────────────────────────────────────────
 _DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 _USE_PG = _DATABASE_URL.startswith("postgresql://") or _DATABASE_URL.startswith("postgres://")
+_IS_VERCEL = bool(os.getenv("VERCEL"))
 
 if _USE_PG:
     import psycopg2
@@ -29,7 +30,10 @@ if _USE_PG:
 else:
     _DB_PATH = Path(os.getenv("ENGCAD_DB_PATH", ""))
     if not _DB_PATH.name:
-        _DB_PATH = Path(__file__).resolve().parents[2] / "data" / "engcad.db"
+        if _IS_VERCEL:
+            _DB_PATH = Path("/tmp/engcad.db")
+        else:
+            _DB_PATH = Path(__file__).resolve().parents[2] / "data" / "engcad.db"
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     logger.info("Usando SQLite: %s", _DB_PATH)
 

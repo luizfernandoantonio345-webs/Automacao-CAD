@@ -107,6 +107,7 @@ app = FastAPI()
 _CORS_ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"}
 _CORS_ORIGIN_REGEX = re.compile(
     r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$"
+    r"|^https://[a-z0-9\-]+\.vercel\.app$"
 )
 
 app.add_middleware(
@@ -924,7 +925,8 @@ def download_project_file(project_id: int, file_type: str):
 @app.get("/logs")
 def get_logs():
     """Retorna logs do sistema."""
-    log_file = os.path.join(os.path.dirname(__file__), "data", "ai_watchdog.log")
+    _log_base = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data")
+    log_file = os.path.join(_log_base, "ai_watchdog.log")
     lines: list[str] = []
     if os.path.isfile(log_file):
         with open(log_file, encoding="utf-8", errors="replace") as f:

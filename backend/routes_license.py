@@ -54,7 +54,7 @@ def _require_auth(request: Request) -> str:
 # STORE DE LICENÇAS — Arquivo JSON simples (produção usaria banco de dados)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-_LICENSE_FILE = Path(__file__).parent.parent / "data" / "licenses.json"
+_LICENSE_FILE = Path("/tmp/licenses.json") if os.getenv("VERCEL") else Path(__file__).parent.parent / "data" / "licenses.json"
 _LICENSE_LOCK = threading.Lock()
 
 

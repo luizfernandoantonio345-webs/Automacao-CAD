@@ -37,13 +37,16 @@ logger = logging.getLogger("engcad.watchdog")
 
 # Se não houver handler configurado, adiciona um básico a file
 if not logger.handlers:
-    _log_dir = os.path.join(os.path.dirname(__file__), "data")
-    os.makedirs(_log_dir, exist_ok=True)
-    _fh = logging.FileHandler(os.path.join(_log_dir, "ai_watchdog.log"), encoding="utf-8")
-    _fh.setFormatter(logging.Formatter(
-        "%(asctime)s [WATCHDOG][%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    ))
-    logger.addHandler(_fh)
+    try:
+        _log_dir = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data")
+        os.makedirs(_log_dir, exist_ok=True)
+        _fh = logging.FileHandler(os.path.join(_log_dir, "ai_watchdog.log"), encoding="utf-8")
+        _fh.setFormatter(logging.Formatter(
+            "%(asctime)s [WATCHDOG][%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        ))
+        logger.addHandler(_fh)
+    except OSError:
+        logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.DEBUG)
 
 
