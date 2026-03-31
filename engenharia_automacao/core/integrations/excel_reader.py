@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pandas as pd
-
 
 class ExcelReader:
     """Le planilhas Excel e converte linhas em payloads compatveis com o core."""
@@ -31,6 +29,7 @@ class ExcelReader:
     }
 
     def read(self, file_path: str | Path) -> list[dict]:
+        import pandas as pd  # lazy import — pandas not required for non-Excel operations
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"Arquivo nao encontrado: {path}")

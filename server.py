@@ -956,10 +956,16 @@ def get_logs():
 @app.post("/generate")
 async def generate_project(request: Request):
     """Gera um projeto CAD real usando o motor de engenharia."""
-    from engenharia_automacao.core.main import ProjectService
-    from engenharia_automacao.core.piping.specs import select_piping_specification
     import json as _json
     import traceback
+
+    _ProjectService = None
+    _select_piping_specification = None
+    try:
+        from engenharia_automacao.core.main import ProjectService as _ProjectService
+        from engenharia_automacao.core.piping.specs import select_piping_specification as _select_piping_specification
+    except Exception as _import_err:
+        logger.warning("Módulos de engenharia não disponíveis: %s", _import_err)
 
     body = await request.json()
     diameter = body.get("diameter", 6)
@@ -993,7 +999,9 @@ async def generate_project(request: Request):
     norms_checked = ["ASME B31.3"]
     norms_passed = []
     try:
-        piping_spec = select_piping_specification(
+        if _select_piping_specification is None:
+            raise ImportError("select_piping_specification não disponível")
+        piping_spec = _select_piping_specification(
             fluid=fluid,
             temperature_c=temperature_c,
             operating_pressure_bar=operating_pressure_bar,
@@ -1019,7 +1027,9 @@ async def generate_project(request: Request):
     lsp_path = None
     csv_path = None
     try:
-        svc = ProjectService()
+        if _ProjectService is None:
+            raise ImportError("ProjectService não disponível (dependências ausentes)")
+        svc = _ProjectService()
         # O payload do ProjectService espera campos específicos
         eng_payload = {
             "code": code, "company": company, "part_name": part_name,
