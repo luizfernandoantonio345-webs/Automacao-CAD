@@ -4,7 +4,7 @@
 # Database
 sqlalchemy==2.0.23
 alembic==1.13.1
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.11
 
 # Caching and async jobs
 redis==5.0.1
