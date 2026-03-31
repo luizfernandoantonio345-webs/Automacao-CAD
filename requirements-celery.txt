@@ -24,7 +24,7 @@ requests==2.31.0  # HTTP requests com retry
 
 # ✓ Performance
 gunicorn==21.2.0  # WSGI server production
-uvloop==0.19.0  # Event loop rápido
+uvloop==0.22.1  # Event loop rápido
 
 # ✓ GPU Support (FASE 4)
 torch==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
