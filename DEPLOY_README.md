@@ -188,9 +188,9 @@ docker-compose ps
 pip install -r requirements.txt
 
 # Definir variáveis de ambiente
-$env:JARVIS_SECRET = "sua_chave_secreta_aqui"
+$env:JARVIS_SECRET = "<GERE_COM: python scripts/generate_secrets.py>"
 $env:AUTOCAD_BRIDGE_PATH = "Z:\AutoCAD_Drop"   # ou caminho local
-$env:REDIS_URL = "redis://:redis_password_123@localhost:6379/1"
+$env:REDIS_URL = "redis://:<SUA_SENHA_REDIS>@localhost:6379/1"
 
 # Iniciar o servidor FastAPI (porta 8000)
 uvicorn server:app --host 0.0.0.0 --port 8000 --reload
@@ -202,8 +202,8 @@ uvicorn server:app --host 0.0.0.0 --port 8000 --reload
 
 ```powershell
 # Em outro terminal:
-$env:CELERY_BROKER_URL = "amqp://cad_user:cad_password_123@localhost:5672/cad_vhost"
-$env:CELERY_RESULT_BACKEND = "redis://:redis_password_123@localhost:6379/0"
+$env:CELERY_BROKER_URL = "amqp://cad_user:<SUA_SENHA_RABBITMQ>@localhost:5672/cad_vhost"
+$env:CELERY_RESULT_BACKEND = "redis://:<SUA_SENHA_REDIS>@localhost:6379/0"
 
 celery -A celery_app worker --loglevel=info --concurrency=4 -n worker1@%h
 ```

@@ -128,7 +128,7 @@ services:
     image: grafana/grafana:latest
     container_name: cad-grafana
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS:-changeme}
       GF_INSTALL_PLUGINS: grafana-piechart-panel
     ports:
       - "3000:3000"
@@ -141,7 +141,7 @@ services:
     networks:
       - cad-network
     restart: unless-stopped
-    # Acesso: http://localhost:3000 (user: admin, pass: admin123)
+    # Acesso: http://localhost:3000 (user: admin, pass: definida em GRAFANA_ADMIN_PASS)
 
 volumes:
   rabbitmq_data:
