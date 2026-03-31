@@ -81,7 +81,7 @@ _DEMO_TOKEN_EXPIRY_MINUTES = 10
 
 # ── Rotas que NÃO exigem autenticação ──
 _AUTH_WHITELIST = {
-    "/login", "/auth/register", "/auth/demo", "/health", "/docs",
+    "/", "/login", "/auth/register", "/auth/demo", "/health", "/docs",
     "/openapi.json", "/redoc",
 }
 
@@ -548,6 +548,18 @@ def auth_me(request: Request):
     if user_email == _DEMO_USER["email"]:
         return _DEMO_USER
     raise HTTPException(status_code=401, detail="Usuário não encontrado")
+
+
+@app.get("/")
+def root():
+    """Status público da API."""
+    return {
+        "service": "Engenharia CAD API",
+        "status": "online",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 
 @app.get("/health")
