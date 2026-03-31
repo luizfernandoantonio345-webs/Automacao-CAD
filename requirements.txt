@@ -9,7 +9,7 @@ sse-starlette==1.8.2
 
 # Environment and security
 python-dotenv==1.0.0
-pyjwt==2.8.0
+pyjwt==2.12.1
 
 # Utilities
 psutil==5.9.6
