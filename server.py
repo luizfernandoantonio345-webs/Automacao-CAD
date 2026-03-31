@@ -81,7 +81,7 @@ _DEMO_TOKEN_EXPIRY_MINUTES = 10
 
 # ── Rotas que NÃO exigem autenticação ──
 _AUTH_WHITELIST = {
-    "/", "/login", "/auth/register", "/auth/demo", "/health", "/docs",
+    "", "/", "/login", "/auth/register", "/auth/demo", "/health", "/docs",
     "/openapi.json", "/redoc",
 }
 
@@ -926,7 +926,8 @@ def download_project_file(project_id: int, file_type: str):
         raise HTTPException(status_code=404, detail=f"Arquivo {file_type} não disponível para este projeto")
 
     # Validar que o arquivo está dentro do diretório de output permitido
-    allowed_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "data"))
+    _allowed_base = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data")
+    allowed_dir = os.path.normpath(_allowed_base)
     real_path = os.path.normpath(os.path.realpath(file_path))
     if not real_path.startswith(allowed_dir):
         raise HTTPException(status_code=403, detail="Acesso negado: caminho fora do diretório permitido")
@@ -983,7 +984,8 @@ async def generate_project(request: Request):
     }
     project_id = db_create_project(user_email, project_data)
 
-    output_dir = os.path.join(os.path.dirname(__file__), "data", "output")
+    _data_base = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data")
+    output_dir = os.path.join(_data_base, "output")
     os.makedirs(output_dir, exist_ok=True)
 
     # Calcular especificação de tubulação (ASME B31.3)
@@ -1092,9 +1094,10 @@ async def upload_excel(request: Request):
 
     content_type = request.headers.get("content-type", "")
 
-    upload_dir = os.path.join(os.path.dirname(__file__), "data", "uploads")
+    _data_base = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data")
+    upload_dir = os.path.join(_data_base, "uploads")
     os.makedirs(upload_dir, exist_ok=True)
-    output_dir = os.path.join(os.path.dirname(__file__), "data", "output")
+    output_dir = os.path.join(_data_base, "output")
     os.makedirs(output_dir, exist_ok=True)
 
     # Suportar multipart/form-data (frontend) e JSON fallback
