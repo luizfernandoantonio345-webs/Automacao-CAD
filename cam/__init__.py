@@ -32,37 +32,90 @@ from .nesting_engine import (
 from .dxf_exporter import DXFExporter, export_geometry_to_dxf
 from .geometry_validator import GeometryValidator, ValidationConfig, validate_for_plasma_cutting
 
-# Módulos industriais avançados
-from .post_processor import (
-    PostProcessor, MachineProfile, MachineProfiles, MachineType,
-    OutputFormat, MCodeMapping, GCodeSyntax, MachinePhysicalLimits,
-)
-from .piercing_control import (
-    PierceGenerator, PierceType, PierceParameters, PierceTable,
-    PierceResult, PierceQuality, MaterialCategory,
-)
-from .speed_control import (
-    SpeedController, SpeedConfig, SpeedMode, SpeedProfile,
-)
-from .lead_inout import (
-    LeadGenerator, LeadConfig, LeadType, LeadPosition, LeadPresets,
-)
-from .microjoint import (
-    TabGenerator, TabConfig, TabType, TabDistribution, Tab,
-)
-from .machine_database import (
-    MachineDatabase, Machine, MachineCategory, ControllerType,
-)
-from .physics_simulation import (
-    PhysicsSimulator, MachinePhysics, MachinePhysicsPresets,
-    SimulationMode, simulate_gcode, estimate_job_time,
-)
-from .operational_ai import (
-    OperationalAI, CuttingDatabase, CuttingParameters,
-    NestingStrategy, ToolpathOptimization, GeometryProblem,
-    get_cutting_parameters, analyze_and_fix_geometry,
-    suggest_all_optimizations, AIConfidence, OptimizationType,
-)
+# Módulos industriais avançados - importações opcionais
+try:
+    from .post_processor import (
+        PostProcessor, MachineProfile, MachineProfiles, MachineType,
+        OutputFormat, MCodeMapping, GCodeSyntax, MachinePhysicalLimits,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Post processor não disponível: {e}")
+    PostProcessor = MachineProfile = MachineProfiles = MachineType = None
+    OutputFormat = MCodeMapping = GCodeSyntax = MachinePhysicalLimits = None
+
+try:
+    from .piercing_control import (
+        PierceGenerator, PierceType, PierceParameters, PierceTable,
+        PierceResult, PierceQuality, MaterialCategory,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Piercing control não disponível: {e}")
+    PierceGenerator = PierceType = PierceParameters = PierceTable = None
+    PierceResult = PierceQuality = MaterialCategory = None
+
+try:
+    from .speed_control import (
+        SpeedController, SpeedConfig, SpeedMode, SpeedProfile,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Speed control não disponível: {e}")
+    SpeedController = SpeedConfig = SpeedMode = SpeedProfile = None
+
+try:
+    from .lead_inout import (
+        LeadGenerator, LeadConfig, LeadType, LeadPosition, LeadPresets,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Lead in/out não disponível: {e}")
+    LeadGenerator = LeadConfig = LeadType = LeadPosition = LeadPresets = None
+
+try:
+    from .microjoint import (
+        TabGenerator, TabConfig, TabType, TabDistribution, Tab,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Microjoint não disponível: {e}")
+    TabGenerator = TabConfig = TabType = TabDistribution = Tab = None
+
+try:
+    from .machine_database import (
+        MachineDatabase, Machine, MachineCategory, ControllerType,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Machine database não disponível: {e}")
+    MachineDatabase = Machine = MachineCategory = ControllerType = None
+
+try:
+    from .physics_simulation import (
+        PhysicsSimulator, MachinePhysics, MachinePhysicsPresets,
+        SimulationMode, simulate_gcode, estimate_job_time,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Physics simulation não disponível: {e}")
+    PhysicsSimulator = MachinePhysics = MachinePhysicsPresets = None
+    SimulationMode = simulate_gcode = estimate_job_time = None
+
+try:
+    from .operational_ai import (
+        OperationalAI, CuttingDatabase, CuttingParameters,
+        NestingStrategy, ToolpathOptimization, GeometryProblem,
+        get_cutting_parameters, analyze_and_fix_geometry,
+        suggest_all_optimizations, AIConfidence, OptimizationType,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Operational AI não disponível: {e}")
+    OperationalAI = CuttingDatabase = CuttingParameters = None
+    NestingStrategy = ToolpathOptimization = GeometryProblem = None
+    get_cutting_parameters = analyze_and_fix_geometry = None
+    suggest_all_optimizations = AIConfidence = OptimizationType = None
 
 __version__ = "2.0.0"
 __all__ = [
