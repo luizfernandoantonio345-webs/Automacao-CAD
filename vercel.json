@@ -1,15 +1,17 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+  "buildCommand": "",
+  "outputDirectory": "",
+  "functions": {
+    "api/*.py": {
+      "maxDuration": 30,
+      "runtime": "@vercel/python@4.3.1"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/index.py"
     }
   ]
 }
