@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+from datetime import UTC
+import io
 import json
 import logging
 import os
 import re
 import time
+import zipfile
 from collections import defaultdict, deque
 from threading import Lock
 
@@ -22,7 +25,12 @@ from engenharia_automacao.app.routes_cad import router as cad_router
 from backend.routes_autocad import router as autocad_router
 from backend.routes_autocad import debug_router as autocad_debug_router
 from backend.routes_license import router as license_router
+from backend.routes_analytics import router as analytics_router
+from backend.routes_notifications import router as notifications_router
+from backend.audit_trail import router as audit_router
 from ai_watchdog import install_watchdog, watchdog
+from cam.routes import router as cam_router
+from cam.nesting_routes import router as nesting_router
 from backend.database.db import (
     init_db, seed_default_user, authenticate_user, create_user,
     email_exists, get_user_by_email, create_project as db_create_project,
@@ -83,6 +91,26 @@ _DEMO_TOKEN_EXPIRY_MINUTES = 10
 _AUTH_WHITELIST = {
     "", "/", "/login", "/auth/register", "/auth/demo", "/health", "/docs",
     "/openapi.json", "/redoc",
+    # Bridge endpoints para sincronizador local (não expõe dados sensíveis)
+    "/api/bridge/pending", "/api/bridge/status", "/api/bridge/send",
+    "/api/bridge/draw-pipe", "/api/bridge/insert-component",
+    "/api/bridge/connection", "/api/bridge/ack",
+    # Download do sincronizador (público para facilitar instalação)
+    "/api/download/sincronizador",
+    # Status endpoints para dashboard (somente leitura)
+    "/api/autocad/health", "/api/autocad/buffer", "/api/autocad/status",
+    # AI endpoints para frontend (somente leitura e chat)
+    "/api/ai/status", "/api/ai/engines", "/api/ai/chat",
+    # CAM endpoints para geração de G-code (somente leitura/processamento)
+    "/api/cam/materials", "/api/cam/parse", "/api/cam/generate", "/api/cam/validate",
+    "/api/cam/nesting/run", "/api/cam/nesting/quick-piece", "/api/cam/library/pieces",
+    "/api/cam/simulate", "/api/cam/consumables/estimate",
+    # CAM IA endpoints (novos)
+    "/api/cam/ai/suggest-parameters", "/api/cam/ai/analyze-geometry",
+    "/api/cam/ai/optimize-toolpath", "/api/cam/ai/pre-check",
+    # CAM Simulação Física endpoints (novos)
+    "/api/cam/simulate/physics", "/api/cam/simulate/estimate-time",
+    "/api/cam/simulate/machine-presets", "/api/cam/consumables/estimate",
 }
 
 # ── Rotas bloqueadas para demo ──
@@ -132,12 +160,35 @@ install_watchdog(app)
 # Include CAD routes
 app.include_router(cad_router)
 
+# Include CAM Plasma CNC routes (Geração de G-code)
+app.include_router(cam_router)
+
+# Include CAM Nesting & Library routes (Otimização de Chapa)
+app.include_router(nesting_router)
+
 # Include AutoCAD COM Driver routes (Nível 4)
 app.include_router(autocad_router)
 app.include_router(autocad_debug_router)
 
 # Include License / HWID routes
 app.include_router(license_router)
+
+# Include Analytics routes (Enterprise KPIs)
+app.include_router(analytics_router)
+
+# Include Notifications routes (Enterprise Alerts)
+app.include_router(notifications_router)
+
+# Include Audit Trail routes (Enterprise Compliance)
+app.include_router(audit_router)
+
+# Include AI Engine routes (Sistema Enterprise de IAs)
+try:
+    from ai_engines.routes import router as ai_router
+    app.include_router(ai_router)
+    logger.info("AI Engines carregados com sucesso")
+except ImportError as e:
+    logger.warning(f"AI Engines não disponíveis: {e}")
 
 
 class LoginData(BaseModel):
@@ -165,7 +216,7 @@ async def system_metrics_generator():
             disk_percent = psutil.disk_usage(os.sep).percent
 
             data = {
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.datetime.now(UTC).isoformat(),
                 "cpu": cpu_percent,
                 "ram": ram_percent,
                 "disk": disk_percent,
@@ -181,7 +232,7 @@ async def system_metrics_generator():
             if _heartbeat_interval >= 5:
                 yield {
                     "event": "ping",
-                    "data": json.dumps({"ts": datetime.datetime.utcnow().isoformat()})
+                    "data": json.dumps({"ts": datetime.datetime.now(UTC).isoformat()})
                 }
                 _heartbeat_interval = 0
 
@@ -208,7 +259,7 @@ async def telemetry_events_generator():
         except asyncio.TimeoutError:
             yield {
                 "event": "ping",
-                "data": json.dumps({"ts": datetime.datetime.utcnow().isoformat()})
+                "data": json.dumps({"ts": datetime.datetime.now(UTC).isoformat()})
             }
         except Exception as e:
             logger.warning("SSE telemetry error: %s", e)
@@ -230,7 +281,7 @@ async def notification_generator():
         except asyncio.TimeoutError:
             yield {
                 "event": "ping",
-                "data": json.dumps({"ts": datetime.datetime.utcnow().isoformat()})
+                "data": json.dumps({"ts": datetime.datetime.now(UTC).isoformat()})
             }
         except Exception as e:
             logger.warning("SSE notification error: %s", e)
@@ -274,7 +325,7 @@ async def ai_events_generator():
             # ✓ PROBLEMA #11: Error recovery - yield heartbeat
             yield {
                 "event": "ping",
-                "data": json.dumps({"ts": datetime.datetime.utcnow().isoformat()})
+                "data": json.dumps({"ts": datetime.datetime.now(UTC).isoformat()})
             }
             
         except Exception as e:
@@ -301,7 +352,7 @@ def publish_ai_event(event_data: dict) -> None:
         if "request_id" not in event_data:
             event_data["request_id"] = str(uuid.uuid4())
         
-        event_data["timestamp"] = datetime.datetime.utcnow().isoformat()
+        event_data["timestamp"] = datetime.datetime.now(UTC).isoformat()
         
         try:
             loop = asyncio.get_running_loop()
@@ -380,6 +431,14 @@ async def auth_and_rate_middleware(request: Request, call_next):
     if path in _AUTH_WHITELIST:
         return await call_next(request)
 
+    # ── AI routes: permitir acesso público para leitura ──
+    if path.startswith("/api/ai/"):
+        return await call_next(request)
+
+    # ── CAM routes: permitir acesso público para geração de G-code ──
+    if path.startswith("/api/cam/"):
+        return await call_next(request)
+
     # ── SSE routes verificadas separadamente (dentro do handler) ──
     if path.startswith("/sse/"):
         # Auth é verificada dentro do handler SSE
@@ -433,7 +492,7 @@ _DEMO_USER = {
 
 def _make_token(user_email: str, *, expiry_minutes: int = 60) -> str:
     return jwt.encode(
-        {"user": user_email, "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=expiry_minutes)},
+        {"user": user_email, "exp": datetime.datetime.now(UTC) + datetime.timedelta(minutes=expiry_minutes)},
         JARVIS_SECRET,
         algorithm="HS256",
     )
@@ -774,7 +833,7 @@ async def send_telemetry_event(event_data: dict):
 async def send_notification(message: str, level: str = "info", user: str = None):
     """Send notification to all connected clients."""
     notification = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
         "message": message,
         "level": level,
         "user": user,
@@ -786,7 +845,7 @@ async def send_notification(message: str, level: str = "info", user: str = None)
 async def send_ai_event(text: str, status: str = "processing", job_id: str = None):
     """Send AI event to all connected clients."""
     ai_event = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
         "text": text,
         "status": status,
         "job_id": job_id,
@@ -831,7 +890,7 @@ def ai_health():
 async def test_telemetry():
     """Test endpoint to trigger telemetry events."""
     test_data = {
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
         "event": "test_event",
         "data": {
             "projects_processed": 42,
@@ -947,8 +1006,8 @@ def get_logs():
     lines = [l.strip() for l in lines if l.strip()]
     if not lines:
         lines = [
-            f"[{datetime.datetime.utcnow().isoformat()}] Sistema iniciado com sucesso",
-            f"[{datetime.datetime.utcnow().isoformat()}] Watchdog ativo — monitorando recursos",
+            f"[{datetime.datetime.now(UTC).isoformat()}] Sistema iniciado com sucesso",
+            f"[{datetime.datetime.now(UTC).isoformat()}] Watchdog ativo — monitorando recursos",
         ]
     return {"logs": lines}
 
@@ -1240,3 +1299,259 @@ async def stress_test_50():
 def get_job_status(job_id: str):
     """Retorna status de um job."""
     return {"id": job_id, "status": "completed", "result": {"success": True}}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BRIDGE MODE — Comunicação com AutoCAD remoto via sincronizador
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Fila de comandos pendentes para o sincronizador
+_bridge_commands: list = []
+_bridge_command_id = 0
+
+# Status de conexão do cliente
+_bridge_client_info = {
+    "connected": False,
+    "last_seen": None,
+    "cad_type": None,
+    "cad_version": None,
+    "machine": None,
+    "commands_executed": 0,
+}
+
+
+@app.post("/api/bridge/connection")
+async def bridge_connection(request: Request):
+    """Recebe status de conexão do sincronizador."""
+    global _bridge_client_info
+    data = await request.json()
+    
+    _bridge_client_info = {
+        "connected": data.get("connected", False),
+        "last_seen": datetime.datetime.now(UTC).isoformat(),
+        "cad_type": data.get("cad_type"),
+        "cad_version": data.get("cad_version"),
+        "machine": data.get("machine"),
+        "commands_executed": _bridge_client_info.get("commands_executed", 0),
+    }
+    
+    return {"status": "ok", "received": _bridge_client_info}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DOWNLOAD DO SINCRONIZADOR
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/download/sincronizador")
+async def download_sincronizador():
+    """Gera e retorna ZIP com o pacote do Sincronizador AutoCAD."""
+    from fastapi.responses import StreamingResponse
+    
+    # Diretório com os arquivos do cliente
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    cliente_dir = os.path.join(base_dir, "AutoCAD_Cliente")
+    
+    if not os.path.isdir(cliente_dir):
+        raise HTTPException(status_code=404, detail="Pacote do sincronizador não encontrado")
+    
+    # Arquivos a incluir no ZIP
+    files_to_include = [
+        "DETECTAR_AUTOCAD.ps1",
+        "SINCRONIZADOR.ps1",
+        "INICIAR_SINCRONIZADOR.bat",
+        "forge_vigilante.lsp",
+    ]
+    
+    # Criar ZIP em memória
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for filename in files_to_include:
+            filepath = os.path.join(cliente_dir, filename)
+            if os.path.isfile(filepath):
+                zf.write(filepath, f"Sincronizador_ForgeCad/{filename}")
+        
+        # Adicionar README com instruções
+        readme_content = """# Sincronizador ForgeCad - Instalação
+
+## Requisitos
+- Windows 10/11
+- PowerShell 5.1+
+- AutoCAD 2020+
+
+## Instalação Rápida
+1. Extraia esta pasta em um local de sua preferência
+2. Execute **INICIAR_SINCRONIZADOR.bat** como Administrador
+3. O sincronizador detectará o AutoCAD automaticamente
+
+## Arquivos
+- **INICIAR_SINCRONIZADOR.bat** - Inicia o sincronizador (execute este)
+- **SINCRONIZADOR.ps1** - Script principal de sincronização
+- **DETECTAR_AUTOCAD.ps1** - Detecta instalações do AutoCAD
+- **forge_vigilante.lsp** - Plugin AutoLISP para AutoCAD
+
+## Uso
+1. Abra o AutoCAD
+2. Execute o sincronizador
+3. Acesse o dashboard web e envie comandos
+4. Os comandos serão executados automaticamente no AutoCAD
+
+## Suporte
+Documentação: https://automacao-cad-frontend.vercel.app/docs
+"""
+        zf.writestr("Sincronizador_ForgeCad/README.md", readme_content)
+    
+    zip_buffer.seek(0)
+    
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": "attachment; filename=Sincronizador_ForgeCad.zip"
+        }
+    )
+
+
+@app.get("/api/bridge/pending")
+async def get_bridge_pending():
+    """Retorna comandos pendentes para o sincronizador local."""
+    global _bridge_commands, _bridge_client_info
+    
+    # Atualizar last_seen quando sincronizador faz polling
+    _bridge_client_info["last_seen"] = datetime.datetime.now(UTC).isoformat()
+    _bridge_client_info["connected"] = True
+    
+    commands = _bridge_commands.copy()
+    return {"commands": commands, "count": len(commands)}
+
+
+@app.post("/api/bridge/ack/{cmd_id}")
+async def ack_bridge_command(cmd_id: str):
+    """Confirma que um comando foi processado pelo sincronizador."""
+    global _bridge_commands, _bridge_client_info
+    _bridge_commands = [c for c in _bridge_commands if str(c.get("id")) != str(cmd_id)]
+    _bridge_client_info["commands_executed"] = _bridge_client_info.get("commands_executed", 0) + 1
+    return {"status": "acknowledged", "id": cmd_id}
+
+
+@app.post("/api/bridge/send")
+async def send_bridge_command(request: Request):
+    """Envia um comando LISP para a fila do sincronizador."""
+    global _bridge_commands, _bridge_command_id
+    data = await request.json()
+    
+    _bridge_command_id += 1
+    cmd = {
+        "id": _bridge_command_id,
+        "lisp_code": data.get("lisp_code", ""),
+        "operation": data.get("operation", "custom"),
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
+    }
+    _bridge_commands.append(cmd)
+    
+    return {"status": "queued", "id": _bridge_command_id}
+
+
+@app.post("/api/bridge/draw-pipe")
+async def bridge_draw_pipe(request: Request):
+    """Gera comando LISP para desenhar tubo e envia para fila."""
+    global _bridge_commands, _bridge_command_id
+    data = await request.json()
+    
+    points = data.get("points", [[0,0,0], [1000,0,0]])
+    diameter = data.get("diameter", 6)
+    layer = data.get("layer", "PIPE-PROCESS")
+    
+    # Gerar código LISP para desenhar linha
+    start = points[0]
+    end = points[1] if len(points) > 1 else points[0]
+    
+    lisp_code = f'''
+; Engenharia CAD - Desenho de Tubo
+(defun c:ENGCAD_PIPE ()
+  (command "._LAYER" "M" "{layer}" "")
+  (command "._LINE" "{start[0]},{start[1]},{start[2]}" "{end[0]},{end[1]},{end[2]}" "")
+  (command "._ZOOM" "E")
+  (princ "\\n[Engenharia CAD] Tubo desenhado com sucesso!")
+  (princ)
+)
+(c:ENGCAD_PIPE)
+'''
+    
+    _bridge_command_id += 1
+    cmd = {
+        "id": _bridge_command_id,
+        "lisp_code": lisp_code,
+        "operation": "draw-pipe",
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
+    }
+    _bridge_commands.append(cmd)
+    
+    return {"status": "queued", "id": _bridge_command_id, "operation": "draw-pipe"}
+
+
+@app.post("/api/bridge/insert-component")
+async def bridge_insert_component(request: Request):
+    """Gera comando LISP para inserir componente e envia para fila."""
+    global _bridge_commands, _bridge_command_id
+    data = await request.json()
+    
+    block_name = data.get("block_name", "VALVE-GATE")
+    coord = data.get("coordinate", [0,0,0])
+    rotation = data.get("rotation", 0)
+    scale = data.get("scale", 1)
+    layer = data.get("layer", "VALVE")
+    
+    lisp_code = f'''
+; Engenharia CAD - Inserção de Componente
+(defun c:ENGCAD_COMPONENT ()
+  (command "._LAYER" "M" "{layer}" "")
+  ; Desenhar símbolo de válvula como placeholder
+  (command "._CIRCLE" "{coord[0]},{coord[1]},{coord[2]}" "{scale * 50}")
+  (command "._TEXT" "J" "MC" "{coord[0]},{coord[1]},{coord[2]}" "{scale * 20}" "{rotation}" "{block_name}")
+  (princ "\\n[Engenharia CAD] Componente {block_name} inserido!")
+  (princ)
+)
+(c:ENGCAD_COMPONENT)
+'''
+    
+    _bridge_command_id += 1
+    cmd = {
+        "id": _bridge_command_id,
+        "lisp_code": lisp_code,
+        "operation": "insert-component",
+        "timestamp": datetime.datetime.now(UTC).isoformat(),
+    }
+    _bridge_commands.append(cmd)
+    
+    return {"status": "queued", "id": _bridge_command_id, "operation": "insert-component"}
+
+
+@app.get("/api/bridge/status")
+async def bridge_status():
+    """Retorna status do modo bridge com info do cliente."""
+    global _bridge_client_info
+    
+    # Verificar se cliente ainda está conectado (timeout 15s)
+    client_connected = False
+    if _bridge_client_info.get("last_seen"):
+        try:
+            last_seen = datetime.datetime.fromisoformat(_bridge_client_info["last_seen"].replace("Z", "+00:00"))
+            diff = (datetime.datetime.now(UTC) - last_seen.replace(tzinfo=UTC)).total_seconds()
+            client_connected = diff < 15
+        except:
+            pass
+    
+    return {
+        "mode": "bridge",
+        "pending_commands": len(_bridge_commands),
+        "status": "active",
+        "message": "Modo Bridge ativo. Use o sincronizador no PC do AutoCAD.",
+        "client": {
+            "connected": client_connected,
+            "cad_type": _bridge_client_info.get("cad_type"),
+            "cad_version": _bridge_client_info.get("cad_version"),
+            "machine": _bridge_client_info.get("machine"),
+            "last_seen": _bridge_client_info.get("last_seen"),
+            "commands_executed": _bridge_client_info.get("commands_executed", 0),
+        }
+    }
