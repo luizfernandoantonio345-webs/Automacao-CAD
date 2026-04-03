@@ -21,24 +21,82 @@ from pydantic import BaseModel, Field
 from pydantic.functional_validators import AfterValidator
 from typing import Annotated
 from sse_starlette.sse import EventSourceResponse
-from engenharia_automacao.app.routes_cad import router as cad_router
-from backend.routes_autocad import router as autocad_router
-from backend.routes_autocad import debug_router as autocad_debug_router
-from backend.routes_license import router as license_router
-from backend.routes_analytics import router as analytics_router
-from backend.routes_notifications import router as notifications_router
-from backend.audit_trail import router as audit_router
-from ai_watchdog import install_watchdog, watchdog
-from cam.routes import router as cam_router
-from cam.nesting_routes import router as nesting_router
-from backend.database.db import (
-    init_db, seed_default_user, authenticate_user, create_user,
-    email_exists, get_user_by_email, create_project as db_create_project,
-    update_project as db_update_project, get_project as db_get_project,
-    get_projects as db_get_projects, get_project_stats,
-    add_quality_check, get_quality_checks,
-    create_upload, update_upload, get_uploads,
-)
+
+# Importações opcionais - graceful degradation para deploy serverless
+import logging as _log
+
+try:
+    from engenharia_automacao.app.routes_cad import router as cad_router
+except ImportError as e:
+    _log.warning(f"CAD router not available: {e}")
+    cad_router = None
+
+try:
+    from backend.routes_autocad import router as autocad_router
+    from backend.routes_autocad import debug_router as autocad_debug_router
+except ImportError as e:
+    _log.warning(f"AutoCAD router not available: {e}")
+    autocad_router = None
+    autocad_debug_router = None
+
+try:
+    from backend.routes_license import router as license_router
+except ImportError as e:
+    _log.warning(f"License router not available: {e}")
+    license_router = None
+
+try:
+    from backend.routes_analytics import router as analytics_router
+except ImportError as e:
+    _log.warning(f"Analytics router not available: {e}")
+    analytics_router = None
+
+try:
+    from backend.routes_notifications import router as notifications_router
+except ImportError as e:
+    _log.warning(f"Notifications router not available: {e}")
+    notifications_router = None
+
+try:
+    from backend.audit_trail import router as audit_router
+except ImportError as e:
+    _log.warning(f"Audit router not available: {e}")
+    audit_router = None
+
+try:
+    from ai_watchdog import install_watchdog, watchdog
+except ImportError as e:
+    _log.warning(f"AI watchdog not available: {e}")
+    install_watchdog = None
+    watchdog = None
+
+try:
+    from cam.routes import router as cam_router
+except ImportError as e:
+    _log.warning(f"CAM router not available: {e}")
+    cam_router = None
+
+try:
+    from cam.nesting_routes import router as nesting_router
+except ImportError as e:
+    _log.warning(f"Nesting router not available: {e}")
+    nesting_router = None
+
+try:
+    from backend.database.db import (
+        init_db, seed_default_user, authenticate_user, create_user,
+        email_exists, get_user_by_email, create_project as db_create_project,
+        update_project as db_update_project, get_project as db_get_project,
+        get_projects as db_get_projects, get_project_stats,
+        add_quality_check, get_quality_checks,
+        create_upload, update_upload, get_uploads,
+    )
+except ImportError as e:
+    _log.warning(f"Database module not available: {e}")
+    init_db = seed_default_user = authenticate_user = create_user = None
+    email_exists = get_user_by_email = db_create_project = None
+    db_update_project = db_get_project = db_get_projects = get_project_stats = None
+    add_quality_check = get_quality_checks = create_upload = update_upload = get_uploads = None
 
 logger = logging.getLogger(__name__)
 
@@ -148,39 +206,51 @@ app.add_middleware(
 )
 
 # ── Inicializar banco de dados SQLite ──
-init_db()
-seed_default_user()
+if init_db:
+    init_db()
+if seed_default_user:
+    seed_default_user()
 logger.info("Banco de dados Engenharia CAD inicializado")
 
 # ── AI Watchdog — IA de Baixo Nível invisível ──
 # Intercepta TODA request: sanitiza payloads, bloqueia operações em sobrecarga,
 # e injeta fallback se o handler crashar. Completamente invisível ao usuário.
-install_watchdog(app)
+if install_watchdog:
+    install_watchdog(app)
 
 # Include CAD routes
-app.include_router(cad_router)
+if cad_router:
+    app.include_router(cad_router)
 
 # Include CAM Plasma CNC routes (Geração de G-code)
-app.include_router(cam_router)
+if cam_router:
+    app.include_router(cam_router)
 
 # Include CAM Nesting & Library routes (Otimização de Chapa)
-app.include_router(nesting_router)
+if nesting_router:
+    app.include_router(nesting_router)
 
 # Include AutoCAD COM Driver routes (Nível 4)
-app.include_router(autocad_router)
-app.include_router(autocad_debug_router)
+if autocad_router:
+    app.include_router(autocad_router)
+if autocad_debug_router:
+    app.include_router(autocad_debug_router)
 
 # Include License / HWID routes
-app.include_router(license_router)
+if license_router:
+    app.include_router(license_router)
 
 # Include Analytics routes (Enterprise KPIs)
-app.include_router(analytics_router)
+if analytics_router:
+    app.include_router(analytics_router)
 
 # Include Notifications routes (Enterprise Alerts)
-app.include_router(notifications_router)
+if notifications_router:
+    app.include_router(notifications_router)
 
 # Include Audit Trail routes (Enterprise Compliance)
-app.include_router(audit_router)
+if audit_router:
+    app.include_router(audit_router)
 
 # Include AI Engine routes (Sistema Enterprise de IAs)
 try:
