@@ -24,6 +24,18 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, File, HTTPException, UploadFile, BackgroundTasks
 from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel, Field
+import json
+
+class UTF8JSONResponse(JSONResponse):
+    """JSONResponse com encoding UTF-8 para caracteres acentuados."""
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(',', ':'),
+        ).encode('utf-8')
 
 # Importar módulo CAM
 from cam.geometry_parser import GeometryParser, Geometry, Point
@@ -562,7 +574,78 @@ async def get_materials():
         },
     }
     
-    return {"materials": materials}
+    return UTF8JSONResponse(content={"materials": materials})
+
+
+@router.get("/quick-estimate")
+async def quick_estimate(
+    material: str = "mild_steel",
+    thickness: float = 6.0,
+    cutting_length_mm: float = 1000.0,
+    pierces: int = 1,
+):
+    """
+    Estimativa rápida de tempo e custo para um corte.
+    
+    Ideal para orçamentos rápidos sem precisar gerar G-code completo.
+    """
+    from cam.operational_ai import OperationalAI
+    
+    ai = OperationalAI()
+    params = ai.suggest_cutting_parameters(material, thickness)
+    
+    # Calcular tempo de corte
+    cutting_speed = params.cutting_speed  # mm/min
+    cutting_time_min = cutting_length_mm / cutting_speed
+    
+    # Tempo de piercing
+    pierce_time_min = pierces * params.pierce_delay / 60
+    
+    # Tempo total estimado
+    total_time_min = cutting_time_min + pierce_time_min
+    
+    # Custos aproximados
+    material_costs = {
+        "mild_steel": 4.50, "stainless": 18.00, "aluminum": 12.00,
+        "copper": 45.00, "brass": 35.00, "galvanized": 5.00,
+    }
+    material_cost_per_kg = material_costs.get(material, 5.0)
+    
+    # Estimar peso (assumindo chapa de 100mm largura média)
+    density = 7.85e-6  # kg/mm³ - aço
+    estimated_weight = cutting_length_mm * 100 * thickness * density
+    material_cost = estimated_weight * material_cost_per_kg
+    
+    # Custo de operação (R$/min)
+    operation_cost = total_time_min * 2.50
+    
+    return UTF8JSONResponse(content={
+        "success": True,
+        "estimate": {
+            "material": material,
+            "thickness_mm": thickness,
+            "cutting_length_mm": cutting_length_mm,
+            "pierces": pierces,
+            "cutting_speed_mm_min": cutting_speed,
+            "cutting_time_minutes": round(cutting_time_min, 2),
+            "pierce_time_minutes": round(pierce_time_min, 2),
+            "total_time_minutes": round(total_time_min, 2),
+            "total_time_formatted": f"{int(total_time_min)}:{int((total_time_min % 1) * 60):02d}",
+            "amperage": params.amperage,
+            "kerf_mm": params.kerf_width,
+        },
+        "cost": {
+            "material_cost_brl": round(material_cost, 2),
+            "operation_cost_brl": round(operation_cost, 2),
+            "total_cost_brl": round(material_cost + operation_cost, 2),
+        },
+        "parameters": {
+            "suggested_amperage": params.amperage,
+            "suggested_speed": params.cutting_speed,
+            "pierce_height_mm": params.pierce_height,
+            "cut_height_mm": params.cut_height,
+        }
+    })
 
 
 @router.post("/download/{format}")
@@ -811,38 +894,156 @@ async def ai_analyze_geometry(request: AIAnalysisRequest):
     - Auto-interseções
     - Furos muito próximos
     - Cantos muito agudos
+    
+    Retorna métricas completas da geometria.
     """
     try:
         from cam.operational_ai import OperationalAI
+        import math
         
         ai = OperationalAI()
         
-        # Converter geometria para formato de análise
-        geometry_info = {
-            "open_contours": [],  # Seria detectado pelo parser
-            "kerf_width": request.kerf_width,
-            "min_features": [],
-            "self_intersections": [],
-            "close_hole_pairs": [],
-            "sharp_corners": [],
-        }
+        # Calcular métricas da geometria
+        geo = request.geometry
         
-        problems = ai.analyze_geometry(geometry_info)
+        # Contar elementos
+        total_lines = len(geo.lines)
+        total_arcs = len(geo.arcs)
+        total_circles = len(geo.circles)
+        total_polylines = len(geo.polylines)
         
-        return {
+        # Calcular perímetro total
+        total_perimeter = 0.0
+        
+        # Linhas
+        for line in geo.lines:
+            dx = line.end.x - line.start.x
+            dy = line.end.y - line.start.y
+            total_perimeter += math.sqrt(dx*dx + dy*dy)
+        
+        # Arcos
+        for arc in geo.arcs:
+            angle_diff = abs(arc.end_angle - arc.start_angle)
+            if angle_diff > 360:
+                angle_diff = 360
+            total_perimeter += 2 * math.pi * arc.radius * (angle_diff / 360)
+        
+        # Círculos
+        for circle in geo.circles:
+            total_perimeter += 2 * math.pi * circle.radius
+        
+        # Polylines
+        closed_polylines = 0
+        open_polylines = 0
+        for poly in geo.polylines:
+            for i in range(len(poly.points) - 1):
+                p1, p2 = poly.points[i], poly.points[i + 1]
+                dx = p2.x - p1.x
+                dy = p2.y - p1.y
+                total_perimeter += math.sqrt(dx*dx + dy*dy)
+            
+            if poly.closed and len(poly.points) > 2:
+                closed_polylines += 1
+                # Fechar o polígono
+                p1, p2 = poly.points[-1], poly.points[0]
+                dx = p2.x - p1.x
+                dy = p2.y - p1.y
+                total_perimeter += math.sqrt(dx*dx + dy*dy)
+            else:
+                open_polylines += 1
+        
+        # Identificar contornos externos e internos (heurística: círculos pequenos são furos)
+        external_contours = closed_polylines + len([c for c in geo.circles if c.radius > 20])
+        internal_contours = total_circles - external_contours + len([c for c in geo.circles if c.radius <= 20])
+        if internal_contours < 0:
+            internal_contours = 0
+        
+        # Detectar problemas
+        problems = []
+        
+        # Verificar contornos abertos
+        if open_polylines > 0:
+            problems.append({
+                "type": "open_contour",
+                "severity": "warning",
+                "description": f"{open_polylines} contorno(s) aberto(s) detectado(s)",
+                "suggestion": "Feche os contornos para garantir corte completo",
+                "auto_fix_available": False,
+            })
+        
+        # Verificar furos muito pequenos
+        small_holes = [c for c in geo.circles if c.radius < request.kerf_width * 2]
+        if small_holes:
+            problems.append({
+                "type": "small_feature",
+                "severity": "warning",
+                "description": f"{len(small_holes)} furo(s) com raio menor que 2x kerf ({request.kerf_width * 2:.1f}mm)",
+                "suggestion": "Furos muito pequenos podem não ser cortados corretamente",
+                "auto_fix_available": False,
+            })
+        
+        # Calcular área estimada (bounding box)
+        all_x = []
+        all_y = []
+        for line in geo.lines:
+            all_x.extend([line.start.x, line.end.x])
+            all_y.extend([line.start.y, line.end.y])
+        for arc in geo.arcs:
+            all_x.append(arc.center.x + arc.radius)
+            all_x.append(arc.center.x - arc.radius)
+            all_y.append(arc.center.y + arc.radius)
+            all_y.append(arc.center.y - arc.radius)
+        for circle in geo.circles:
+            all_x.append(circle.center.x + circle.radius)
+            all_x.append(circle.center.x - circle.radius)
+            all_y.append(circle.center.y + circle.radius)
+            all_y.append(circle.center.y - circle.radius)
+        for poly in geo.polylines:
+            for p in poly.points:
+                all_x.append(p.x)
+                all_y.append(p.y)
+        
+        if all_x and all_y:
+            width = max(all_x) - min(all_x)
+            height = max(all_y) - min(all_y)
+            bounding_area = width * height
+        else:
+            width = height = bounding_area = 0
+        
+        return UTF8JSONResponse(content={
             "success": True,
-            "problems_count": len(problems),
-            "auto_fixable": sum(1 for p in problems if p.auto_fix_available),
-            "problems": [p.to_dict() for p in problems],
-            "can_proceed": all(p.severity.value != "critical" for p in problems),
-        }
+            "analysis": {
+                "metrics": {
+                    "total_elements": total_lines + total_arcs + total_circles + total_polylines,
+                    "lines": total_lines,
+                    "arcs": total_arcs,
+                    "circles": total_circles,
+                    "polylines": total_polylines,
+                    "external_contours": external_contours,
+                    "internal_contours": internal_contours,
+                    "closed_contours": closed_polylines + total_circles,
+                    "open_contours": open_polylines,
+                    "total_perimeter": round(total_perimeter, 2),
+                    "bounding_width": round(width, 2),
+                    "bounding_height": round(height, 2),
+                    "bounding_area": round(bounding_area, 2),
+                },
+                "problems": problems,
+                "problems_count": len(problems),
+                "can_proceed": all(p["severity"] != "critical" for p in problems),
+            },
+            "recommendations": [
+                f"Perímetro total de corte: {total_perimeter:.1f}mm",
+                f"Área do bounding box: {bounding_area/100:.1f}cm²",
+            ] if total_perimeter > 0 else ["Nenhuma geometria para analisar"],
+        })
     
     except Exception as e:
         logger.error(f"Erro na análise de geometria IA: {e}")
-        return {
+        return UTF8JSONResponse(content={
             "success": False,
-            "error": str(e)
-        }
+            "error": f"Erro ao analisar geometria: {str(e)}"
+        }, status_code=500)
 
 
 @router.post("/ai/optimize-toolpath")

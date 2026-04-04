@@ -188,7 +188,30 @@ _TELEMETRY_EVENTS = asyncio.Queue(maxsize=1000)
 _NOTIFICATION_EVENTS = asyncio.Queue(maxsize=1000)
 _AI_EVENTS = asyncio.Queue(maxsize=1000)
 
-app = FastAPI()
+# Configuração de JSON com suporte a UTF-8
+import json
+from fastapi.responses import JSONResponse
+
+class UTF8JSONResponse(JSONResponse):
+    """JSONResponse que garante encoding UTF-8 correto para caracteres acentuados."""
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(',', ':'),
+        ).encode('utf-8')
+
+app = FastAPI(
+    title="Engenharia CAD - Sistema CNC Plasma",
+    description="API completa para automação de corte plasma CNC com IA",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    default_response_class=UTF8JSONResponse,
+)
 
 _CORS_ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"}
 _CORS_ORIGIN_REGEX = re.compile(
@@ -204,6 +227,90 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+# ── Exception Handlers com mensagens em português ──
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Traduz erros de validação para português."""
+    errors = []
+    for error in exc.errors():
+        field = " -> ".join(str(loc) for loc in error["loc"])
+        msg_type = error["type"]
+        
+        # Traduzir tipos de erro comuns
+        translations = {
+            "missing": f"Campo obrigatório não informado: {field}",
+            "string_type": f"O campo '{field}' deve ser texto",
+            "int_type": f"O campo '{field}' deve ser número inteiro",
+            "float_type": f"O campo '{field}' deve ser número decimal",
+            "bool_type": f"O campo '{field}' deve ser verdadeiro ou falso",
+            "value_error": f"Valor inválido para '{field}'",
+            "type_error": f"Tipo incorreto para '{field}'",
+            "json_invalid": "JSON inválido no corpo da requisição",
+        }
+        
+        translated = translations.get(msg_type, f"Erro em '{field}': {error['msg']}")
+        errors.append({
+            "campo": field,
+            "mensagem": translated,
+            "tipo": msg_type,
+        })
+    
+    return UTF8JSONResponse(
+        status_code=422,
+        content={
+            "sucesso": False,
+            "erro": "Dados de entrada inválidos",
+            "detalhes": errors,
+            "dica": "Verifique os campos obrigatórios e seus tipos",
+        }
+    )
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Traduz erros HTTP para português."""
+    status_messages = {
+        400: "Requisição inválida",
+        401: "Não autorizado - faça login",
+        403: "Acesso negado",
+        404: "Recurso não encontrado",
+        405: "Método não permitido",
+        408: "Tempo limite excedido",
+        422: "Dados de entrada inválidos",
+        429: "Muitas requisições - aguarde",
+        500: "Erro interno do servidor",
+        502: "Erro de gateway",
+        503: "Serviço temporariamente indisponível",
+    }
+    
+    message = status_messages.get(exc.status_code, str(exc.detail))
+    
+    return UTF8JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "sucesso": False,
+            "erro": message,
+            "detalhe": str(exc.detail) if exc.detail != message else None,
+            "codigo": exc.status_code,
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handler geral para exceções não tratadas."""
+    logger.error(f"Erro não tratado: {exc}", exc_info=True)
+    return UTF8JSONResponse(
+        status_code=500,
+        content={
+            "sucesso": False,
+            "erro": "Erro interno do servidor",
+            "mensagem": "Ocorreu um erro inesperado. Por favor, tente novamente.",
+            "tipo": type(exc).__name__,
+        }
+    )
 
 # ── Inicializar banco de dados SQLite ──
 if init_db:
