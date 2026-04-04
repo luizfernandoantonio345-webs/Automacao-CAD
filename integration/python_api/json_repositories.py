@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from threading import Lock
 from typing import List, Optional
@@ -49,8 +49,8 @@ class JSONUserRepository(UserRepository):
                     company=user_dict.get("empresa", ""),
                     usage_limit=user_dict.get("limite", 100),
                     usage_count=user_dict.get("usado", 0),
-                    created_at=datetime.fromisoformat(user_dict.get("created_at", datetime.utcnow().isoformat())),
-                    updated_at=datetime.fromisoformat(user_dict.get("updated_at", datetime.utcnow().isoformat())),
+                    created_at=datetime.fromisoformat(user_dict.get("created_at", datetime.now(UTC).isoformat())),
+                    updated_at=datetime.fromisoformat(user_dict.get("updated_at", datetime.now(UTC).isoformat())),
                 )
         return None
 
@@ -75,8 +75,8 @@ class JSONUserRepository(UserRepository):
                 "empresa": company,
                 "limite": usage_limit,
                 "usado": 0,
-                "created_at": datetime.utcnow().isoformat(),
-                "updated_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             }
             users.append(user_dict)
             self._save_users(users)
@@ -98,7 +98,7 @@ class JSONUserRepository(UserRepository):
             for user_dict in users:
                 if user_dict.get("id") == user_id:
                     user_dict["usado"] = new_usage
-                    user_dict["updated_at"] = datetime.utcnow().isoformat()
+                    user_dict["updated_at"] = datetime.now(UTC).isoformat()
                     self._save_users(users)
                     return User(
                         id=user_dict["id"],
@@ -198,7 +198,7 @@ class JSONProjectEventRepository(ProjectEventRepository):
                     length=event_dict["length"],
                     source=event_dict["source"],
                     result_path=event_dict.get("result_path"),
-                    created_at=datetime.fromisoformat(event_dict.get("created_at", datetime.utcnow().isoformat())),
+                    created_at=datetime.fromisoformat(event_dict.get("created_at", datetime.now(UTC).isoformat())),
                 ))
         return events
 
@@ -250,7 +250,7 @@ class JSONDraftFeedbackRepository(DraftFeedbackRepository):
                     code=feedback_dict["code"],
                     ai_response=feedback_dict.get("ai_response"),
                     tokens_used=feedback_dict.get("tokens_used"),
-                    created_at=datetime.fromisoformat(feedback_dict.get("created_at", datetime.utcnow().isoformat())),
+                    created_at=datetime.fromisoformat(feedback_dict.get("created_at", datetime.now(UTC).isoformat())),
                 ))
         return feedback_list
 

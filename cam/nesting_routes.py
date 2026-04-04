@@ -42,6 +42,8 @@ logger = logging.getLogger("engcad.cam.nesting_routes")
 
 class UTF8JSONResponse(JSONResponse):
     """JSONResponse com encoding UTF-8 para caracteres acentuados."""
+    media_type = "application/json; charset=utf-8"
+    
     def render(self, content) -> bytes:
         return json.dumps(
             content,

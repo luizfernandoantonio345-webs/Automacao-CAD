@@ -9,7 +9,7 @@ import os
 import time
 import logging
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class DeadLetterQueue:
             "error": error,
             "task_id": task_id,
             "retry_count": retry_count,
-            "failed_at": datetime.utcnow().isoformat(),
+            "failed_at": datetime.now(UTC).isoformat(),
             "status": "pending_analysis"
         }
         
@@ -116,7 +116,7 @@ class DeadLetterQueue:
             
             # Atualizar status
             job_data["status"] = "requeued"
-            job_data["requeued_at"] = datetime.utcnow().isoformat()
+            job_data["requeued_at"] = datetime.now(UTC).isoformat()
             
             logger.info(f"Job requeued da DLQ: {dlq_id}")
             return True
@@ -148,7 +148,7 @@ class DeadLetterQueue:
             "total_failed_jobs": total_jobs,
             "by_type": types,
             "by_error": errors,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
 # ✓ Instância global

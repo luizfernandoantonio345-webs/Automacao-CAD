@@ -8,7 +8,7 @@ Proibição: Não usa estimativas. Contagem exata baseada na geometria.
 import json
 from dataclasses import dataclass, asdict, field
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 @dataclass
@@ -558,7 +558,7 @@ class MTOGenerator:
         # Cria relatório
         report = ExecutionReport(
             project_name="ENGENHARIA CAD - Projeto Executivo P&ID",
-            generated_at=datetime.utcnow().isoformat() + "Z",
+            generated_at=datetime.now(UTC).isoformat(),
             systems=self.systems,
             weld_joints=self.weld_joints,
             hydro_test_plan=self.hydro_points,

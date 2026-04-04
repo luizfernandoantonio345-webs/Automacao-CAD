@@ -10,8 +10,12 @@ import {
   FaDesktop,
   FaTerminal,
   FaSignOutAlt,
+  FaBrain,
+  FaTachometerAlt,
+  FaFire,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 interface NavEntry {
   path: string;
@@ -31,6 +35,9 @@ const NAV_ITEMS: NavEntry[] = [
   { path: "/quality", label: "Quality Gate", icon: <FaShieldAlt /> },
   { path: "/final-report", label: "Relatório Final", icon: <FaFileAlt /> },
   { path: "/cad-dashboard", label: "Painel CAD", icon: <FaDesktop /> },
+  { path: "/cnc-control", label: "Controle CNC Plasma", icon: <FaFire /> },
+  { path: "/ai-dashboard", label: "Central de IAs", icon: <FaBrain /> },
+  { path: "/analytics", label: "Analytics", icon: <FaTachometerAlt /> },
   { path: "/cad-console", label: "Console CAD", icon: <FaTerminal /> },
 ];
 
@@ -51,10 +58,124 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
   const demo = isDemoMode();
 
-  const getNavStyle = (path: string) => {
-    return location.pathname === path ? db.navActive : db.navItem;
+  // Estilos dinâmicos baseados no tema
+  const sidebarStyles: Record<string, React.CSSProperties> = {
+    container: {
+      display: "flex",
+      height: "100vh",
+      backgroundColor: theme.background,
+      color: theme.textPrimary,
+    },
+    sidebar: {
+      width: "260px",
+      background: theme.surface,
+      borderRight: `1px solid ${theme.border}`,
+      boxShadow: "4px 0 20px rgba(0,0,0,0.2)",
+      padding: "32px 16px 16px",
+      flexShrink: 0,
+      display: "flex",
+      flexDirection: "column",
+    },
+    brand: {
+      fontSize: "18px",
+      fontWeight: 700,
+      letterSpacing: "0.15em",
+      marginBottom: "12px",
+      display: "flex",
+      alignItems: "baseline",
+      gap: "6px",
+      paddingLeft: "12px",
+      color: theme.textPrimary,
+    },
+    versionTag: {
+      fontSize: "9px",
+      color: theme.textTertiary,
+      letterSpacing: "0.05em",
+      fontWeight: 400,
+    },
+    demoBanner: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      padding: "8px 12px",
+      marginBottom: "16px",
+      backgroundColor: `${theme.warning}15`,
+      border: `1px solid ${theme.warning}40`,
+      borderRadius: "6px",
+      color: theme.warning,
+      fontSize: "9px",
+      letterSpacing: "0.1em",
+      fontWeight: 600,
+    },
+    demoDot: {
+      width: "6px",
+      height: "6px",
+      backgroundColor: theme.warning,
+      borderRadius: "50%",
+      boxShadow: `0 0 6px ${theme.warning}`,
+    },
+    nav: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "4px",
+      flex: 1,
+      marginTop: "8px",
+    },
+    navItem: {
+      padding: "12px 14px",
+      color: theme.textSecondary,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      borderRadius: "8px",
+      fontSize: "13px",
+      fontWeight: 500,
+      transition: "all 0.15s ease",
+    },
+    navActive: {
+      padding: "12px 14px",
+      backgroundColor: `${theme.accentPrimary}15`,
+      color: theme.accentPrimary,
+      borderRadius: "8px",
+      borderLeft: `3px solid ${theme.accentPrimary}`,
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "13px",
+      fontWeight: 600,
+      marginLeft: "-3px",
+    },
+    sidebarFooter: {
+      borderTop: `1px solid ${theme.border}`,
+      paddingTop: "12px",
+      marginTop: "auto",
+    },
+    logoutBtn: {
+      padding: "12px 14px",
+      color: theme.textTertiary,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      fontSize: "13px",
+      borderRadius: "8px",
+      transition: "color 0.15s, background-color 0.15s",
+    },
+    main: {
+      flex: 1,
+      overflowY: "auto",
+      backgroundColor: theme.background,
+    },
+  };
+
+  const getNavStyle = (path: string): React.CSSProperties => {
+    return location.pathname === path
+      ? sidebarStyles.navActive
+      : sidebarStyles.navItem;
   };
 
   const handleLogout = () => {
@@ -63,142 +184,65 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <div style={db.container}>
+    <div style={sidebarStyles.container}>
       {/* Sidebar */}
-      <aside style={db.sidebar}>
-        <div style={db.brand}>
-          ENGENHARIA <span style={{ color: "#00A1FF" }}>CAD</span>
-          <span style={db.versionTag}>v1.0</span>
+      <aside style={sidebarStyles.sidebar as React.CSSProperties}>
+        <div style={sidebarStyles.brand}>
+          ENGENHARIA <span style={{ color: theme.accentPrimary }}>CAD</span>
+          <span style={sidebarStyles.versionTag}>v1.0</span>
         </div>
 
         {demo && (
-          <div style={db.demoBanner}>
-            <span style={db.demoDot} />
+          <div style={sidebarStyles.demoBanner as React.CSSProperties}>
+            <span style={sidebarStyles.demoDot as React.CSSProperties} />
             MODO DEMONSTRAÇÃO
           </div>
         )}
 
-        <nav style={db.nav}>
+        <nav style={sidebarStyles.nav as React.CSSProperties}>
           {NAV_ITEMS.map((item) => (
             <div
               key={item.path}
               style={getNavStyle(item.path)}
               onClick={() => navigate(item.path)}
+              onMouseEnter={(e) => {
+                if (location.pathname !== item.path) {
+                  e.currentTarget.style.backgroundColor = `${theme.accentPrimary}08`;
+                  e.currentTarget.style.color = theme.textPrimary;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (location.pathname !== item.path) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = theme.textSecondary;
+                }
+              }}
             >
               {item.icon} {item.label}
             </div>
           ))}
         </nav>
 
-        <div style={db.sidebarFooter}>
-          <div style={db.logoutBtn} onClick={handleLogout}>
+        <div style={sidebarStyles.sidebarFooter}>
+          <div
+            style={sidebarStyles.logoutBtn}
+            onClick={handleLogout}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${theme.danger}15`;
+              e.currentTarget.style.color = theme.danger;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = theme.textTertiary;
+            }}
+          >
             <FaSignOutAlt /> Sair
           </div>
         </div>
       </aside>
 
       {/* Área de Trabalho */}
-      <main style={db.main}>{children}</main>
+      <main style={sidebarStyles.main}>{children}</main>
     </div>
   );
-};
-
-const db: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: "flex",
-    height: "100vh",
-    backgroundColor: "#0A0A0B",
-    color: "#FFF",
-  },
-  sidebar: {
-    width: "280px",
-    background: "#0D0D0F",
-    borderRight: "1px solid #1a1c22",
-    boxShadow: "10px 0 30px rgba(0,0,0,0.5)",
-    padding: "40px 20px 20px",
-    flexShrink: 0,
-    display: "flex",
-    flexDirection: "column" as const,
-  },
-  brand: {
-    fontSize: "22px",
-    fontWeight: "bold",
-    letterSpacing: "4px",
-    marginBottom: "16px",
-    display: "flex",
-    alignItems: "baseline",
-    gap: "8px",
-  },
-  versionTag: {
-    fontSize: "10px",
-    color: "#556",
-    letterSpacing: "1px",
-    fontWeight: 400,
-  },
-  demoBanner: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px",
-    marginBottom: "20px",
-    backgroundColor: "rgba(255, 215, 0, 0.08)",
-    border: "1px solid rgba(255, 215, 0, 0.25)",
-    borderRadius: "4px",
-    color: "#FFD700",
-    fontSize: "10px",
-    letterSpacing: "1.5px",
-    fontWeight: 700,
-  },
-  demoDot: {
-    width: "6px",
-    height: "6px",
-    backgroundColor: "#FFD700",
-    borderRadius: "50%",
-    boxShadow: "0 0 6px #FFD700",
-    flexShrink: 0,
-  },
-  nav: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    flex: 1,
-  },
-  navItem: {
-    padding: "12px 15px",
-    color: "#555",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    borderRadius: "4px",
-    fontSize: "14px",
-    transition: "color 0.15s",
-  },
-  navActive: {
-    padding: "12px 15px",
-    backgroundColor: "rgba(0,161,255,0.1)",
-    color: "#00A1FF",
-    borderRadius: "4px",
-    borderLeft: "4px solid #00A1FF",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    fontSize: "14px",
-  },
-  sidebarFooter: {
-    borderTop: "1px solid #1a1c22",
-    paddingTop: "16px",
-  },
-  logoutBtn: {
-    padding: "12px 15px",
-    color: "#666",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    fontSize: "13px",
-    borderRadius: "4px",
-    transition: "color 0.15s",
-  },
-  main: { flex: 1, overflowY: "auto" as const },
 };

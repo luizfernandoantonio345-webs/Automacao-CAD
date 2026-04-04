@@ -194,6 +194,8 @@ from fastapi.responses import JSONResponse
 
 class UTF8JSONResponse(JSONResponse):
     """JSONResponse que garante encoding UTF-8 correto para caracteres acentuados."""
+    media_type = "application/json; charset=utf-8"
+    
     def render(self, content) -> bytes:
         return json.dumps(
             content,

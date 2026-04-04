@@ -62,7 +62,7 @@ class ProjectTelemetryStore:
         temp_file.replace(path)
 
     def record_event(self, payload: dict, source: str, result_path: str | None = None) -> None:
-        from datetime import datetime
+        from datetime import datetime, UTC
         from integration.python_api.repositories import ProjectEvent
 
         event = ProjectEvent(
@@ -74,7 +74,7 @@ class ProjectTelemetryStore:
             length=float(payload.get("length", 0) or 0),
             source=source,
             result_path=result_path or "",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         if self.event_repository is not None:
@@ -265,7 +265,7 @@ class ProjectTelemetryStore:
                     if not line.strip():
                         continue
                     item = json.loads(line)
-                    from datetime import datetime
+                    from datetime import datetime, UTC
                     from integration.python_api.repositories import ProjectEvent
                     events.append(ProjectEvent(
                         id=len(events) + 1,
@@ -276,7 +276,7 @@ class ProjectTelemetryStore:
                         length=float(item.get("length", 0) or 0),
                         source=str(item.get("source", "")),
                         result_path=str(item.get("result_path", "")),
-                        created_at=datetime.fromisoformat(item.get("created_at", datetime.utcnow().isoformat())),
+                        created_at=datetime.fromisoformat(item.get("created_at", datetime.now(UTC).isoformat())),
                     ))
 
             feedback = []
@@ -285,7 +285,7 @@ class ProjectTelemetryStore:
                     if not line.strip():
                         continue
                     item = json.loads(line)
-                    from datetime import datetime
+                    from datetime import datetime, UTC
                     from integration.python_api.repositories import DraftFeedback
                     feedback.append(DraftFeedback(
                         id=len(feedback) + 1,
@@ -294,7 +294,7 @@ class ProjectTelemetryStore:
                         company=str(item.get("company", "")),
                         part_name=str(item.get("part_name", "")),
                         code=str(item.get("code", "")),
-                        created_at=datetime.fromisoformat(item.get("created_at", datetime.utcnow().isoformat())),
+                        created_at=datetime.fromisoformat(item.get("created_at", datetime.now(UTC).isoformat())),
                     ))
 
         grouped: dict[tuple[str, str], dict[str, object]] = defaultdict(
@@ -418,7 +418,7 @@ class ProjectTelemetryStore:
         return draft
 
     def record_draft_feedback(self, prompt: str, draft: dict, feedback: str) -> None:
-        from datetime import datetime
+        from datetime import datetime, UTC
         from integration.python_api.repositories import DraftFeedback
 
         feedback_obj = DraftFeedback(
@@ -430,7 +430,7 @@ class ProjectTelemetryStore:
             code=str(draft.get("code", "")),
             ai_response=None,
             tokens_used=None,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         if self.feedback_repository is not None:

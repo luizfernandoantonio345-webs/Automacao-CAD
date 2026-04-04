@@ -1,0 +1,42 @@
+# Keep deploys lean, but do not ignore backend runtime files.
+
+# This repository has two Vercel projects:
+
+# 1) Backend project (root directory = repository root)
+
+# 2) Frontend project (root directory = frontend)
+
+# Node artifacts
+
+node_modules/
+frontend/node_modules/
+
+# Local build/test caches
+
+**/**pycache**/
+**/.pytest_cache/
+\*\*/.mypy_cache/
+.pytest_tmp/
+
+# Local/ephemeral runtime outputs
+
+data/output/
+data/telemetry/
+\*.log
+
+# Dev-only files
+
+.git/
+.github/
+.vscode/
+
+# Infrastructure (Docker/k8s configs - not needed for serverless)
+
+infrastructure/
+
+# Misc dev folders
+
+Microsoft/
+licensing_server/
+scripts/
+alembic/

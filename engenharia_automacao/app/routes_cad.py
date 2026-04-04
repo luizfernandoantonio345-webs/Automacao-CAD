@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import AsyncGenerator, List, Optional
 
@@ -88,7 +88,7 @@ async def cad_inject(request: CadInjectRequest, background_tasks: BackgroundTask
     
     # Gerar ID único para o script
     script_id = f"AUTO-{uuid.uuid4().hex[:8]}".upper()
-    timestamp = datetime.utcnow().isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     
     # Simular geração de LISP script (será aprimorado depois)
     lisp_script = generate_lisp_script(
@@ -124,7 +124,7 @@ async def get_injection_status(script_id: str):
     return {
         "script_id": script_id,
         "status": "COMPLETED",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "progress": 100
     }
 

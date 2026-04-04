@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Vercel: Deploy Full (Preview)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/vercel_setup_and_deploy.ps1"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Vercel: Deploy Full (Production)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/vercel_setup_and_deploy.ps1",
+        "-Prod"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

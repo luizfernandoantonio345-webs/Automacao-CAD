@@ -25,6 +25,10 @@ import {
   Minus,
   Settings2,
   AlertTriangle,
+  Download,
+  ExternalLink,
+  Copy,
+  Info,
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -58,6 +62,14 @@ const CadDashboard: React.FC = () => {
   // ── State ──
   const [health, setHealth] = useState<AutoCADHealthResponse | null>(null);
   const [bufferStatus, setBufferStatus] = useState<BufferStatus | null>(null);
+  const [bridgeClient, setBridgeClient] = useState<{
+    connected: boolean;
+    cad_type?: string;
+    cad_version?: string;
+    machine?: string;
+    commands_executed?: number;
+    last_seen?: string;
+  } | null>(null);
   const [driverMode, setDriverMode] = useState<DriverMode>("com");
   const [bridgePath, setBridgePath] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
@@ -132,6 +144,20 @@ const CadDashboard: React.FC = () => {
       setBufferStatus(b);
       setDriverMode(b.mode === "bridge" ? "bridge" : "com");
       if (b.bridge_path) setBridgePath(b.bridge_path);
+
+      // Buscar status do cliente bridge
+      if (b.mode === "bridge") {
+        try {
+          const bridgeStatus = await fetch(
+            `${process.env.REACT_APP_API_BASE_URL || "https://automacao-cad-backend.vercel.app"}/api/bridge/status`,
+          ).then((r) => r.json());
+          if (bridgeStatus.client) {
+            setBridgeClient(bridgeStatus.client);
+          }
+        } catch {
+          // Ignorar erros de bridge status
+        }
+      }
     } catch {
       setHealth(null);
       setBufferStatus(null);
@@ -304,11 +330,22 @@ const CadDashboard: React.FC = () => {
   };
 
   // ── Derived state ──
+  const clientConnected = bridgeClient?.connected === true;
   const isConnected =
     health?.driver_status === "Connected" ||
-    health?.driver_status === "Simulation";
-  const statusColor = isConnected ? theme.success : theme.danger;
-  const statusLabel = health?.driver_status ?? "Desconhecido";
+    health?.driver_status === "Simulation" ||
+    health?.driver_status === "Bridge" ||
+    clientConnected;
+  const statusColor = clientConnected
+    ? theme.success
+    : isConnected
+      ? theme.warning
+      : theme.danger;
+  const statusLabel = clientConnected
+    ? `🟢 Sincronizador Conectado (${bridgeClient?.cad_type || "CAD"})`
+    : health?.driver_status === "Bridge"
+      ? "🟡 Aguardando Sincronizador..."
+      : (health?.driver_status ?? "Desconhecido");
   const isBridge = driverMode === "bridge";
 
   // ── Style helpers ──
@@ -518,6 +555,98 @@ const CadDashboard: React.FC = () => {
               {statusLabel}
             </span>
           </div>
+
+          {/* Info do cliente bridge conectado */}
+          {bridgeClient?.connected && (
+            <div
+              style={{
+                backgroundColor: `${theme.success}15`,
+                border: `1px solid ${theme.success}40`,
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "12px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: theme.success,
+                  marginBottom: "8px",
+                }}
+              >
+                ✓ SINCRONIZADOR ATIVO
+              </div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: theme.textSecondary,
+                  display: "grid",
+                  gap: "4px",
+                }}
+              >
+                <span>📍 Máquina: {bridgeClient.machine || "Local"}</span>
+                <span>
+                  🖥️ CAD: {bridgeClient.cad_type} {bridgeClient.cad_version}
+                </span>
+                <span>
+                  📊 Comandos executados: {bridgeClient.commands_executed || 0}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Info quando aguardando sincronizador */}
+          {isBridge && !bridgeClient?.connected && (
+            <div
+              style={{
+                backgroundColor: `${theme.warning}15`,
+                border: `1px solid ${theme.warning}40`,
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "12px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  color: theme.warning,
+                  marginBottom: "8px",
+                }}
+              >
+                ⏳ AGUARDANDO SINCRONIZADOR
+              </div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: theme.textSecondary,
+                  marginBottom: "10px",
+                }}
+              >
+                Baixe e execute o sincronizador no PC do AutoCAD
+              </div>
+              <a
+                href="https://automacao-cad-backend.vercel.app/api/download/sincronizador"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 14px",
+                  backgroundColor: theme.accentPrimary,
+                  color: "#FFFFFF",
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                }}
+              >
+                <Download size={14} /> Baixar Sincronizador
+              </a>
+            </div>
+          )}
 
           {health && (
             <div

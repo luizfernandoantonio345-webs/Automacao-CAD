@@ -32,6 +32,9 @@ const GlobalSetup = lazy(() => import("./pages/GlobalSetup"));
 const CadConsole = lazy(() => import("./pages/CadConsole"));
 const CadDashboard = lazy(() => import("./pages/CadDashboard"));
 const AutoCADControl = lazy(() => import("./pages/AutoCADControl"));
+const AIDashboard = lazy(() => import("./pages/AIDashboard"));
+const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
+const CncControl = lazy(() => import("./pages/CncControl"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -255,6 +258,30 @@ function AppContent() {
             element={
               <SidebarLayout>
                 <CadDashboard />
+              </SidebarLayout>
+            }
+          />
+          <Route
+            path="/cnc-control"
+            element={
+              <SidebarLayout>
+                <CncControl />
+              </SidebarLayout>
+            }
+          />
+          <Route
+            path="/ai-dashboard"
+            element={
+              <SidebarLayout>
+                <AIDashboard />
+              </SidebarLayout>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <SidebarLayout>
+                <AnalyticsDashboard />
               </SidebarLayout>
             }
           />

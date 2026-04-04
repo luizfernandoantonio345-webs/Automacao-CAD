@@ -1,0 +1,16 @@
+{
+  "name": "automacao-cad-frontend-deploy",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm --workspace frontend run dev",
+    "build": "npm --workspace frontend run build",
+    "start": "npx serve -s frontend/build"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

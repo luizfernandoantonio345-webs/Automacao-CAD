@@ -78,3 +78,5 @@ migrate_*.py
 # Database files
 *.db
 *.sqlite3
+.vercel
+.env*.local

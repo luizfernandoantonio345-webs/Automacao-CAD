@@ -89,14 +89,14 @@ worker_task_log_format = '[%(asctime)s: %(levelname)s/%(processName)s][%(task_na
 # ✓ FASE 2: Logging Estruturado JSON
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 
 class JSONFormatter(logging.Formatter):
     """✓ FASE 2: Formatter JSON para logs estruturados."""
     
     def format(self, record):
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

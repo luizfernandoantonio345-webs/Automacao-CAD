@@ -26,7 +26,9 @@ const api = axios.create({ baseURL, timeout: 15_000 });
 const clearStaleClientCache = () => {
   if (typeof window === "undefined") return;
   try {
-    const appliedVersion = window.localStorage.getItem(CLIENT_CACHE_VERSION_KEY);
+    const appliedVersion = window.localStorage.getItem(
+      CLIENT_CACHE_VERSION_KEY,
+    );
     if (appliedVersion === CLIENT_CACHE_VERSION) return;
 
     window.sessionStorage.removeItem("auth_token");
@@ -118,7 +120,9 @@ const shouldRetry = (error: AxiosError) => {
 
 const shouldFailoverToRuntimeBase = (error: AxiosError) => {
   const status = error.response?.status;
-  return !status || error.code === "ERR_NETWORK" || error.code === "ECONNABORTED";
+  return (
+    !status || error.code === "ERR_NETWORK" || error.code === "ECONNABORTED"
+  );
 };
 
 const runtimeBaseDiffers = () => {
@@ -147,7 +151,9 @@ async function requestWithRetry<T>(
             timeout: 15_000,
             headers: {
               ...(config.headers || {}),
-              ...(safeStorage.getToken() ? { Authorization: `Bearer ${safeStorage.getToken()}` } : {}),
+              ...(safeStorage.getToken()
+                ? { Authorization: `Bearer ${safeStorage.getToken()}` }
+                : {}),
             },
           });
           api.defaults.baseURL = runtimeDefaultApiBase;

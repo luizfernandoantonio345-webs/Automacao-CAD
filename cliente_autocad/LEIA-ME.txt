@@ -1,0 +1,85 @@
+# ENGENHARIA CAD - CLIENTE AUTOCAD v2.0
+
+## 📦 Conteúdo do Pacote
+
+```
+├── INICIAR.bat              → Clique duas vezes para iniciar
+├── SINCRONIZADOR_INTELIGENTE.ps1  → Script principal
+├── forge_vigilante.lsp      → Plugin para o AutoCAD
+└── LEIA-ME.txt             → Este arquivo
+```
+
+## 🚀 Instalação Simples (1 Clique!)
+
+### Passo 1: Executar
+Dê **duplo clique** em `INICIAR.bat`
+
+### Passo 2: Sistema Detecta Automaticamente
+O sistema irá:
+- ✅ Procurar AutoCAD ou GstarCAD instalado
+- ✅ Mostrar versões encontradas
+- ✅ Criar pastas necessárias
+- ✅ Instalar o plugin LISP
+- ✅ Abrir o CAD automaticamente (se você quiser)
+
+### Passo 3: No AutoCAD
+Após o CAD abrir:
+1. Digite `APPLOAD` e pressione Enter
+2. Navegue até `C:\EngenhariaCAD\`
+3. Selecione `forge_vigilante.lsp`
+4. Clique "Carregar"
+5. Digite `FORGE_START` e pressione Enter
+
+### Passo 4: Pronto!
+Você verá no sincronizador:
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║        ENGENHARIA CAD - SINCRONIZADOR ATIVO                      ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🌐 Usando o Sistema Web
+
+1. Acesse: **https://automacao-cad-frontend.vercel.app**
+2. Vá em "Painel CAD"
+3. Veja o status:
+   - 🟢 Verde = Conectado
+   - 🟡 Amarelo = Aguardando
+   - 🔴 Vermelho = Desconectado
+4. Use os controles para desenhar!
+
+---
+
+## 📋 Comandos no AutoCAD
+
+| Comando | Descrição |
+|---------|-----------|
+| `FORGE_START` | Ativa o monitor |
+| `FORGE_STOP` | Desativa o monitor |
+| `FORGE_STATUS` | Mostra status atual |
+| `FORGE_TEST` | Desenha um teste |
+| `FORGE_LOG` | Mostra histórico |
+
+---
+
+## ❓ Problemas?
+
+### "Nenhum CAD encontrado"
+- Verifique se AutoCAD ou GstarCAD está instalado
+- Tente instalar e executar novamente
+
+### Sincronizador fecha sozinho
+- Clique direito em INICIAR.bat → Executar como Administrador
+
+### Comandos não aparecem no AutoCAD
+- Verifique se digitou `FORGE_START` no AutoCAD
+- A janela azul do sincronizador deve estar aberta
+
+---
+
+## 📞 Suporte
+
+Sistema Engenharia CAD v2.0
+Desenvolvido para automação industrial

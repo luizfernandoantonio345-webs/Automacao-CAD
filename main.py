@@ -1,5 +1,9 @@
 import os
-import ezdxf
+try:
+    import ezdxf
+except Exception:
+    ezdxf = None  # type: ignore
+    print("⚠️ ezdxf não disponível - funcionalidade DXF limitada")
 from api_isometrico import gerar_isometrico_dxf
 from relatorio_generator import gerar_relatorio
 from datetime import datetime
