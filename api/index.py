@@ -3,19 +3,24 @@ from __future__ import annotations
 import sys
 import traceback
 from pathlib import Path
-
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+# Initialize app to None first, then assign
+app: FastAPI = None  # type: ignore
+
 # Attempt to import the full server, fallback to minimal API on error
 try:
-    from server import app
+    from server import app as server_app
+    app = server_app
 except Exception as e:
     # If the full server fails, create a minimal diagnostic API
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
+    _import_error = str(e)
+    _import_traceback = traceback.format_exc()
     
     app = FastAPI(title="Engenharia CAD - Fallback Mode")
     
@@ -26,9 +31,6 @@ except Exception as e:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
-    _import_error = str(e)
-    _import_traceback = traceback.format_exc()
     
     @app.get("/")
     async def root():
