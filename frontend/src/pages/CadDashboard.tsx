@@ -29,86 +29,88 @@ import {
   ExternalLink,
   Copy,
   Info,
+  Zap,
+  Box,
+  PenTool,
+  Move3D,
+  RotateCw,
+  Maximize2,
+  Grid3X3,
+  Cpu,
+  Server,
+  CloudLightning,
+  Terminal,
+  Code,
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════════════════
 
-type DriverMode = "com" | "bridge";
-
-interface BufferStatus {
-  mode: string;
-  bridge_path: string;
-  buffer_size: number;
-  bridge_accessible: boolean;
-}
+type ConnectionMode = "auto" | "simulation" | "local";
 
 interface CommandLog {
   id: string;
   timestamp: string;
   operation: string;
-  status: "success" | "error" | "pending";
+  status: "success" | "error" | "pending" | "simulated";
   message: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CadDashboard — Painel de Controle AutoCAD N-58
+// CadDashboard — Painel de Controle CAD Avançado
 // ═══════════════════════════════════════════════════════════════════════════
 
 const CadDashboard: React.FC = () => {
   const { theme } = useTheme();
 
-  // ── State ──
-  const [health, setHealth] = useState<AutoCADHealthResponse | null>(null);
-  const [bufferStatus, setBufferStatus] = useState<BufferStatus | null>(null);
-  const [bridgeClient, setBridgeClient] = useState<{
-    connected: boolean;
-    cad_type?: string;
-    cad_version?: string;
-    machine?: string;
-    commands_executed?: number;
-    last_seen?: string;
+  // ── Connection State ──
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>("auto");
+  const [cadInfo, setCadInfo] = useState<{
+    type: string;
+    version: string;
+    document?: string;
   } | null>(null);
-  const [driverMode, setDriverMode] = useState<DriverMode>("com");
-  const [bridgePath, setBridgePath] = useState("");
-  const [loading, setLoading] = useState<string | null>(null);
-  const [logs, setLogs] = useState<CommandLog[]>([]);
 
-  // Draw Pipe form
+  // ── Operation State ──
+  const [logs, setLogs] = useState<CommandLog[]>([]);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [stats, setStats] = useState({ operations: 0, success: 0, errors: 0 });
+
+  // ── Draw Pipe Form ──
   const [pipeStartX, setPipeStartX] = useState("0");
   const [pipeStartY, setPipeStartY] = useState("0");
-  const [pipeStartZ, setPipeStartZ] = useState("0");
   const [pipeEndX, setPipeEndX] = useState("1000");
   const [pipeEndY, setPipeEndY] = useState("0");
-  const [pipeEndZ, setPipeEndZ] = useState("0");
   const [pipeDiameter, setPipeDiameter] = useState("6");
   const [pipeLayer, setPipeLayer] = useState("PIPE-PROCESS");
 
-  // Insert Component form
+  // ── Component Form ──
   const [compType, setCompType] = useState("VALVE-GATE");
   const [compX, setCompX] = useState("500");
   const [compY, setCompY] = useState("0");
-  const [compZ, setCompZ] = useState("0");
-  const [compRotation, setCompRotation] = useState("0");
   const [compScale, setCompScale] = useState("1");
-  const [compLayer, setCompLayer] = useState("VALVE");
 
-  // Add Text form
+  // ── Text Form ──
   const [textContent, setTextContent] = useState("");
   const [textX, setTextX] = useState("0");
   const [textY, setTextY] = useState("0");
-  const [textZ, setTextZ] = useState("0");
   const [textHeight, setTextHeight] = useState("2.5");
 
   const logEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // ── Helpers ──
+  // ═══════════════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════════════════
+
   const addLog = useCallback(
     (
       operation: string,
-      status: "success" | "error" | "pending",
-      message: string,
+      status: "success" | "error" | "pending" | "simulated",
+      message: string
     ) => {
       const entry: CommandLog = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -117,1512 +119,965 @@ const CadDashboard: React.FC = () => {
         status,
         message,
       };
-      setLogs((prev) => [...prev.slice(-49), entry]);
-    },
-    [],
-  );
-
-  const handleResult = useCallback(
-    (operation: string, result: DriverResult) => {
-      if (result.success) {
-        addLog(operation, "success", result.message || "OK");
-      } else {
-        addLog(operation, "error", result.message || "Falha");
+      setLogs((prev) => [...prev.slice(-99), entry]);
+      
+      if (status === "success" || status === "simulated") {
+        setStats(s => ({ ...s, operations: s.operations + 1, success: s.success + 1 }));
+      } else if (status === "error") {
+        setStats(s => ({ ...s, operations: s.operations + 1, errors: s.errors + 1 }));
       }
     },
-    [addLog],
+    []
   );
 
-  // ── Polling health ──
-  const refreshHealth = useCallback(async () => {
+  // ═══════════════════════════════════════════════════════════════════════
+  // AUTO-CONNECT (WebSocket + API Hybrid)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const doConnect = useCallback(async () => {
+    if (isConnecting || isConnected) return;
+    
+    setIsConnecting(true);
+    addLog("Conexão", "pending", "Conectando ao sistema CAD...");
+
     try {
-      const [h, b] = await Promise.all([
-        ApiService.autocadHealth(),
-        ApiService.autocadBufferStatus(),
-      ]);
-      setHealth(h);
-      setBufferStatus(b);
-      setDriverMode(b.mode === "bridge" ? "bridge" : "com");
-      if (b.bridge_path) setBridgePath(b.bridge_path);
-
-      // Buscar status do cliente bridge
-      if (b.mode === "bridge") {
-        try {
-          const bridgeStatus = await fetch(
-            `${process.env.REACT_APP_API_BASE_URL || "https://automacao-cad-backend.vercel.app"}/api/bridge/status`,
-          ).then((r) => r.json());
-          if (bridgeStatus.client) {
-            setBridgeClient(bridgeStatus.client);
-          }
-        } catch {
-          // Ignorar erros de bridge status
-        }
+      // Tentar conectar via API primeiro
+      const health = await ApiService.autocadHealth();
+      
+      if (health?.driver_status === "Connected" || health?.com_available) {
+        // CAD real detectado
+        setIsConnected(true);
+        setCadInfo({
+          type: health.engine || "AutoCAD",
+          version: health.document?.version || "2024",
+          document: health.document?.name,
+        });
+        setConnectionMode("local");
+        addLog("Conexão", "success", `✓ Conectado ao ${health.engine || "AutoCAD"}`);
+      } else {
+        // Sem CAD disponível - modo simulação automático
+        setIsConnected(true);
+        setCadInfo({
+          type: "Simulador CAD",
+          version: "1.0",
+          document: "Documento Virtual",
+        });
+        setConnectionMode("simulation");
+        addLog("Conexão", "simulated", "✓ Conectado em modo Simulação (sem AutoCAD detectado)");
       }
-    } catch {
-      setHealth(null);
-      setBufferStatus(null);
+    } catch (error) {
+      // Fallback para modo simulação
+      setIsConnected(true);
+      setCadInfo({
+        type: "Simulador CAD",
+        version: "1.0",
+        document: "Documento Virtual",
+      });
+      setConnectionMode("simulation");
+      addLog("Conexão", "simulated", "✓ Modo Simulação ativo (backend offline)");
+    } finally {
+      setIsConnecting(false);
     }
-  }, []);
+  }, [isConnecting, isConnected, addLog]);
 
+  const doDisconnect = useCallback(() => {
+    setIsConnected(false);
+    setCadInfo(null);
+    setConnectionMode("auto");
+    addLog("Desconexão", "success", "Desconectado do sistema CAD");
+  }, [addLog]);
+
+  // Auto-conectar ao montar
   useEffect(() => {
-    refreshHealth();
-    const timer = setInterval(refreshHealth, 5000);
-    return () => clearInterval(timer);
-  }, [refreshHealth]);
+    const timer = setTimeout(() => {
+      doConnect();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // ── Actions ──
-  const doConnect = async () => {
-    setLoading("connect");
-    try {
-      const r = await ApiService.autocadConnect();
-      handleResult("Conectar AutoCAD", r);
-      await refreshHealth();
-    } catch (e: any) {
-      addLog("Conectar AutoCAD", "error", e?.message ?? "Erro de conexão");
-    }
-    setLoading(null);
-  };
+  // ═══════════════════════════════════════════════════════════════════════
+  // CAD OPERATIONS
+  // ═══════════════════════════════════════════════════════════════════════
 
-  const doDisconnect = async () => {
-    setLoading("disconnect");
-    try {
-      const r = await ApiService.autocadDisconnect();
-      handleResult("Desconectar", r);
-      await refreshHealth();
-    } catch (e: any) {
-      addLog("Desconectar", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
+  const executeCommand = useCallback(
+    async (
+      name: string,
+      apiCall: () => Promise<DriverResult>,
+      simulatedResult?: string
+    ) => {
+      if (!isConnected) {
+        addLog(name, "error", "Não conectado");
+        return;
+      }
 
-  const doSetMode = async (useBridge: boolean) => {
-    setLoading("mode");
-    try {
-      const r = await ApiService.autocadSetMode(useBridge);
-      handleResult(`Modo → ${useBridge ? "Ponte" : "COM"}`, r);
-      setDriverMode(useBridge ? "bridge" : "com");
-      await refreshHealth();
-    } catch (e: any) {
-      addLog("Alterar Modo", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
+      setLoading(name);
+      addLog(name, "pending", "Executando...");
 
-  const doSetBridgePath = async () => {
-    if (!bridgePath.trim()) return;
-    setLoading("bridge");
-    try {
-      const r = await ApiService.autocadSetBridgePath(bridgePath.trim());
-      handleResult("Configurar Bridge Path", r);
-      await refreshHealth();
-    } catch (e: any) {
-      addLog("Bridge Path", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
+      try {
+        if (connectionMode === "simulation") {
+          // Simular delay realista
+          await new Promise((r) => setTimeout(r, 300 + Math.random() * 500));
+          addLog(name, "simulated", simulatedResult || "✓ Simulado com sucesso");
+        } else {
+          const result = await apiCall();
+          if (result.success) {
+            addLog(name, "success", result.message || "✓ OK");
+          } else {
+            addLog(name, "error", result.message || "Falhou");
+          }
+        }
+      } catch (error: any) {
+        addLog(name, "error", error?.message || "Erro de execução");
+      } finally {
+        setLoading(null);
+      }
+    },
+    [isConnected, connectionMode, addLog]
+  );
 
-  const doCreateLayers = async () => {
-    setLoading("layers");
-    try {
-      const r = await ApiService.autocadCreateLayers();
-      handleResult("Criar Layers N-58", r);
-    } catch (e: any) {
-      addLog("Criar Layers", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
+  const doCreateLayers = () =>
+    executeCommand("Criar Layers N-58", () => ApiService.autocadCreateLayers(), "12 layers Petrobras N-58 criados");
 
-  const doDrawPipe = async () => {
-    setLoading("pipe");
-    addLog("Desenhar Tubo", "pending", "Enviando...");
-    try {
-      const r = await ApiService.autocadDrawPipe({
-        points: [
-          [
-            parseFloat(pipeStartX),
-            parseFloat(pipeStartY),
-            parseFloat(pipeStartZ),
+  const doDrawPipe = () =>
+    executeCommand(
+      "Desenhar Tubo",
+      () =>
+        ApiService.autocadDrawPipe({
+          points: [
+            [parseFloat(pipeStartX), parseFloat(pipeStartY), 0],
+            [parseFloat(pipeEndX), parseFloat(pipeEndY), 0],
           ],
-          [parseFloat(pipeEndX), parseFloat(pipeEndY), parseFloat(pipeEndZ)],
-        ],
-        diameter: parseFloat(pipeDiameter),
-        layer: pipeLayer,
-      });
-      handleResult("Desenhar Tubo", r);
-    } catch (e: any) {
-      addLog("Desenhar Tubo", "error", e?.message ?? "Erro ao desenhar");
-    }
-    setLoading(null);
-  };
+          diameter: parseFloat(pipeDiameter),
+          layer: pipeLayer,
+        }),
+      `Tubo Ø${pipeDiameter}" desenhado (${pipeStartX},${pipeStartY}) → (${pipeEndX},${pipeEndY})`
+    );
 
-  const doInsertComponent = async () => {
-    setLoading("component");
-    addLog(`Inserir ${compType}`, "pending", "Enviando...");
-    try {
-      const r = await ApiService.autocadInsertComponent({
-        block_name: compType,
-        coordinate: [parseFloat(compX), parseFloat(compY), parseFloat(compZ)],
-        rotation: parseFloat(compRotation),
-        scale: parseFloat(compScale),
-        layer: compLayer,
-      });
-      handleResult(`Inserir ${compType}`, r);
-    } catch (e: any) {
-      addLog(`Inserir ${compType}`, "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
+  const doInsertComponent = () =>
+    executeCommand(
+      `Inserir ${compType}`,
+      () =>
+        ApiService.autocadInsertComponent({
+          block_name: compType,
+          coordinate: [parseFloat(compX), parseFloat(compY), 0],
+          rotation: 0,
+          scale: parseFloat(compScale),
+          layer: "VALVE",
+        }),
+      `${compType} inserido em (${compX}, ${compY})`
+    );
 
-  const doAddText = async () => {
+  const doAddText = () => {
     if (!textContent.trim()) return;
-    setLoading("text");
-    addLog("Adicionar Texto", "pending", "Enviando...");
-    try {
-      const r = await ApiService.autocadAddText({
-        text: textContent.trim(),
-        position: [parseFloat(textX), parseFloat(textY), parseFloat(textZ)],
-        height: parseFloat(textHeight),
-        layer: "ANNOTATION",
-      });
-      handleResult("Adicionar Texto", r);
-    } catch (e: any) {
-      addLog("Adicionar Texto", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
+    executeCommand(
+      "Adicionar Texto",
+      () =>
+        ApiService.autocadAddText({
+          text: textContent.trim(),
+          position: [parseFloat(textX), parseFloat(textY), 0],
+          height: parseFloat(textHeight),
+          layer: "ANNOTATION",
+        }),
+      `Texto "${textContent}" adicionado`
+    );
   };
 
-  const doFinalize = async () => {
-    setLoading("finalize");
-    try {
-      const r = await ApiService.autocadFinalize();
-      handleResult("Finalizar Vista", r);
-    } catch (e: any) {
-      addLog("Finalizar Vista", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
+  const doSave = () =>
+    executeCommand("Salvar", () => ApiService.autocadSave(), "Documento salvo");
+
+  const doFinalize = () =>
+    executeCommand("Finalizar Vista", () => ApiService.autocadFinalize(), "Vista zoom extents aplicada");
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // STYLES
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const colors = {
+    primary: "#00A1FF",
+    success: "#10B981",
+    warning: "#F59E0B",
+    danger: "#EF4444",
+    purple: "#8B5CF6",
+    gradient: "linear-gradient(135deg, #00A1FF 0%, #0077CC 100%)",
   };
 
-  const doSave = async () => {
-    setLoading("save");
-    try {
-      const r = await ApiService.autocadSave();
-      handleResult("Salvar Documento", r);
-    } catch (e: any) {
-      addLog("Salvar Documento", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
-
-  const doCommit = async () => {
-    setLoading("commit");
-    try {
-      const r = await ApiService.autocadCommit();
-      handleResult("Commit Bridge", r);
-      await refreshHealth();
-    } catch (e: any) {
-      addLog("Commit Bridge", "error", e?.message ?? "Erro");
-    }
-    setLoading(null);
-  };
-
-  // ── Derived state ──
-  const clientConnected = bridgeClient?.connected === true;
-  const isConnected =
-    health?.driver_status === "Connected" ||
-    health?.driver_status === "Simulation" ||
-    health?.driver_status === "Bridge" ||
-    clientConnected;
-  const statusColor = clientConnected
-    ? theme.success
-    : isConnected
-      ? theme.warning
-      : theme.danger;
-  const statusLabel = clientConnected
-    ? `🟢 Sincronizador Conectado (${bridgeClient?.cad_type || "CAD"})`
-    : health?.driver_status === "Bridge"
-      ? "🟡 Aguardando Sincronizador..."
-      : (health?.driver_status ?? "Desconhecido");
-  const isBridge = driverMode === "bridge";
-
-  // ── Style helpers ──
   const card = (extra?: React.CSSProperties): React.CSSProperties => ({
-    backgroundColor: theme.surface,
+    background: `linear-gradient(180deg, ${theme.surface}ee 0%, ${theme.surface}dd 100%)`,
+    backdropFilter: "blur(20px)",
     border: `1px solid ${theme.border}`,
-    borderRadius: "12px",
-    padding: "20px",
+    borderRadius: "16px",
+    padding: "24px",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
     ...extra,
   });
 
+  const glowCard = (color: string): React.CSSProperties => ({
+    ...card(),
+    border: `1px solid ${color}40`,
+    boxShadow: `0 0 40px ${color}15, 0 4px 24px rgba(0,0,0,0.15)`,
+  });
+
   const inputStyle: React.CSSProperties = {
-    backgroundColor: theme.inputBackground,
+    backgroundColor: `${theme.inputBackground}cc`,
     border: `1px solid ${theme.inputBorder}`,
-    borderRadius: "6px",
-    padding: "8px 12px",
+    borderRadius: "10px",
+    padding: "12px 16px",
     color: theme.textPrimary,
-    fontSize: "0.875rem",
+    fontSize: "0.9rem",
     width: "100%",
     outline: "none",
+    transition: "all 0.2s ease",
   };
 
   const labelStyle: React.CSSProperties = {
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     color: theme.textSecondary,
-    fontWeight: 600,
+    fontWeight: 700,
     textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    marginBottom: "4px",
+    letterSpacing: "1.2px",
+    marginBottom: "8px",
     display: "block",
   };
 
   const btnPrimary = (isLoading?: boolean): React.CSSProperties => ({
-    backgroundColor: isLoading ? theme.textTertiary : theme.accentPrimary,
+    background: isLoading ? theme.textTertiary : colors.gradient,
     color: "#FFFFFF",
     border: "none",
-    borderRadius: "8px",
-    padding: "10px 20px",
-    fontWeight: 600,
+    borderRadius: "12px",
+    padding: "14px 24px",
+    fontWeight: 700,
     cursor: isLoading ? "not-allowed" : "pointer",
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    fontSize: "0.875rem",
-    transition: "all 0.2s ease",
+    justifyContent: "center",
+    gap: "10px",
+    fontSize: "0.9rem",
+    transition: "all 0.3s ease",
     opacity: isLoading ? 0.7 : 1,
+    boxShadow: isLoading ? "none" : `0 4px 20px ${colors.primary}40`,
   });
 
   const btnSecondary: React.CSSProperties = {
     backgroundColor: "transparent",
     color: theme.textPrimary,
-    border: `1px solid ${theme.border}`,
-    borderRadius: "8px",
-    padding: "8px 16px",
-    fontWeight: 500,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "0.8rem",
-    transition: "all 0.2s ease",
-  };
-
-  const btnDanger: React.CSSProperties = {
-    backgroundColor: theme.danger,
-    color: "#FFFFFF",
-    border: "none",
-    borderRadius: "8px",
-    padding: "8px 16px",
+    border: `2px solid ${theme.border}`,
+    borderRadius: "12px",
+    padding: "12px 20px",
     fontWeight: 600,
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
-    gap: "6px",
-    fontSize: "0.8rem",
+    gap: "8px",
+    fontSize: "0.85rem",
+    transition: "all 0.3s ease",
   };
 
-  const quickBtn = (color: string): React.CSSProperties => ({
-    background: `linear-gradient(135deg, ${color}22 0%, ${color}11 100%)`,
-    border: `1px solid ${color}44`,
-    borderRadius: "10px",
-    padding: "16px",
+  const btnDanger: React.CSSProperties = {
+    background: `linear-gradient(135deg, ${colors.danger} 0%, #DC2626 100%)`,
+    color: "#FFFFFF",
+    border: "none",
+    borderRadius: "12px",
+    padding: "12px 20px",
+    fontWeight: 600,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    fontSize: "0.85rem",
+    boxShadow: `0 4px 20px ${colors.danger}30`,
+  };
+
+  const quickActionBtn = (
+    color: string,
+    active?: boolean
+  ): React.CSSProperties => ({
+    background: active
+      ? `linear-gradient(135deg, ${color}30 0%, ${color}15 100%)`
+      : `${theme.surface}80`,
+    border: `2px solid ${active ? color : theme.border}`,
+    borderRadius: "16px",
+    padding: "20px",
     cursor: "pointer",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "8px",
+    gap: "12px",
     color: theme.textPrimary,
-    transition: "all 0.2s ease",
-    minWidth: "120px",
+    transition: "all 0.3s ease",
+    minWidth: "140px",
+    boxShadow: active ? `0 0 30px ${color}20` : "none",
   });
+
+  const statusBadge = (
+    status: "connected" | "simulated" | "disconnected"
+  ): React.CSSProperties => {
+    const statusColors = {
+      connected: colors.success,
+      simulated: colors.warning,
+      disconnected: colors.danger,
+    };
+    const color = statusColors[status];
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "8px",
+      padding: "8px 16px",
+      borderRadius: "20px",
+      fontSize: "0.8rem",
+      fontWeight: 700,
+      backgroundColor: `${color}15`,
+      border: `1px solid ${color}40`,
+      color: color,
+    };
+  };
 
   // ═══════════════════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════
 
+  const connectionStatus = isConnected
+    ? connectionMode === "simulation"
+      ? "simulated"
+      : "connected"
+    : "disconnected";
+
   return (
     <div
       style={{
-        padding: "24px",
-        backgroundColor: theme.background,
+        padding: "32px",
+        background: `linear-gradient(180deg, ${theme.background} 0%, ${theme.background}ee 100%)`,
         minHeight: "100vh",
         color: theme.textPrimary,
       }}
     >
-      {/* ── Header ── */}
-      <div
+      {/* ═══════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
+          alignItems: "flex-start",
+          marginBottom: "32px",
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700 }}>
-            Painel de Controle CAD
-          </h1>
-          <p
-            style={{
-              margin: "4px 0 0 0",
-              fontSize: "0.85rem",
-              color: theme.textSecondary,
-            }}
-          >
-            Engenharia CAD — Dashboard Norma N-58 Petrobras
-          </p>
-        </div>
-        <button
-          onClick={refreshHealth}
-          style={btnSecondary}
-          title="Atualizar status"
-        >
-          <RefreshCw size={16} /> Atualizar
-        </button>
-      </div>
-
-      {/* ═══════════ ROW 1: Status + Mode + Bridge Config ═══════════ */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "16px",
-          marginBottom: "20px",
-        }}
-      >
-        {/* ── Status Card ── */}
-        <motion.div
-          style={card()}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px",
-            }}
-          >
-            <Activity size={18} color={theme.accentPrimary} />
-            <span style={{ ...labelStyle, marginBottom: 0 }}>STATUS CAD</span>
-            {health?.engine && health.engine !== "Unknown" && (
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontSize: "0.65rem",
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: "4px",
-                  backgroundColor:
-                    health.engine === "GstarCAD"
-                      ? `${theme.success}18`
-                      : `${theme.accentPrimary}18`,
-                  border: `1px solid ${health.engine === "GstarCAD" ? theme.success : theme.accentPrimary}`,
-                  color:
-                    health.engine === "GstarCAD"
-                      ? theme.success
-                      : theme.accentPrimary,
-                  letterSpacing: "0.04em",
-                }}
-              >
-                ⚙ {health.engine}
-              </span>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "16px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
             <div
               style={{
-                width: "12px",
-                height: "12px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                background: colors.gradient,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 4px 20px ${colors.primary}40`,
+              }}
+            >
+              <Layers size={26} color="#FFF" />
+            </div>
+            <div>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "2rem",
+                  fontWeight: 800,
+                  letterSpacing: "-0.5px",
+                  background: `linear-gradient(90deg, ${theme.textPrimary} 0%, ${colors.primary} 100%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                PAINEL CAD
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.85rem",
+                  color: theme.textSecondary,
+                  letterSpacing: "2px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Automação Industrial N-58
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={statusBadge(connectionStatus)}>
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
                 borderRadius: "50%",
-                backgroundColor: statusColor,
-                boxShadow: `0 0 8px ${statusColor}`,
+                backgroundColor: "currentColor",
+                boxShadow: `0 0 10px currentColor`,
+                animation: isConnected ? "pulse 2s infinite" : "none",
               }}
             />
-            <span style={{ fontSize: "1.1rem", fontWeight: 600 }}>
-              {statusLabel}
-            </span>
+            {connectionStatus === "connected"
+              ? "CAD Conectado"
+              : connectionStatus === "simulated"
+              ? "Modo Simulação"
+              : "Desconectado"}
           </div>
 
-          {/* Info do cliente bridge conectado */}
-          {bridgeClient?.connected && (
-            <div
-              style={{
-                backgroundColor: `${theme.success}15`,
-                border: `1px solid ${theme.success}40`,
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "12px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: theme.success,
-                  marginBottom: "8px",
-                }}
-              >
-                ✓ SINCRONIZADOR ATIVO
-              </div>
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: theme.textSecondary,
-                  display: "grid",
-                  gap: "4px",
-                }}
-              >
-                <span>📍 Máquina: {bridgeClient.machine || "Local"}</span>
-                <span>
-                  🖥️ CAD: {bridgeClient.cad_type} {bridgeClient.cad_version}
-                </span>
-                <span>
-                  📊 Comandos executados: {bridgeClient.commands_executed || 0}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Info quando aguardando sincronizador */}
-          {isBridge && !bridgeClient?.connected && (
-            <div
-              style={{
-                backgroundColor: `${theme.warning}15`,
-                border: `1px solid ${theme.warning}40`,
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "12px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: theme.warning,
-                  marginBottom: "8px",
-                }}
-              >
-                ⏳ AGUARDANDO SINCRONIZADOR
-              </div>
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: theme.textSecondary,
-                  marginBottom: "10px",
-                }}
-              >
-                Baixe e execute o sincronizador no PC do AutoCAD
-              </div>
-              <a
-                href="https://automacao-cad-backend.vercel.app/api/download/sincronizador"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 14px",
-                  backgroundColor: theme.accentPrimary,
-                  color: "#FFFFFF",
-                  borderRadius: "6px",
-                  textDecoration: "none",
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                }}
-              >
-                <Download size={14} /> Baixar Sincronizador
-              </a>
-            </div>
-          )}
-
-          {health && (
-            <div
-              style={{
-                fontSize: "0.8rem",
-                color: theme.textSecondary,
-                display: "grid",
-                gap: "4px",
-              }}
-            >
-              <span>Engine: {health.engine || "Não detectado"}</span>
-              <span>
-                COM Disponível: {health.com_available ? "✓ Sim" : "✗ Não"}
-              </span>
-              {health.document && (
-                <span>Documento: {health.document.name}</span>
-              )}
-              {health.stats && (
-                <>
-                  <span>
-                    Operações: {health.stats.operations_success}/
-                    {health.stats.operations_total}
-                  </span>
-                  <span>Reconexões: {health.stats.reconnections}</span>
-                </>
-              )}
-            </div>
-          )}
-
-          <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+          {isConnected ? (
+            <button onClick={doDisconnect} style={btnDanger}>
+              <WifiOff size={18} /> Desconectar
+            </button>
+          ) : (
             <button
               onClick={doConnect}
-              disabled={!!loading}
-              style={btnPrimary(loading === "connect")}
+              disabled={isConnecting}
+              style={btnPrimary(isConnecting)}
             >
-              {loading === "connect" ? (
-                <Loader2 size={16} className="animate-spin" />
+              {isConnecting ? (
+                <Loader2 size={18} className="animate-spin" />
               ) : (
-                <Wifi size={16} />
+                <Zap size={18} />
               )}
               Conectar
             </button>
-            <button
-              onClick={doDisconnect}
-              disabled={!!loading}
-              style={btnDanger}
-            >
-              <WifiOff size={16} /> Desconectar
-            </button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          STATUS CARDS ROW
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "20px",
+          marginBottom: "28px",
+        }}
+      >
+        {/* Status Card */}
+        <motion.div
+          style={glowCard(isConnected ? colors.success : colors.danger)}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <Server size={20} color={isConnected ? colors.success : colors.danger} />
+            <span style={{ ...labelStyle, marginBottom: 0 }}>STATUS</span>
+          </div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "4px" }}>
+            {isConnected ? cadInfo?.type : "Offline"}
+          </div>
+          <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
+            {cadInfo?.document || "Nenhum documento"}
           </div>
         </motion.div>
 
-        {/* ── Mode Card ── */}
+        {/* Operations Card */}
         <motion.div
-          style={card()}
-          initial={{ opacity: 0, y: 10 }}
+          style={glowCard(colors.primary)}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
+          transition={{ delay: 0.15 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px",
-            }}
-          >
-            <Settings2 size={18} color={theme.accentPrimary} />
-            <span style={{ ...labelStyle, marginBottom: 0 }}>
-              MODO DE OPERAÇÃO
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <Activity size={20} color={colors.primary} />
+            <span style={{ ...labelStyle, marginBottom: 0 }}>OPERAÇÕES</span>
           </div>
-
-          <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-            <button
-              onClick={() => doSetMode(false)}
-              disabled={!!loading}
-              style={{
-                flex: 1,
-                padding: "12px",
-                borderRadius: "8px",
-                border: `2px solid ${!isBridge ? theme.accentPrimary : theme.border}`,
-                backgroundColor: !isBridge
-                  ? `${theme.accentPrimary}15`
-                  : "transparent",
-                color: theme.textPrimary,
-                cursor: "pointer",
-                fontWeight: !isBridge ? 700 : 400,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <Monitor
-                size={22}
-                color={!isBridge ? theme.accentPrimary : theme.textSecondary}
-              />
-              <span style={{ fontSize: "0.85rem" }}>COM Direto</span>
-              <span style={{ fontSize: "0.65rem", color: theme.textTertiary }}>
-                PC Local
-              </span>
-            </button>
-            <button
-              onClick={() => doSetMode(true)}
-              disabled={!!loading}
-              style={{
-                flex: 1,
-                padding: "12px",
-                borderRadius: "8px",
-                border: `2px solid ${isBridge ? theme.accentPrimary : theme.border}`,
-                backgroundColor: isBridge
-                  ? `${theme.accentPrimary}15`
-                  : "transparent",
-                color: theme.textPrimary,
-                cursor: "pointer",
-                fontWeight: isBridge ? 700 : 400,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <Network
-                size={22}
-                color={isBridge ? theme.accentPrimary : theme.textSecondary}
-              />
-              <span style={{ fontSize: "0.85rem" }}>Modo Ponte</span>
-              <span style={{ fontSize: "0.65rem", color: theme.textTertiary }}>
-                Rede / Vigilante
-              </span>
-            </button>
+          <div style={{ fontSize: "2.5rem", fontWeight: 800, color: colors.primary }}>
+            {stats.operations}
           </div>
-
-          {bufferStatus && isBridge && (
-            <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
-              <span>Buffer: {bufferStatus.buffer_size} comandos</span>
-              {bufferStatus.buffer_size > 0 && (
-                <button
-                  onClick={doCommit}
-                  disabled={!!loading}
-                  style={{
-                    ...btnPrimary(loading === "commit"),
-                    marginTop: "8px",
-                    width: "100%",
-                    justifyContent: "center",
-                  }}
-                >
-                  {loading === "commit" ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Send size={14} />
-                  )}
-                  Commit → Vigilante
-                </button>
-              )}
-            </div>
-          )}
+          <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
+            Total executadas
+          </div>
         </motion.div>
 
-        {/* ── Bridge Path Config ── */}
+        {/* Success Card */}
         <motion.div
-          style={card()}
-          initial={{ opacity: 0, y: 10 }}
+          style={glowCard(colors.success)}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          transition={{ delay: 0.2 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px",
-            }}
-          >
-            <FolderSync size={18} color={theme.accentPrimary} />
-            <span style={{ ...labelStyle, marginBottom: 0 }}>
-              BRIDGE PATH (PASTA DE REDE)
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <CheckCircle2 size={20} color={colors.success} />
+            <span style={{ ...labelStyle, marginBottom: 0 }}>SUCESSO</span>
           </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <input
-              type="text"
-              value={bridgePath}
-              onChange={(e) => setBridgePath(e.target.value)}
-              placeholder="Ex: Z:/AutoCAD_Drop/ ou C:/AutoCAD_Drop/"
-              style={inputStyle}
-            />
+          <div style={{ fontSize: "2.5rem", fontWeight: 800, color: colors.success }}>
+            {stats.success}
           </div>
+          <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
+            Comandos OK
+          </div>
+        </motion.div>
 
-          <button
-            onClick={doSetBridgePath}
-            disabled={!!loading || !bridgePath.trim()}
-            style={btnPrimary(loading === "bridge")}
-          >
-            {loading === "bridge" ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <FolderSync size={14} />
-            )}
-            Salvar Caminho
-          </button>
-
-          {bufferStatus && (
-            <div
-              style={{
-                marginTop: "12px",
-                padding: "8px 12px",
-                borderRadius: "6px",
-                backgroundColor: bufferStatus.bridge_accessible
-                  ? `${theme.success}15`
-                  : `${theme.warning}15`,
-                border: `1px solid ${bufferStatus.bridge_accessible ? theme.success : theme.warning}44`,
-                fontSize: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              {bufferStatus.bridge_accessible ? (
-                <>
-                  <CheckCircle2 size={14} color={theme.success} />
-                  <span style={{ color: theme.success }}>Pasta acessível</span>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle size={14} color={theme.warning} />
-                  <span style={{ color: theme.warning }}>
-                    Pasta não encontrada
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+        {/* Mode Card */}
+        <motion.div
+          style={glowCard(colors.purple)}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <Cpu size={20} color={colors.purple} />
+            <span style={{ ...labelStyle, marginBottom: 0 }}>MODO</span>
+          </div>
+          <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>
+            {connectionMode === "simulation" ? "Simulação" : connectionMode === "local" ? "Local" : "Auto"}
+          </div>
+          <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
+            {connectionMode === "simulation" ? "Virtual" : "Direto"}
+          </div>
         </motion.div>
       </div>
 
-      {/* ═══════════ ROW 2: Quick Actions N-58 ═══════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          QUICK ACTIONS
+      ═══════════════════════════════════════════════════════════════════ */}
       <motion.div
-        style={{ ...card({ marginBottom: "20px" }) }}
-        initial={{ opacity: 0, y: 10 }}
+        style={{ ...card({ marginBottom: "28px" }) }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.15 }}
+        transition={{ delay: 0.3 }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "16px",
-          }}
-        >
-          <Layers size={18} color={theme.accentPrimary} />
-          <span style={{ ...labelStyle, marginBottom: 0 }}>
-            AÇÕES RÁPIDAS — NORMA N-58
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+          <CloudLightning size={22} color={colors.primary} />
+          <span style={{ fontSize: "1rem", fontWeight: 700 }}>AÇÕES RÁPIDAS</span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.7rem",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              backgroundColor: `${colors.primary}15`,
+              color: colors.primary,
+              fontWeight: 600,
+            }}
+          >
+            NORMA N-58 PETROBRAS
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(6, 1fr)",
+            gap: "16px",
+          }}
+        >
           <button
             onClick={doCreateLayers}
-            disabled={!!loading}
-            style={quickBtn(theme.accentPrimary)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.accentPrimary}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            disabled={!isConnected || !!loading}
+            style={quickActionBtn(colors.primary, loading === "Criar Layers N-58")}
           >
-            <Layers size={24} color={theme.accentPrimary} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Criar Layers
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              Sistema N-58
-            </span>
+            {loading === "Criar Layers N-58" ? (
+              <Loader2 size={28} className="animate-spin" color={colors.primary} />
+            ) : (
+              <Layers size={28} color={colors.primary} />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Layers N-58</span>
           </button>
 
           <button
-            onClick={() =>
-              document
-                .getElementById("pipe-form")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            style={quickBtn(theme.success)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.success}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={doDrawPipe}
+            disabled={!isConnected || !!loading}
+            style={quickActionBtn(colors.success, loading === "Desenhar Tubo")}
           >
-            <Pipette size={24} color={theme.success} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Desenhar Tubo
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              Tubulação 3D
-            </span>
+            {loading === "Desenhar Tubo" ? (
+              <Loader2 size={28} className="animate-spin" color={colors.success} />
+            ) : (
+              <Pipette size={28} color={colors.success} />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Tubo</span>
           </button>
 
           <button
-            onClick={() => {
-              setCompType("VALVE-GATE");
-              setCompLayer("VALVE");
-              document
-                .getElementById("comp-form")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-            style={quickBtn(theme.warning)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.warning}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={doInsertComponent}
+            disabled={!isConnected || !!loading}
+            style={quickActionBtn(colors.warning, loading?.includes("Inserir"))}
           >
-            <CircleDot size={24} color={theme.warning} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Inserir Válvula
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              VALVE-GATE
-            </span>
+            {loading?.includes("Inserir") ? (
+              <Loader2 size={28} className="animate-spin" color={colors.warning} />
+            ) : (
+              <Hexagon size={28} color={colors.warning} />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Componente</span>
           </button>
 
           <button
-            onClick={() => {
-              setCompType("FLANGE-WN");
-              setCompLayer("FLANGE");
-              document
-                .getElementById("comp-form")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-            style={quickBtn(theme.danger)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.danger}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={doAddText}
+            disabled={!isConnected || !!loading || !textContent.trim()}
+            style={quickActionBtn(colors.purple, loading === "Adicionar Texto")}
           >
-            <Hexagon size={24} color={theme.danger} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Inserir Flange
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              FLANGE-WN
-            </span>
-          </button>
-
-          <button
-            onClick={() =>
-              document
-                .getElementById("text-form")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            style={quickBtn(theme.accentSecondary)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.accentSecondary}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <Type size={24} color={theme.accentSecondary} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Adicionar Texto
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              Anotação
-            </span>
+            {loading === "Adicionar Texto" ? (
+              <Loader2 size={28} className="animate-spin" color={colors.purple} />
+            ) : (
+              <Type size={28} color={colors.purple} />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Texto</span>
           </button>
 
           <button
             onClick={doFinalize}
-            disabled={!!loading}
-            style={quickBtn(theme.accentPrimary)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.accentPrimary}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            disabled={!isConnected || !!loading}
+            style={quickActionBtn("#06B6D4", loading === "Finalizar Vista")}
           >
-            <ZoomIn size={24} color={theme.accentPrimary} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
-              Finalizar Vista
-            </span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              Zoom + Regen
-            </span>
+            {loading === "Finalizar Vista" ? (
+              <Loader2 size={28} className="animate-spin" color="#06B6D4" />
+            ) : (
+              <Maximize2 size={28} color="#06B6D4" />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Finalizar</span>
           </button>
 
           <button
             onClick={doSave}
-            disabled={!!loading}
-            style={quickBtn(theme.accentSecondary)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 4px 12px ${theme.accentSecondary}33`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            disabled={!isConnected || !!loading}
+            style={quickActionBtn(colors.danger, loading === "Salvar")}
           >
-            <Save size={24} color={theme.accentSecondary} />
-            <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>Salvar</span>
-            <span style={{ fontSize: "0.7rem", color: theme.textTertiary }}>
-              Documento
-            </span>
+            {loading === "Salvar" ? (
+              <Loader2 size={28} className="animate-spin" color={colors.danger} />
+            ) : (
+              <Save size={28} color={colors.danger} />
+            )}
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Salvar</span>
           </button>
         </div>
       </motion.div>
 
-      {/* ═══════════ ROW 3: Forms (Pipe + Component) ═══════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          FORMS ROW
+      ═══════════════════════════════════════════════════════════════════ */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "16px",
-          marginBottom: "20px",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "20px",
+          marginBottom: "28px",
         }}
       >
-        {/* ── Draw Pipe Form ── */}
+        {/* Pipe Form */}
         <motion.div
-          id="pipe-form"
           style={card()}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
+          transition={{ delay: 0.35 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <Pipette size={18} color={theme.success} />
-            <span style={{ fontSize: "1rem", fontWeight: 600 }}>
-              Desenhar Tubulação
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <Pipette size={20} color={colors.success} />
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Desenhar Tubo</span>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px",
-            }}
-          >
-            {/* Start Point */}
-            <div style={{ gridColumn: "span 2" }}>
-              <span style={labelStyle}>Ponto Inicial (X, Y, Z)</span>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "6px",
-                }}
-              >
-                <input
-                  type="number"
-                  value={pipeStartX}
-                  onChange={(e) => setPipeStartX(e.target.value)}
-                  placeholder="X"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={pipeStartY}
-                  onChange={(e) => setPipeStartY(e.target.value)}
-                  placeholder="Y"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={pipeStartZ}
-                  onChange={(e) => setPipeStartZ(e.target.value)}
-                  placeholder="Z"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-
-            {/* End Point */}
-            <div style={{ gridColumn: "span 2" }}>
-              <span style={labelStyle}>Ponto Final (X, Y, Z)</span>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "6px",
-                }}
-              >
-                <input
-                  type="number"
-                  value={pipeEndX}
-                  onChange={(e) => setPipeEndX(e.target.value)}
-                  placeholder="X"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={pipeEndY}
-                  onChange={(e) => setPipeEndY(e.target.value)}
-                  placeholder="Y"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={pipeEndZ}
-                  onChange={(e) => setPipeEndZ(e.target.value)}
-                  placeholder="Z"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-
-            {/* Diameter */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div>
-              <span style={labelStyle}>Diâmetro (pol)</span>
+              <label style={labelStyle}>Início X</label>
+              <input
+                type="number"
+                value={pipeStartX}
+                onChange={(e) => setPipeStartX(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Início Y</label>
+              <input
+                type="number"
+                value={pipeStartY}
+                onChange={(e) => setPipeStartY(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Fim X</label>
+              <input
+                type="number"
+                value={pipeEndX}
+                onChange={(e) => setPipeEndX(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Fim Y</label>
+              <input
+                type="number"
+                value={pipeEndY}
+                onChange={(e) => setPipeEndY(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Diâmetro</label>
               <select
                 value={pipeDiameter}
                 onChange={(e) => setPipeDiameter(e.target.value)}
                 style={inputStyle}
               >
-                <option value="2">2" (DN50)</option>
-                <option value="3">3" (DN80)</option>
-                <option value="4">4" (DN100)</option>
-                <option value="6">6" (DN150)</option>
-                <option value="8">8" (DN200)</option>
-                <option value="10">10" (DN250)</option>
-                <option value="12">12" (DN300)</option>
-                <option value="16">16" (DN400)</option>
-                <option value="20">20" (DN500)</option>
-                <option value="24">24" (DN600)</option>
+                {["1", "2", "3", "4", "6", "8", "10", "12", "14", "16", "18", "20", "24"].map((d) => (
+                  <option key={d} value={d}>
+                    {d}"
+                  </option>
+                ))}
               </select>
             </div>
-
-            {/* Layer */}
             <div>
-              <span style={labelStyle}>Layer</span>
+              <label style={labelStyle}>Layer</label>
               <select
                 value={pipeLayer}
                 onChange={(e) => setPipeLayer(e.target.value)}
                 style={inputStyle}
               >
-                <option value="PIPE-PROCESS">PIPE-PROCESS</option>
-                <option value="PIPE-UTILITY">PIPE-UTILITY</option>
-                <option value="PIPE-DRAIN">PIPE-DRAIN</option>
-                <option value="PIPE-VENT">PIPE-VENT</option>
-                <option value="PIPE-STEAM">PIPE-STEAM</option>
+                {["PIPE-PROCESS", "PIPE-UTILITY", "PIPE-INSTRUMENT"].map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
-
-          <button
-            onClick={doDrawPipe}
-            disabled={!!loading}
-            style={{
-              ...btnPrimary(loading === "pipe"),
-              marginTop: "16px",
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            {loading === "pipe" ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Minus size={16} />
-            )}
-            Desenhar Tubo
-          </button>
         </motion.div>
 
-        {/* ── Insert Component Form ── */}
+        {/* Component Form */}
         <motion.div
-          id="comp-form"
           style={card()}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.25 }}
+          transition={{ delay: 0.4 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <CircleDot size={18} color={theme.warning} />
-            <span style={{ fontSize: "1rem", fontWeight: 600 }}>
-              Inserir Componente
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <Hexagon size={20} color={colors.warning} />
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Inserir Componente</span>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px",
-            }}
-          >
-            {/* Component Type */}
-            <div style={{ gridColumn: "span 2" }}>
-              <span style={labelStyle}>Tipo de Componente</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>Tipo</label>
               <select
                 value={compType}
                 onChange={(e) => setCompType(e.target.value)}
                 style={inputStyle}
               >
-                <optgroup label="Válvulas">
-                  <option value="VALVE-GATE">Válvula Gaveta (Gate)</option>
-                  <option value="VALVE-GLOBE">Válvula Globo (Globe)</option>
-                  <option value="VALVE-BALL">Válvula Esfera (Ball)</option>
-                  <option value="VALVE-CHECK">Válvula Retenção (Check)</option>
-                  <option value="VALVE-BUTTERFLY">
-                    Válvula Borboleta (Butterfly)
+                {[
+                  "VALVE-GATE",
+                  "VALVE-GLOBE",
+                  "VALVE-CHECK",
+                  "VALVE-BALL",
+                  "VALVE-BUTTERFLY",
+                  "ELBOW-90",
+                  "ELBOW-45",
+                  "TEE",
+                  "REDUCER",
+                  "FLANGE",
+                  "BLIND",
+                ].map((t) => (
+                  <option key={t} value={t}>
+                    {t}
                   </option>
-                </optgroup>
-                <optgroup label="Flanges">
-                  <option value="FLANGE-WN">Flange Pescoço (Weld Neck)</option>
-                  <option value="FLANGE-SO">Flange Sobreposto (Slip-On)</option>
-                  <option value="FLANGE-BL">Flange Cego (Blind)</option>
-                </optgroup>
-                <optgroup label="Conexões">
-                  <option value="ELBOW-90">Cotovelo 90°</option>
-                  <option value="ELBOW-45">Cotovelo 45°</option>
-                  <option value="TEE">Tê</option>
-                  <option value="REDUCER">Redução</option>
-                </optgroup>
+                ))}
               </select>
             </div>
-
-            {/* Coordinate */}
-            <div style={{ gridColumn: "span 2" }}>
-              <span style={labelStyle}>Coordenada (X, Y, Z)</span>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "6px",
-                }}
-              >
-                <input
-                  type="number"
-                  value={compX}
-                  onChange={(e) => setCompX(e.target.value)}
-                  placeholder="X"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={compY}
-                  onChange={(e) => setCompY(e.target.value)}
-                  placeholder="Y"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={compZ}
-                  onChange={(e) => setCompZ(e.target.value)}
-                  placeholder="Z"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-
-            {/* Rotation */}
             <div>
-              <span style={labelStyle}>Rotação (°)</span>
+              <label style={labelStyle}>Posição X</label>
               <input
                 type="number"
-                value={compRotation}
-                onChange={(e) => setCompRotation(e.target.value)}
-                min="0"
-                max="359"
+                value={compX}
+                onChange={(e) => setCompX(e.target.value)}
                 style={inputStyle}
               />
             </div>
-
-            {/* Scale */}
             <div>
-              <span style={labelStyle}>Escala</span>
+              <label style={labelStyle}>Posição Y</label>
+              <input
+                type="number"
+                value={compY}
+                onChange={(e) => setCompY(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>Escala</label>
               <input
                 type="number"
                 value={compScale}
                 onChange={(e) => setCompScale(e.target.value)}
-                min="0.1"
-                max="100"
-                step="0.1"
                 style={inputStyle}
+                step="0.1"
               />
             </div>
-
-            {/* Layer */}
-            <div style={{ gridColumn: "span 2" }}>
-              <span style={labelStyle}>Layer</span>
-              <select
-                value={compLayer}
-                onChange={(e) => setCompLayer(e.target.value)}
-                style={inputStyle}
-              >
-                <option value="VALVE">VALVE</option>
-                <option value="FLANGE">FLANGE</option>
-                <option value="FITTING">FITTING</option>
-                <option value="INSTRUMENT">INSTRUMENT</option>
-                <option value="SUPPORT">SUPPORT</option>
-              </select>
-            </div>
           </div>
-
-          <button
-            onClick={doInsertComponent}
-            disabled={!!loading}
-            style={{
-              ...btnPrimary(loading === "component"),
-              marginTop: "16px",
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            {loading === "component" ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <CircleDot size={16} />
-            )}
-            Inserir {compType.split("-")[0]}
-          </button>
         </motion.div>
-      </div>
 
-      {/* ═══════════ ROW 4: Text Form + Command Log ═══════════ */}
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}
-      >
-        {/* ── Add Text Form ── */}
+        {/* Text Form */}
         <motion.div
-          id="text-form"
           style={card()}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
+          transition={{ delay: 0.45 }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <Type size={18} color={theme.accentSecondary} />
-            <span style={{ fontSize: "1rem", fontWeight: 600 }}>
-              Adicionar Texto / Anotação
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <Type size={20} color={colors.purple} />
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Adicionar Texto</span>
           </div>
 
-          <div style={{ display: "grid", gap: "12px" }}>
-            <div>
-              <span style={labelStyle}>Texto</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>Conteúdo</label>
               <input
                 type="text"
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
-                placeholder='Ex: "L-350-002-HC-6" ou "TAG-V-001"'
+                placeholder="Digite o texto..."
                 style={inputStyle}
               />
             </div>
-
             <div>
-              <span style={labelStyle}>Posição (X, Y, Z)</span>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "6px",
-                }}
-              >
-                <input
-                  type="number"
-                  value={textX}
-                  onChange={(e) => setTextX(e.target.value)}
-                  placeholder="X"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={textY}
-                  onChange={(e) => setTextY(e.target.value)}
-                  placeholder="Y"
-                  style={inputStyle}
-                />
-                <input
-                  type="number"
-                  value={textZ}
-                  onChange={(e) => setTextZ(e.target.value)}
-                  placeholder="Z"
-                  style={inputStyle}
-                />
-              </div>
+              <label style={labelStyle}>Posição X</label>
+              <input
+                type="number"
+                value={textX}
+                onChange={(e) => setTextX(e.target.value)}
+                style={inputStyle}
+              />
             </div>
-
             <div>
-              <span style={labelStyle}>Altura do Texto</span>
+              <label style={labelStyle}>Posição Y</label>
+              <input
+                type="number"
+                value={textY}
+                onChange={(e) => setTextY(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>Altura</label>
               <input
                 type="number"
                 value={textHeight}
                 onChange={(e) => setTextHeight(e.target.value)}
-                min="0.1"
-                max="100"
-                step="0.5"
                 style={inputStyle}
+                step="0.5"
               />
             </div>
           </div>
-
-          <button
-            onClick={doAddText}
-            disabled={!!loading || !textContent.trim()}
-            style={{
-              ...btnPrimary(loading === "text"),
-              marginTop: "16px",
-              width: "100%",
-              justifyContent: "center",
-            }}
-          >
-            {loading === "text" ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Type size={16} />
-            )}
-            Adicionar Texto
-          </button>
-        </motion.div>
-
-        {/* ── Command Log ── */}
-        <motion.div
-          style={card({
-            maxHeight: "380px",
-            display: "flex",
-            flexDirection: "column",
-          })}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.35 }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "12px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Activity size={18} color={theme.accentPrimary} />
-              <span style={{ fontSize: "1rem", fontWeight: 600 }}>
-                Log de Comandos
-              </span>
-            </div>
-            <button
-              onClick={() => setLogs([])}
-              style={{
-                ...btnSecondary,
-                padding: "4px 10px",
-                fontSize: "0.7rem",
-              }}
-            >
-              Limpar
-            </button>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              backgroundColor: theme.codeBackground,
-              borderRadius: "8px",
-              padding: "12px",
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontSize: "0.75rem",
-            }}
-          >
-            {logs.length === 0 ? (
-              <div
-                style={{
-                  color: theme.textTertiary,
-                  textAlign: "center",
-                  paddingTop: "40px",
-                }}
-              >
-                Nenhum comando executado ainda.
-              </div>
-            ) : (
-              <AnimatePresence>
-                {logs.map((log) => (
-                  <motion.div
-                    key={log.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "8px",
-                      marginBottom: "6px",
-                      paddingBottom: "6px",
-                      borderBottom: `1px solid ${theme.border}33`,
-                    }}
-                  >
-                    {log.status === "success" && (
-                      <CheckCircle2
-                        size={14}
-                        color={theme.success}
-                        style={{ marginTop: "2px", flexShrink: 0 }}
-                      />
-                    )}
-                    {log.status === "error" && (
-                      <XCircle
-                        size={14}
-                        color={theme.danger}
-                        style={{ marginTop: "2px", flexShrink: 0 }}
-                      />
-                    )}
-                    {log.status === "pending" && (
-                      <Loader2
-                        size={14}
-                        color={theme.warning}
-                        style={{ marginTop: "2px", flexShrink: 0 }}
-                      />
-                    )}
-                    <span style={{ color: theme.textTertiary, flexShrink: 0 }}>
-                      {log.timestamp}
-                    </span>
-                    <span style={{ fontWeight: 600, color: theme.textPrimary }}>
-                      {log.operation}
-                    </span>
-                    <span
-                      style={{
-                        color:
-                          log.status === "error"
-                            ? theme.danger
-                            : theme.textSecondary,
-                      }}
-                    >
-                      {log.message}
-                    </span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            )}
-            <div ref={logEndRef} />
-          </div>
         </motion.div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          LOGS
+      ═══════════════════════════════════════════════════════════════════ */}
+      <motion.div
+        style={card()}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <Terminal size={20} color={colors.primary} />
+          <span style={{ fontSize: "1rem", fontWeight: 700 }}>Console de Operações</span>
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.7rem",
+              padding: "4px 12px",
+              borderRadius: "20px",
+              backgroundColor: `${theme.textSecondary}15`,
+              color: theme.textSecondary,
+            }}
+          >
+            {logs.length} logs
+          </span>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: "#0D0D0D",
+            borderRadius: "12px",
+            padding: "16px",
+            maxHeight: "300px",
+            overflowY: "auto",
+            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+            fontSize: "0.8rem",
+          }}
+        >
+          <AnimatePresence>
+            {logs.length === 0 ? (
+              <div style={{ color: "#666", textAlign: "center", padding: "20px" }}>
+                <Code size={32} style={{ marginBottom: "8px", opacity: 0.5 }} />
+                <div>Nenhuma operação executada ainda</div>
+                <div style={{ fontSize: "0.7rem", marginTop: "4px" }}>
+                  Clique em "Conectar" para começar
+                </div>
+              </div>
+            ) : (
+              logs.map((log) => (
+                <motion.div
+                  key={log.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "8px 0",
+                    borderBottom: "1px solid #1a1a1a",
+                  }}
+                >
+                  <span style={{ color: "#666", minWidth: "70px" }}>{log.timestamp}</span>
+                  <span
+                    style={{
+                      color:
+                        log.status === "success"
+                          ? colors.success
+                          : log.status === "simulated"
+                          ? colors.warning
+                          : log.status === "error"
+                          ? colors.danger
+                          : colors.primary,
+                      minWidth: "20px",
+                    }}
+                  >
+                    {log.status === "success"
+                      ? "✓"
+                      : log.status === "simulated"
+                      ? "◉"
+                      : log.status === "error"
+                      ? "✗"
+                      : "○"}
+                  </span>
+                  <span style={{ color: "#AAA", fontWeight: 600 }}>[{log.operation}]</span>
+                  <span style={{ color: "#DDD" }}>{log.message}</span>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+          <div ref={logEndRef} />
+        </div>
+      </motion.div>
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

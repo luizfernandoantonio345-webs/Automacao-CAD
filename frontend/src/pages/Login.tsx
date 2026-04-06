@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaFingerprint,
   FaShieldAlt,
@@ -8,26 +9,123 @@ import {
   FaDraftingCompass,
   FaBolt,
   FaChartLine,
+  FaIndustry,
+  FaCogs,
+  FaLayerGroup,
 } from "react-icons/fa";
 import { API_BASE_URL, ApiService } from "../services/api";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANIMATED BACKGROUND
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AnimatedBackground: React.FC = () => (
+  <div style={{
+    position: "absolute",
+    inset: 0,
+    overflow: "hidden",
+    zIndex: 0,
+  }}>
+    {/* Gradient base */}
+    <div style={{
+      position: "absolute",
+      inset: 0,
+      background: "linear-gradient(135deg, #030508 0%, #0a1628 40%, #071020 70%, #030508 100%)",
+    }} />
+    
+    {/* Animated orbs */}
+    <motion.div
+      animate={{
+        x: [0, 100, 0],
+        y: [0, -50, 0],
+        scale: [1, 1.2, 1],
+      }}
+      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      style={{
+        position: "absolute",
+        top: "20%",
+        left: "10%",
+        width: "400px",
+        height: "400px",
+        borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
+        filter: "blur(40px)",
+      }}
+    />
+    <motion.div
+      animate={{
+        x: [0, -80, 0],
+        y: [0, 80, 0],
+        scale: [1, 1.3, 1],
+      }}
+      transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+      style={{
+        position: "absolute",
+        bottom: "10%",
+        right: "5%",
+        width: "500px",
+        height: "500px",
+        borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(0,161,255,0.1) 0%, transparent 70%)",
+        filter: "blur(60px)",
+      }}
+    />
+    
+    {/* Grid overlay */}
+    <div style={{
+      position: "absolute",
+      inset: 0,
+      backgroundImage: `
+        linear-gradient(rgba(0,161,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,161,255,0.03) 1px, transparent 1px)
+      `,
+      backgroundSize: "60px 60px",
+      opacity: 0.5,
+    }} />
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FEATURE CARDS
+// ═══════════════════════════════════════════════════════════════════════════
 
 const FEATURES = [
   {
     icon: <FaDraftingCompass />,
-    title: "AutoCAD Automation",
+    title: "Automação CAD",
     desc: "Geração automatizada de desenhos de piping, P&ID e isométricos direto no AutoCAD.",
+    color: "#00A1FF",
   },
   {
     icon: <FaBolt />,
     title: "IA Integrada",
     desc: "Inteligência artificial para validação de normas (ASME, Petrobras N-series) em tempo real.",
+    color: "#10B981",
   },
   {
     icon: <FaChartLine />,
     title: "Quality Gate",
     desc: "Controle de qualidade com rastreabilidade completa e relatórios certificáveis.",
+    color: "#8B5CF6",
+  },
+  {
+    icon: <FaIndustry />,
+    title: "CNC/Plasma",
+    desc: "Geração de G-code otimizado para corte plasma com nesting inteligente.",
+    color: "#F59E0B",
   },
 ];
+
+const STATS = [
+  { value: "50+", label: "Normas Suportadas" },
+  { value: "10x", label: "Mais Rápido" },
+  { value: "99.9%", label: "Precisão" },
+  { value: "24/7", label: "Disponibilidade" },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOGIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -35,6 +133,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,7 +146,7 @@ const Login = () => {
     setLoading(true);
     try {
       await ApiService.login({ email, senha: password });
-      navigate("/global-setup");
+      navigate("/dashboard");
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401) {
@@ -55,9 +154,7 @@ const Login = () => {
       } else if (status === 429) {
         setError("Muitas tentativas. Aguarde um momento.");
       } else if (!status) {
-        setError(
-          `Servidor indisponível em ${API_BASE_URL}. Recarregue com Ctrl+F5 e tente novamente.`,
-        );
+        setError(`Servidor indisponível. Recarregue e tente novamente.`);
       } else {
         setError(`Erro no servidor (${status}). Tente novamente.`);
       }
@@ -70,19 +167,15 @@ const Login = () => {
     setDemoLoading(true);
     try {
       await ApiService.demoLogin();
-      navigate("/global-setup");
+      navigate("/dashboard");
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 429) {
-        setError("Muitas tentativas. Aguarde um momento e tente novamente.");
+        setError("Muitas tentativas. Aguarde e tente novamente.");
       } else if (status && status >= 500) {
-        setError(
-          "Servidor temporariamente indisponível. Tente novamente em instantes.",
-        );
+        setError("Servidor temporariamente indisponível.");
       } else {
-        setError(
-          `Não foi possível conectar ao servidor em ${API_BASE_URL}. Recarregue com Ctrl+F5 e tente novamente.`,
-        );
+        setError("Não foi possível conectar. Tente novamente.");
       }
       setDemoLoading(false);
     }
@@ -90,149 +183,266 @@ const Login = () => {
 
   return (
     <div style={s.container}>
-      <div style={s.overlay} />
+      <AnimatedBackground />
 
-      {/* Left panel — Product identity & features */}
-      <div style={s.leftPanel}>
+      {/* ═══════════════ LEFT PANEL - BRANDING ═══════════════ */}
+      <motion.div
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8 }}
+        style={s.leftPanel}
+      >
         <div style={s.heroContent}>
-          <div style={s.heroLogoRow}>
-            <span style={s.heroIcon}>
-              <FaMicrochip />
-            </span>
-            <h1 style={s.heroBrand}>
-              ENGENHARIA <span style={s.brandHighlight}>CAD</span>
-            </h1>
-          </div>
-          <p style={s.heroTagline}>
-            Plataforma de Automação CAD Industrial com Inteligência Artificial
-          </p>
-          <div style={s.featureList}>
+          {/* Logo */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            style={s.logoRow}
+          >
+            <div style={s.logoIcon}>
+              <FaMicrochip size={32} />
+            </div>
+            <div>
+              <h1 style={s.brand}>
+                ENGENHARIA <span style={s.brandHighlight}>CAD</span>
+              </h1>
+              <p style={s.version}>PLATAFORMA INDUSTRIAL v2.0</p>
+            </div>
+          </motion.div>
+
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            style={s.tagline}
+          >
+            Plataforma de Automação CAD Industrial com{" "}
+            <span style={{ color: "#00A1FF" }}>Inteligência Artificial</span> para
+            engenharia de piping, validação de normas e controle de qualidade.
+          </motion.p>
+
+          {/* Features Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            style={s.featuresGrid}
+          >
             {FEATURES.map((f, i) => (
-              <div key={i} style={s.featureItem}>
-                <span style={s.featureIcon}>{f.icon}</span>
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.02, y: -4 }}
+                style={{
+                  ...s.featureCard,
+                  borderColor: `${f.color}40`,
+                  boxShadow: `0 4px 20px ${f.color}10`,
+                }}
+              >
+                <div style={{ ...s.featureIcon, color: f.color }}>{f.icon}</div>
                 <div>
                   <div style={s.featureTitle}>{f.title}</div>
                   <div style={s.featureDesc}>{f.desc}</div>
                 </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            style={s.statsRow}
+          >
+            {STATS.map((stat, i) => (
+              <div key={i} style={s.stat}>
+                <span style={s.statValue}>{stat.value}</span>
+                <span style={s.statLabel}>{stat.label}</span>
               </div>
             ))}
-          </div>
-          <div style={s.heroStats}>
-            <div style={s.stat}>
-              <span style={s.statVal}>50+</span>
-              <span style={s.statLabel}>Normas Suportadas</span>
-            </div>
-            <div style={s.stat}>
-              <span style={s.statVal}>10x</span>
-              <span style={s.statLabel}>Mais Rápido</span>
-            </div>
-            <div style={s.stat}>
-              <span style={s.statVal}>99.9%</span>
-              <span style={s.statLabel}>Precisão</span>
-            </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Right panel — Login form */}
-      <div style={s.rightPanel}>
-        <div style={s.loginBox}>
-          <div style={s.topLine} />
+      {/* ═══════════════ RIGHT PANEL - LOGIN FORM ═══════════════ */}
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8 }}
+        style={s.rightPanel}
+      >
+        <div style={s.formContainer}>
+          {/* Glow effect */}
+          <div style={s.formGlow} />
+          
+          {/* Top accent line */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            style={s.accentLine}
+          />
 
-          <div style={s.header}>
-            <h2 style={s.loginTitle}>Acesso ao Sistema</h2>
-            <div style={s.versionBadge}>V1.0 GOLD</div>
+          {/* Header */}
+          <div style={s.formHeader}>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring" }}
+              style={s.lockIcon}
+            >
+              <FaShieldAlt size={24} />
+            </motion.div>
+            <h2 style={s.formTitle}>Acesso ao Sistema</h2>
+            <p style={s.formSubtitle}>
+              Faça login para acessar sua conta
+            </p>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleLogin} style={s.form}>
-            <div style={s.inputWrapper}>
+            <div style={s.inputGroup}>
               <label style={s.label}>E-MAIL</label>
-              <input
+              <motion.input
                 type="email"
                 placeholder="operador@empresa.com.br"
-                style={s.input}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocusedInput("email")}
+                onBlur={() => setFocusedInput(null)}
+                style={{
+                  ...s.input,
+                  borderColor: focusedInput === "email" ? "#00A1FF" : "#1a2030",
+                  boxShadow: focusedInput === "email" ? "0 0 20px rgba(0,161,255,0.2)" : "none",
+                }}
+                whileFocus={{ scale: 1.01 }}
               />
             </div>
 
-            <div style={s.inputWrapper}>
+            <div style={s.inputGroup}>
               <label style={s.label}>SENHA</label>
-              <input
+              <motion.input
                 type="password"
                 placeholder="••••••••••••"
-                style={s.input}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setFocusedInput("password")}
+                onBlur={() => setFocusedInput(null)}
+                style={{
+                  ...s.input,
+                  borderColor: focusedInput === "password" ? "#00A1FF" : "#1a2030",
+                  boxShadow: focusedInput === "password" ? "0 0 20px rgba(0,161,255,0.2)" : "none",
+                }}
+                whileFocus={{ scale: 1.01 }}
               />
             </div>
 
-            {error && <div style={s.errorMsg}>{error}</div>}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  style={s.errorBox}
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <button
+            <motion.button
               type="submit"
-              style={{ ...s.submitBtn, opacity: loading ? 0.6 : 1 }}
               disabled={loading || demoLoading}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              style={{
+                ...s.submitBtn,
+                opacity: loading ? 0.7 : 1,
+              }}
             >
-              <span style={s.btnText}>
-                {loading ? "AUTENTICANDO..." : "ENTRAR"}
-              </span>
-              <span style={s.btnIcon}>
-                <FaFingerprint />
-              </span>
-            </button>
+              {loading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <FaCogs size={18} />
+                </motion.div>
+              ) : (
+                <>
+                  <span>ENTRAR</span>
+                  <FaFingerprint size={18} />
+                </>
+              )}
+            </motion.button>
           </form>
 
+          {/* Divider */}
           <div style={s.divider}>
-            <span style={s.dividerLine} />
+            <div style={s.dividerLine} />
             <span style={s.dividerText}>ou</span>
-            <span style={s.dividerLine} />
+            <div style={s.dividerLine} />
           </div>
 
-          <button
+          {/* Demo Button */}
+          <motion.button
             onClick={handleDemo}
-            style={{ ...s.demoBtn, opacity: demoLoading ? 0.6 : 1 }}
             disabled={loading || demoLoading}
+            whileHover={{ scale: demoLoading ? 1 : 1.02 }}
+            whileTap={{ scale: demoLoading ? 1 : 0.98 }}
+            style={{
+              ...s.demoBtn,
+              opacity: demoLoading ? 0.7 : 1,
+            }}
           >
-            <span style={{ marginRight: 10, display: "inline-flex" }}>
-              <FaRocket />
-            </span>
-            {demoLoading ? "CARREGANDO DEMO..." : "EXPLORAR MODO DEMONSTRAÇÃO"}
-          </button>
+            {demoLoading ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              >
+                <FaCogs size={16} />
+              </motion.div>
+            ) : (
+              <>
+                <FaRocket size={16} />
+                <span>EXPLORAR DEMONSTRAÇÃO</span>
+              </>
+            )}
+          </motion.button>
           <p style={s.demoHint}>
-            Acesso completo sem cadastro — veja o sistema em ação em 1 minuto
+            Acesso completo sem cadastro — veja o sistema em ação
           </p>
 
+          {/* Footer */}
           <div style={s.footer}>
-            <div style={s.statusDot} />
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={s.statusDot}
+            />
             <span style={s.statusText}>CONEXÃO SEGURA AES-256</span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════
+
 const s: Record<string, React.CSSProperties> = {
   container: {
     height: "100vh",
-    backgroundColor: "#050507",
     display: "flex",
     position: "relative",
     overflow: "hidden",
-    fontFamily: "'Segoe UI', Roboto, sans-serif",
-  },
-  overlay: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    background:
-      "linear-gradient(135deg, #050507 0%, #0a1628 50%, #050507 100%)",
-    opacity: 0.9,
-    zIndex: 0,
+    fontFamily: "'Inter', 'Segoe UI', Roboto, sans-serif",
   },
 
-  /* ── Left Panel ── */
+  // ═══════════ LEFT PANEL ═══════════
   leftPanel: {
     flex: 1,
     display: "flex",
@@ -240,233 +450,286 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     position: "relative",
     zIndex: 10,
-    padding: "60px",
+    padding: "48px",
   },
-  heroContent: { maxWidth: 520 },
-  heroLogoRow: {
+  heroContent: {
+    maxWidth: "560px",
+  },
+  logoRow: {
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-    marginBottom: "16px",
+    gap: "16px",
+    marginBottom: "32px",
   },
-  heroIcon: {
-    fontSize: "38px",
-    color: "#00A1FF",
-    filter: "drop-shadow(0 0 10px rgba(0,161,255,0.5))",
-    display: "inline-flex",
-  },
-  heroBrand: {
+  logoIcon: {
+    width: "64px",
+    height: "64px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #00A1FF 0%, #0077CC 100%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     color: "#FFF",
-    fontSize: "36px",
-    letterSpacing: "8px",
-    margin: 0,
-    fontWeight: 900,
+    boxShadow: "0 8px 32px rgba(0,161,255,0.4)",
   },
-  brandHighlight: { color: "#00A1FF" },
-  heroTagline: {
+  brand: {
+    color: "#FFF",
+    fontSize: "32px",
+    letterSpacing: "6px",
+    margin: 0,
+    fontWeight: 800,
+  },
+  brandHighlight: {
+    color: "#00A1FF",
+  },
+  version: {
+    color: "#556677",
+    fontSize: "11px",
+    letterSpacing: "3px",
+    marginTop: "4px",
+  },
+  tagline: {
     color: "#8899aa",
     fontSize: "16px",
-    lineHeight: "1.6",
+    lineHeight: "1.8",
     marginBottom: "40px",
   },
-  featureList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
+  featuresGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px",
     marginBottom: "40px",
   },
-  featureItem: {
+  featureCard: {
     display: "flex",
     gap: "14px",
-    alignItems: "flex-start",
+    padding: "16px",
+    backgroundColor: "rgba(255,255,255,0.02)",
+    border: "1px solid rgba(255,255,255,0.05)",
+    borderRadius: "12px",
+    cursor: "default",
+    transition: "all 0.3s ease",
   },
   featureIcon: {
-    color: "#00A1FF",
-    fontSize: "20px",
+    fontSize: "22px",
     marginTop: "2px",
     flexShrink: 0,
-    display: "inline-flex",
   },
   featureTitle: {
     color: "#e0e0e0",
     fontWeight: 700,
-    fontSize: "14px",
-    marginBottom: "4px",
+    fontSize: "13px",
+    marginBottom: "6px",
   },
   featureDesc: {
     color: "#667788",
-    fontSize: "13px",
+    fontSize: "12px",
     lineHeight: "1.5",
   },
-  heroStats: {
+  statsRow: {
     display: "flex",
-    gap: "30px",
+    gap: "32px",
     borderTop: "1px solid #1a2030",
-    paddingTop: "24px",
+    paddingTop: "28px",
   },
   stat: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
   },
-  statVal: {
+  statValue: {
     color: "#00A1FF",
-    fontSize: "22px",
+    fontSize: "24px",
     fontWeight: 900,
     letterSpacing: "1px",
   },
   statLabel: {
     color: "#556677",
-    fontSize: "11px",
-    marginTop: "4px",
-    letterSpacing: "0.5px",
+    fontSize: "10px",
+    marginTop: "6px",
+    letterSpacing: "1px",
+    textTransform: "uppercase",
   },
 
-  /* ── Right Panel ── */
+  // ═══════════ RIGHT PANEL ═══════════
   rightPanel: {
-    width: "480px",
+    width: "520px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
     zIndex: 10,
-    borderLeft: "1px solid #111827",
-    backgroundColor: "rgba(8,10,15,0.6)",
+    borderLeft: "1px solid rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(5,8,12,0.8)",
+    backdropFilter: "blur(20px)",
     flexShrink: 0,
   },
-  loginBox: {
+  formContainer: {
     width: "380px",
     position: "relative",
   },
-  topLine: {
+  formGlow: {
     position: "absolute",
-    top: "-1px",
+    top: "-50%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "200px",
+    height: "200px",
+    background: "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
+    filter: "blur(40px)",
+    pointerEvents: "none",
+  },
+  accentLine: {
+    position: "absolute",
+    top: 0,
     left: 0,
-    width: "100%",
+    right: 0,
     height: "3px",
     background: "linear-gradient(90deg, transparent, #00A1FF, transparent)",
+    transformOrigin: "center",
   },
-  header: { textAlign: "center", marginBottom: "32px" },
-  loginTitle: {
+  formHeader: {
+    textAlign: "center",
+    marginBottom: "32px",
+  },
+  lockIcon: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, rgba(0,161,255,0.2) 0%, rgba(0,161,255,0.05) 100%)",
+    border: "1px solid rgba(0,161,255,0.3)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#00A1FF",
+    margin: "0 auto 20px auto",
+  },
+  formTitle: {
     color: "#FFF",
-    fontSize: "18px",
+    fontSize: "22px",
     fontWeight: 700,
-    letterSpacing: "3px",
+    letterSpacing: "2px",
     margin: 0,
   },
-  versionBadge: {
-    display: "inline-block",
-    padding: "3px 10px",
-    backgroundColor: "#002d4a",
-    color: "#00A1FF",
-    fontSize: "9px",
-    borderRadius: "10px",
-    marginTop: "10px",
-    letterSpacing: "1px",
+  formSubtitle: {
+    color: "#667788",
+    fontSize: "13px",
+    marginTop: "8px",
   },
-  form: { display: "flex", flexDirection: "column" },
-  inputWrapper: { marginBottom: "20px" },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  inputGroup: {
+    marginBottom: "20px",
+  },
   label: {
-    color: "#555",
-    fontSize: "10px",
-    fontWeight: "bold",
-    marginBottom: "8px",
+    color: "#667788",
+    fontSize: "11px",
+    fontWeight: 600,
+    marginBottom: "10px",
     display: "block",
-    letterSpacing: "1px",
+    letterSpacing: "2px",
   },
   input: {
     width: "100%",
-    padding: "14px",
-    backgroundColor: "#0A0B0E",
-    border: "1px solid #222",
+    padding: "16px 18px",
+    backgroundColor: "rgba(10,15,25,0.8)",
+    border: "1px solid #1a2030",
     color: "#FFF",
-    borderRadius: "4px",
+    borderRadius: "12px",
     outline: "none",
-    transition: "border 0.3s",
+    transition: "all 0.3s ease",
     fontSize: "14px",
     boxSizing: "border-box",
   },
-  errorMsg: {
-    color: "#ff3c66",
-    fontSize: "0.85rem",
-    marginBottom: "0.75rem",
+  errorBox: {
+    color: "#ff4466",
+    fontSize: "13px",
+    marginBottom: "16px",
     textAlign: "center",
-    backgroundColor: "rgba(255,60,102,0.08)",
-    padding: "8px",
-    borderRadius: "4px",
+    backgroundColor: "rgba(255,68,102,0.1)",
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,68,102,0.2)",
   },
   submitBtn: {
-    padding: "14px",
-    backgroundColor: "#00A1FF",
+    padding: "16px",
+    background: "linear-gradient(135deg, #00A1FF 0%, #0077CC 100%)",
     border: "none",
     color: "#FFF",
-    borderRadius: "4px",
+    borderRadius: "12px",
     cursor: "pointer",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    transition: "all 0.3s",
+    gap: "12px",
     fontWeight: 700,
-    fontSize: "13px",
+    fontSize: "14px",
     letterSpacing: "2px",
+    boxShadow: "0 8px 32px rgba(0,161,255,0.3)",
+    transition: "all 0.3s ease",
   },
-  btnText: { marginRight: "10px" },
-  btnIcon: { fontSize: "18px", display: "inline-flex" },
   divider: {
     display: "flex",
     alignItems: "center",
-    margin: "20px 0",
-    gap: "12px",
+    margin: "24px 0",
+    gap: "16px",
   },
   dividerLine: {
     flex: 1,
     height: "1px",
-    backgroundColor: "#222",
+    backgroundColor: "#1a2030",
   },
   dividerText: {
-    color: "#555",
+    color: "#556677",
     fontSize: "12px",
-    letterSpacing: "1px",
+    letterSpacing: "2px",
   },
   demoBtn: {
     width: "100%",
     padding: "14px",
     backgroundColor: "transparent",
-    border: "1px solid #00A1FF",
+    border: "2px solid #00A1FF",
     color: "#00A1FF",
-    borderRadius: "4px",
+    borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: 700,
-    fontSize: "12px",
-    letterSpacing: "1.5px",
+    fontWeight: 600,
+    fontSize: "13px",
+    letterSpacing: "2px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "all 0.3s",
+    gap: "12px",
+    transition: "all 0.3s ease",
   },
   demoHint: {
-    color: "#445566",
-    fontSize: "11px",
+    color: "#556677",
+    fontSize: "12px",
     textAlign: "center",
-    marginTop: "10px",
-    lineHeight: "1.5",
+    marginTop: "12px",
+    lineHeight: "1.6",
   },
   footer: {
-    marginTop: "30px",
+    marginTop: "32px",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    opacity: 0.6,
+    opacity: 0.7,
   },
   statusDot: {
-    width: "6px",
-    height: "6px",
-    backgroundColor: "#32CD32",
+    width: "8px",
+    height: "8px",
+    backgroundColor: "#10B981",
     borderRadius: "50%",
     marginRight: "10px",
-    boxShadow: "0 0 5px #32CD32",
+    boxShadow: "0 0 10px #10B981",
   },
-  statusText: { color: "#AAA", fontSize: "9px", letterSpacing: "1px" },
+  statusText: {
+    color: "#667788",
+    fontSize: "10px",
+    letterSpacing: "2px",
+  },
 };
 
 export default Login;
