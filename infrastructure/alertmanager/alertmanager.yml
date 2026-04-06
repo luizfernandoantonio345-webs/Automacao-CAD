@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ALERTMANAGER CONFIGURATION - ENGENHARIA CAD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alertas@engenharia-cad.com'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+# Templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+
+  routes:
+    # Alertas críticos vão para Slack + Email
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+
+    # Alertas de warning só para Slack
+    - match:
+        severity: warning
+      receiver: 'warning'
+
+# Receivers
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: '${ALERT_EMAIL}'
+        send_resolved: true
+
+  - name: 'critical'
+    slack_configs:
+      - channel: '#engcad-alerts-critical'
+        title: '🚨 ALERTA CRÍTICO - {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    email_configs:
+      - to: '${ALERT_EMAIL}'
+        send_resolved: true
+
+  - name: 'warning'
+    slack_configs:
+      - channel: '#engcad-alerts'
+        title: '⚠️ Aviso - {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+# Inhibit rules
+inhibit_rules:
+  # Se a API está down, não notifica sobre latência
+  - source_match:
+      alertname: 'APIDown'
+    target_match:
+      alertname: 'HighLatency'
+    equal: ['job']
+
+  # Se CPU está alta, não notifica sobre memória ao mesmo tempo
+  - source_match:
+      alertname: 'HighCPUUsage'
+    target_match:
+      alertname: 'HighMemoryUsage'
+    equal: ['instance']

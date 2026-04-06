@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENGENHARIA CAD - CONFIGURAÇÃO GRAFANA
+# ═══════════════════════════════════════════════════════════════════════════════
+# Este arquivo define a configuração do Grafana para monitoramento.
+# Faça deploy junto com docker-compose ou Kubernetes.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+apiVersion: 1
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATASOURCES
+# ═══════════════════════════════════════════════════════════════════════════════
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: engcad
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    editable: false
+
+  - name: Redis
+    type: redis-datasource
+    url: redis:6379
+    editable: false
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOTIFIERS (Alertas)
+# ═══════════════════════════════════════════════════════════════════════════════
+notifiers:
+  - name: Slack
+    type: slack
+    uid: slack-notifier
+    org_id: 1
+    is_default: true
+    settings:
+      url: ${SLACK_WEBHOOK_URL}
+      recipient: "#engcad-alerts"
+      username: "Grafana Bot"
+
+  - name: Email
+    type: email
+    uid: email-notifier
+    org_id: 1
+    settings:
+      addresses: ${ALERT_EMAIL}

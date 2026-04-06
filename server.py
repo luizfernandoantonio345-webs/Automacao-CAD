@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import time
+import traceback
 import zipfile
 from collections import defaultdict, deque
 from threading import Lock
@@ -21,6 +22,51 @@ from pydantic import BaseModel, Field
 from pydantic.functional_validators import AfterValidator
 from typing import Annotated
 from sse_starlette.sse import EventSourceResponse
+
+# ══════════════════════════════════════════════════════════════════════════════
+# LOGGING ESTRUTURADO COM STRUCTLOG (Enterprise)
+# ══════════════════════════════════════════════════════════════════════════════
+try:
+    import structlog
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.JSONRenderer() if os.getenv("LOG_FORMAT") == "json" else structlog.dev.ConsoleRenderer(),
+        ],
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+    logger = structlog.get_logger("engcad.server")
+except ImportError:
+    # Fallback para logging padrão se structlog não estiver disponível
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    logger = logging.getLogger("engcad.server")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RATE LIMITING COM SLOWAPI (Enterprise)
+# ══════════════════════════════════════════════════════════════════════════════
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    
+    limiter = Limiter(key_func=get_remote_address)
+    _SLOWAPI_AVAILABLE = True
+except ImportError:
+    logger.warning("slowapi não disponível - rate limiting desabilitado")
+    limiter = None
+    RateLimitExceeded = Exception
+    _rate_limit_exceeded_handler = None
+    _SLOWAPI_AVAILABLE = False
 
 # Importações opcionais - graceful degradation para deploy serverless
 import logging as _log
@@ -44,6 +90,12 @@ try:
 except ImportError as e:
     _log.warning(f"License router not available: {e}")
     license_router = None
+
+try:
+    from backend.routes_billing import router as billing_router
+except ImportError as e:
+    _log.warning(f"Billing router not available: {e}")
+    billing_router = None
 
 try:
     from backend.routes_analytics import router as analytics_router
@@ -116,7 +168,7 @@ except ImportError as e:
     db_update_project = db_get_project = db_get_projects = get_project_stats = None
     add_quality_check = get_quality_checks = create_upload = update_upload = get_uploads = None
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)  # Deprecated - using structlog
 
 # Load and validate environment variables
 # ── Modo de operação: Servidor Central (com .env) ou Agente Local (sem .env) ──
@@ -128,26 +180,19 @@ _APP_ENV = os.getenv("APP_ENV", "development").lower()
 
 if not JARVIS_SECRET or JARVIS_SECRET == "jarvis_secret_key_change_me":
     if _APP_ENV == "production":
-        logger.critical("JARVIS_SECRET não definido em produção. SERVIDOR NÃO VAI INICIAR.")
+        print("FATAL: JARVIS_SECRET não definido em produção. SERVIDOR NÃO VAI INICIAR.")
         raise SystemExit("FATAL: Defina JARVIS_SECRET (>= 32 bytes) antes de iniciar em produção.")
     import secrets as _secrets_mod
     JARVIS_SECRET = _secrets_mod.token_hex(32)
-    logger.warning(
-        "JARVIS_SECRET não definido — usando secret efêmero (NÃO USE EM PRODUÇÃO)"
-    )
+    print("JARVIS_SECRET não definido — usando secret efêmero (NÃO USE EM PRODUÇÃO)")
 elif len(JARVIS_SECRET.encode("utf-8")) < _MIN_SECRET_BYTES:
     if _APP_ENV == "production":
-        logger.critical("JARVIS_SECRET muito curto (%d bytes, mínimo %d). SERVIDOR NÃO VAI INICIAR.",
-                        len(JARVIS_SECRET.encode("utf-8")), _MIN_SECRET_BYTES)
+        print("FATAL: JARVIS_SECRET muito curto. SERVIDOR NÃO VAI INICIAR.")
         raise SystemExit("FATAL: JARVIS_SECRET deve ter >= 32 bytes em produção.")
     import secrets as _secrets_mod
     _old_len = len(JARVIS_SECRET.encode("utf-8"))
     JARVIS_SECRET = _secrets_mod.token_hex(32)
-    logger.warning(
-        "JARVIS_SECRET tinha apenas %d bytes (mínimo: %d para HS256/RFC 7518). "
-        "Chave automática gerada. Defina uma chave >= 32 bytes em produção.",
-        _old_len, _MIN_SECRET_BYTES,
-    )
+    print(f"JARVIS_SECRET tinha apenas {_old_len} bytes (mínimo: {_MIN_SECRET_BYTES} para HS256/RFC 7518). Chave automática gerada. Defina uma chave >= 32 bytes em produção.")
 
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120"))
@@ -239,14 +284,27 @@ _CORS_ORIGIN_REGEX = re.compile(
     r"|^https://[a-z0-9\-]+\.vercel\.app$"
 )
 
+# ══════════════════════════════════════════════════════════════════════════════
+# CORS MIDDLEWARE
+# ══════════════════════════════════════════════════════════════════════════════
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(_CORS_ALLOWED_ORIGINS),
     allow_origin_regex=_CORS_ORIGIN_REGEX.pattern,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID", "X-Correlation-ID"],
 )
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RATE LIMITING MIDDLEWARE
+# ══════════════════════════════════════════════════════════════════════════════
+if _SLOWAPI_AVAILABLE and limiter is not None:
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("Rate limiting habilitado via slowapi")
+else:
+    logger.warning("Rate limiting usando fallback interno")
 
 # ── Exception Handlers com mensagens em português ──
 from fastapi.exceptions import RequestValidationError
@@ -379,6 +437,11 @@ if autocad_debug_router:
 if license_router:
     app.include_router(license_router)
 
+# Include Billing / Monetization routes (Stripe)
+if billing_router:
+    app.include_router(billing_router)
+    logger.info("Billing & Monetization routes carregados")
+
 # Include Analytics routes (Enterprise KPIs)
 if analytics_router:
     app.include_router(analytics_router)
@@ -398,6 +461,14 @@ try:
     logger.info("AI Engines carregados com sucesso")
 except ImportError as e:
     logger.warning(f"AI Engines não disponíveis: {e}")
+
+# Include LLM Gateway routes (Multi-provider AI proxy)
+try:
+    from ai_engines.llm_gateway import router as llm_router
+    app.include_router(llm_router)
+    logger.info("LLM Gateway carregado com sucesso")
+except ImportError as e:
+    logger.warning(f"LLM Gateway não disponível: {e}")
 
 
 class LoginData(BaseModel):

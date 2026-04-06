@@ -1,0 +1,160 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROMETHEUS ALERT RULES - ENGENHARIA CAD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+groups:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: api_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taxa de erros alta (> 5%)"
+          description: "A API está retornando mais de 5% de erros 5xx nos últimos 5 minutos."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latência P95 alta (> 500ms)"
+          description: "A latência P95 está acima de 500ms nos últimos 5 minutos."
+
+      - alert: APIDown
+        expr: up{job="engcad-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API offline"
+          description: "A API não está respondendo há mais de 1 minuto."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Infrastructure Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: infrastructure_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: avg(process_cpu_usage) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de CPU alto (> 80%)"
+          description: "O uso de CPU está acima de 80% há mais de 10 minutos."
+
+      - alert: HighMemoryUsage
+        expr: avg(process_memory_usage) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de memória alto (> 85%)"
+          description: "O uso de memória está acima de 85% há mais de 10 minutos."
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Espaço em disco baixo (< 10%)"
+          description: "O espaço em disco está abaixo de 10%."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Redis Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: redis_alerts
+    rules:
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis offline"
+          description: "Redis não está respondendo há mais de 1 minuto."
+
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memória alta (> 90%)"
+          description: "O Redis está usando mais de 90% da memória configurada."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Celery Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: celery_alerts
+    rules:
+      - alert: CeleryQueueHigh
+        expr: celery_queue_length > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Fila Celery grande (> 100 tasks)"
+          description: "A fila do Celery tem mais de 100 tarefas pendentes há 10 minutos."
+
+      - alert: CeleryWorkerDown
+        expr: celery_workers_active == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nenhum worker Celery ativo"
+          description: "Não há workers Celery ativos há mais de 2 minutos."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CAM/CNC Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: cam_alerts
+    rules:
+      - alert: CAMJobsFailing
+        expr: rate(cam_jobs_failed_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Jobs CAM falhando"
+          description: "Taxa de falhas de jobs CAM está alta nos últimos 5 minutos."
+
+      - alert: LowNestingEfficiency
+        expr: avg(nesting_efficiency) < 0.6
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Eficiência de nesting baixa (< 60%)"
+          description: "A eficiência média de nesting está abaixo de 60% nos últimos 30 minutos."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # OEE Alerts
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: oee_alerts
+    rules:
+      - alert: LowOEE
+        expr: oee_total < 0.65
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "OEE baixo (< 65%)"
+          description: "O OEE total está abaixo de 65% na última hora."
+
+      - alert: MachineDowntime
+        expr: increase(machine_downtime_minutes[1h]) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Parada de máquina prolongada"
+          description: "Mais de 30 minutos de parada na última hora."
