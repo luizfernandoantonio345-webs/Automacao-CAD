@@ -353,7 +353,7 @@ async def call_openai(
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content
+        yield response.choices[0].message.content
 
 
 async def call_anthropic(
@@ -395,7 +395,7 @@ async def call_anthropic(
             temperature=temperature,
             max_tokens=max_tokens,
         )
-        return response.content[0].text
+        yield response.content[0].text
 
 
 async def call_ollama(
@@ -428,7 +428,7 @@ async def call_ollama(
     else:
         response = await client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
         data = response.json()
-        return data.get("message", {}).get("content", "")
+        yield data.get("message", {}).get("content", "")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -442,10 +442,11 @@ async def call_llm(
     max_tokens: int,
     stream: bool = False,
     fallback: bool = True,
-) -> AsyncGenerator[str, None] | str:
+) -> AsyncGenerator[str, None]:
     """
     Gateway central que roteia para o provider correto.
     Implementa fallback automático se provider primário falhar.
+    Sempre retorna um async generator para consistência.
     """
     model_info = AVAILABLE_MODELS.get(model)
     if not model_info:
@@ -474,11 +475,17 @@ async def call_llm(
             logger.info(f"Chamando {try_provider} com modelo {use_model}")
             
             if try_provider == "openai":
-                return await call_openai(use_model, messages, temperature, max_tokens, stream)
+                async for chunk in call_openai(use_model, messages, temperature, max_tokens, stream):
+                    yield chunk
+                return
             elif try_provider == "anthropic":
-                return await call_anthropic(use_model, messages, temperature, max_tokens, stream)
+                async for chunk in call_anthropic(use_model, messages, temperature, max_tokens, stream):
+                    yield chunk
+                return
             elif try_provider == "ollama":
-                return await call_ollama(use_model, messages, temperature, max_tokens, stream)
+                async for chunk in call_ollama(use_model, messages, temperature, max_tokens, stream):
+                    yield chunk
+                return
                 
         except Exception as e:
             logger.warning(f"Falha em {try_provider}: {e}")
@@ -560,7 +567,7 @@ async def create_completion(
         # Streaming response
         async def stream_generator():
             full_response = ""
-            async for chunk in await call_llm(
+            async for chunk in call_llm(
                 req.model, messages, req.temperature, req.max_tokens, stream=True
             ):
                 full_response += chunk
@@ -573,10 +580,13 @@ async def create_completion(
         
         return StreamingResponse(stream_generator(), media_type="text/event-stream")
     
-    # Non-streaming response
-    content = await call_llm(
+    # Non-streaming response - collect all chunks
+    content_chunks = []
+    async for chunk in call_llm(
         req.model, messages, req.temperature, req.max_tokens, stream=False
-    )
+    ):
+        content_chunks.append(chunk)
+    content = "".join(content_chunks)
     
     # Contar tokens de saída
     output_tokens = count_tokens(content, req.model)
