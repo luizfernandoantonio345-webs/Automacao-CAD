@@ -117,6 +117,41 @@ except ImportError as e:
     get_cutting_parameters = analyze_and_fix_geometry = None
     suggest_all_optimizations = AIConfidence = OptimizationType = None
 
+try:
+    from .job_history import (
+        JobHistoryManager, Job, JobStatus, JobMaterial, JobParameters,
+        JobStatistics, JobCosts, ConsumablesUsed, get_job_manager,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Job history não disponível: {e}")
+    JobHistoryManager = Job = JobStatus = JobMaterial = JobParameters = None
+    JobStatistics = JobCosts = ConsumablesUsed = get_job_manager = None
+
+try:
+    from .dashboard_metrics import (
+        DashboardMetricsManager, OEEMetrics, ProductivityMetrics,
+        CostMetrics, ConsumablesMetrics, QualityMetrics, MachineMetrics,
+        get_metrics_manager,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Dashboard metrics não disponível: {e}")
+    DashboardMetricsManager = OEEMetrics = ProductivityMetrics = None
+    CostMetrics = ConsumablesMetrics = QualityMetrics = MachineMetrics = None
+    get_metrics_manager = None
+
+try:
+    from .machine_integration import (
+        MachineManager, MachineController, MachineConfig, MachineState,
+        MachinePosition, MachineStatus, ConnectionType, get_machine_manager,
+    )
+except ImportError as e:
+    import logging
+    logging.warning(f"Machine integration não disponível: {e}")
+    MachineManager = MachineController = MachineConfig = MachineState = None
+    MachinePosition = MachineStatus = ConnectionType = get_machine_manager = None
+
 __version__ = "2.0.0"
 __all__ = [
     "GeometryParser",

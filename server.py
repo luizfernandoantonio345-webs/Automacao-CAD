@@ -83,6 +83,24 @@ except ImportError as e:
     nesting_router = None
 
 try:
+    from cam.job_history import router as job_history_router
+except ImportError as e:
+    _log.warning(f"Job history router not available: {e}")
+    job_history_router = None
+
+try:
+    from cam.dashboard_metrics import router as dashboard_router
+except ImportError as e:
+    _log.warning(f"Dashboard router not available: {e}")
+    dashboard_router = None
+
+try:
+    from cam.machine_integration import router as machine_router
+except ImportError as e:
+    _log.warning(f"Machine integration router not available: {e}")
+    machine_router = None
+
+try:
     from backend.database.db import (
         init_db, seed_default_user, authenticate_user, create_user,
         email_exists, get_user_by_email, create_project as db_create_project,
@@ -338,6 +356,18 @@ if cam_router:
 # Include CAM Nesting & Library routes (Otimização de Chapa)
 if nesting_router:
     app.include_router(nesting_router)
+
+# Include Job History routes (Histórico de Jobs CNC)
+if job_history_router:
+    app.include_router(job_history_router)
+
+# Include Dashboard Metrics routes (KPIs e Métricas)
+if dashboard_router:
+    app.include_router(dashboard_router)
+
+# Include Machine Integration routes (Comunicação CNC)
+if machine_router:
+    app.include_router(machine_router)
 
 # Include AutoCAD COM Driver routes (Nível 4)
 if autocad_router:
