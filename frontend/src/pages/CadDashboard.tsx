@@ -149,7 +149,7 @@ const CadDashboard: React.FC = () => {
         setIsConnected(true);
         setCadInfo({
           type: health.engine || "AutoCAD",
-          version: health.document?.version || "2024",
+          version: "2024",
           document: health.document?.name,
         });
         setConnectionMode("local");
