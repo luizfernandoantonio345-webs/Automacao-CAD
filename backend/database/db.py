@@ -3,6 +3,10 @@ Engenharia CAD — Camada de persistência (SQLite ou PostgreSQL).
 
 SQLite é o padrão para desenvolvimento local.
 Se DATABASE_URL apontar para PostgreSQL, usa psycopg2 automaticamente.
+
+IMPORTANTE: Em produção Vercel sem DATABASE_URL, o sistema usa SQLite em memória
+temporária. Dados serão perdidos entre deploys. Configure DATABASE_URL para 
+PostgreSQL em produção.
 """
 from __future__ import annotations
 
@@ -22,6 +26,8 @@ logger = logging.getLogger("engcad.db")
 _DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 _USE_PG = _DATABASE_URL.startswith("postgresql://") or _DATABASE_URL.startswith("postgres://")
 _IS_VERCEL = bool(os.getenv("VERCEL"))
+_IS_PRODUCTION = os.getenv("VERCEL_ENV") == "production" or os.getenv("APP_ENV") == "production"
+_EPHEMERAL_MODE = False
 
 if _USE_PG:
     import psycopg2
@@ -32,12 +38,23 @@ else:
     if not _DB_PATH.name:
         if _IS_VERCEL:
             _DB_PATH = Path("/tmp/engcad.db")
+            _EPHEMERAL_MODE = True
+            if _IS_PRODUCTION:
+                logger.warning(
+                    "⚠️ AVISO: SQLite efêmero em produção Vercel! "
+                    "Configure DATABASE_URL para PostgreSQL para persistência real."
+                )
         else:
             _DB_PATH = Path(__file__).resolve().parents[2] / "data" / "engcad.db"
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    logger.info("Usando SQLite: %s", _DB_PATH)
+    logger.info("Usando SQLite: %s (efêmero=%s)", _DB_PATH, _EPHEMERAL_MODE)
 
 _LOCAL = threading.local()
+
+
+def is_ephemeral() -> bool:
+    """Retorna True se o banco é temporário (perderá dados entre deploys)."""
+    return _EPHEMERAL_MODE and not _USE_PG
 
 
 def _get_conn():

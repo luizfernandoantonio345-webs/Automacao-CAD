@@ -727,7 +727,7 @@ const AIDashboard: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: spacing.md,
             marginBottom: spacing.lg,
           }}

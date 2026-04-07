@@ -94,12 +94,42 @@ async def get_engine_details(engine_name: str):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# CHATBOT ENDPOINTS
+# CHATBOT ENDPOINTS (com Guardrails)
 # ════════════════════════════════════════════════════════════════════════════
+
+from ai_engines.ai_guardrails import apply_guardrails
 
 @router.post("/chat")
 async def chat(request: ChatRequest):
-    """Envia mensagem para o chatbot assistente."""
+    """
+    Envia mensagem para o chatbot assistente.
+    
+    Aplica guardrails para garantir que respostas sejam apenas
+    sobre tópicos de engenharia, CAD e automação industrial.
+    """
+    # Aplicar guardrails
+    guardrail_result = apply_guardrails(request.message)
+    
+    if not guardrail_result["allowed"]:
+        # Mensagem fora do escopo - retornar redirecionamento
+        return {
+            "success": True,
+            "response": guardrail_result["redirect"],
+            "data": {
+                "AssistantChatbot": {
+                    "response": guardrail_result["redirect"],
+                    "filtered": True,
+                    "category": guardrail_result["category"],
+                }
+            },
+            "guardrails": {
+                "blocked": True,
+                "category": guardrail_result["category"],
+                "confidence": guardrail_result["confidence"],
+            }
+        }
+    
+    # Mensagem permitida - processar normalmente
     result = await ai_router.chat(request.message, request.context)
     return result
 

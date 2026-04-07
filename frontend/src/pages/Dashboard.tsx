@@ -200,8 +200,8 @@ const Dashboard = () => {
   const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return (
-    <div style={{ ...styles.pageContainer, padding: 0 }}>
-      <main style={{ flex: 1, padding: spacing.lg, overflowY: "auto" }}>
+    <div style={{ ...styles.pageContainer, padding: 0, overflow: "hidden" }}>
+      <main style={{ flex: 1, padding: spacing.lg, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", boxSizing: "border-box" }}>
         {/* Welcome Hero */}
         <WelcomeHero userName="Operador" theme={widgetTheme} />
 
@@ -229,8 +229,9 @@ const Dashboard = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
               gap: 16,
+              maxWidth: "100%",
             }}
           >
             {quickActions.map((action) => (
@@ -247,7 +248,7 @@ const Dashboard = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 16,
             marginBottom: 24,
           }}
@@ -290,8 +291,9 @@ const Dashboard = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
             gap: 24,
+            maxWidth: "100%",
           }}
         >
           {/* Recent Projects */}
@@ -301,6 +303,8 @@ const Dashboard = () => {
               border: `1px solid ${theme.border}`,
               borderRadius: 16,
               padding: 20,
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
             <div
@@ -502,9 +506,10 @@ const Dashboard = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: 24,
             marginTop: 24,
+            maxWidth: "100%",
           }}
         >
           {/* Top Companies */}
@@ -514,6 +519,8 @@ const Dashboard = () => {
               border: `1px solid ${theme.border}`,
               borderRadius: 16,
               padding: 20,
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
             <h3

@@ -60,13 +60,14 @@ function Set-VercelEnvValue {
     }
 
     try {
-        Invoke-Vercel -Arguments $rmArgs | Out-Null
+        Invoke-Vercel -Arguments $rmArgs 2>$null | Out-Null
     }
     catch {
         # Ignore removal errors when variable does not exist.
     }
 
-    $addArgs = @("env", "add", $Name, $Environment, "--cwd", $Cwd)
+    # Use --force to skip interactive prompts for git branch selection
+    $addArgs = @("env", "add", $Name, $Environment, "--force", "--cwd", $Cwd)
     if ($ScopeValue) {
         $addArgs += @("--scope", $ScopeValue)
     }
@@ -74,7 +75,7 @@ function Set-VercelEnvValue {
     $Value | & vercel @addArgs | Out-Null
 }
 
-function To-VercelBool {
+function ConvertTo-VercelBool {
     param([bool]$Value)
     if ($Value) {
         return "true"
@@ -89,19 +90,22 @@ if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
 $backend = Resolve-ProjectName -Provided $BackendProject -Prompt "Nome do projeto BACKEND na Vercel"
 $frontend = Resolve-ProjectName -Provided $FrontendProject -Prompt "Nome do projeto FRONTEND na Vercel"
 
+$backendCwd = (Resolve-Path ".").Path
+$frontendCwd = (Resolve-Path "frontend").Path
+
 $commonArgs = @()
 if ($Scope) {
     $commonArgs += @("--scope", $Scope)
 }
 
 Write-Step "Linkando backend na raiz do repositorio"
-Invoke-Vercel -Arguments (@("link", "--yes", "--project", $backend, "--cwd", ".") + $commonArgs) | Out-Null
+Invoke-Vercel -Arguments (@("link", "--yes", "--project", $backend, "--cwd", $backendCwd) + $commonArgs) | Out-Null
 
 $backendVars = @{
     "APP_ENV"                  = $AppEnv
-    "ALLOW_DEMO_LOGIN"         = (To-VercelBool -Value $AllowDemoLogin)
-    "SIMULATION_MODE"          = (To-VercelBool -Value $SimulationMode)
-    "LICENSE_FALLBACK_ENABLED" = (To-VercelBool -Value $LicenseFallbackEnabled)
+    "ALLOW_DEMO_LOGIN"         = (ConvertTo-VercelBool -Value $AllowDemoLogin)
+    "SIMULATION_MODE"          = (ConvertTo-VercelBool -Value $SimulationMode)
+    "LICENSE_FALLBACK_ENABLED" = (ConvertTo-VercelBool -Value $LicenseFallbackEnabled)
 }
 
 if ($JarvisSecret -and $JarvisSecret.Trim().Length -gt 0) {
@@ -132,12 +136,12 @@ if ($Prod) {
 
 foreach ($backendEnv in $backendTargetEnvs) {
     foreach ($entry in $backendVars.GetEnumerator()) {
-        Set-VercelEnvValue -Name $entry.Key -Value $entry.Value -Environment $backendEnv -Cwd "." -ScopeValue $Scope
+        Set-VercelEnvValue -Name $entry.Key -Value $entry.Value -Environment $backendEnv -Cwd $backendCwd -ScopeValue $Scope
     }
 }
 
 Write-Step "Fazendo deploy do backend"
-$backendDeployArgs = @("deploy", "--yes", "--cwd", ".")
+$backendDeployArgs = @("deploy", "--yes", "--cwd", $backendCwd)
 if ($Prod) {
     $backendDeployArgs += "--prod"
 }
@@ -152,7 +156,7 @@ if (-not $backendUrl) {
 Write-Step "URL backend detectada: $backendUrl"
 
 Write-Step "Linkando frontend (diretorio frontend)"
-Invoke-Vercel -Arguments (@("link", "--yes", "--project", $frontend, "--cwd", "frontend") + $commonArgs) | Out-Null
+Invoke-Vercel -Arguments (@("link", "--yes", "--project", $frontend, "--cwd", $frontendCwd) + $commonArgs) | Out-Null
 
 Write-Step "Sincronizando variaveis de ambiente do frontend"
 $frontendVars = @(
@@ -168,12 +172,12 @@ if ($Prod) {
 
 foreach ($envName in $targetEnvs) {
     foreach ($varName in $frontendVars) {
-        Set-VercelEnvValue -Name $varName -Value $backendUrl -Environment $envName -Cwd "frontend" -ScopeValue $Scope
+        Set-VercelEnvValue -Name $varName -Value $backendUrl -Environment $envName -Cwd $frontendCwd -ScopeValue $Scope
     }
 }
 
 Write-Step "Fazendo deploy do frontend"
-$frontendDeployArgs = @("deploy", "--yes", "--cwd", "frontend")
+$frontendDeployArgs = @("deploy", "--yes", "--cwd", $frontendCwd)
 if ($Prod) {
     $frontendDeployArgs += "--prod"
 }

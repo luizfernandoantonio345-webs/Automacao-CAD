@@ -222,8 +222,9 @@ const SystemHealthCard: React.FC<{
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: spacing.sm,
+          maxWidth: "100%",
         }}
       >
         {Object.entries(health.components || {}).map(([name, comp]) => {
@@ -452,9 +453,10 @@ const UserActivityCard: React.FC<{
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
           gap: spacing.sm,
           marginBottom: spacing.md,
+          maxWidth: "100%",
         }}
       >
         <div style={{ textAlign: "center" }}>
@@ -749,9 +751,10 @@ const AnalyticsDashboard: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: spacing.md,
             marginBottom: spacing.lg,
+            maxWidth: "100%",
           }}
         >
           {Object.entries(kpis)
@@ -765,7 +768,7 @@ const AnalyticsDashboard: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
             gap: spacing.lg,
           }}
         >

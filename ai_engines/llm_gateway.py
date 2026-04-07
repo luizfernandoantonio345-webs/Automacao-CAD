@@ -527,6 +527,9 @@ async def list_models():
     return {"models": models, "default": DEFAULT_MODEL}
 
 
+from ai_engines.ai_guardrails import apply_guardrails, inject_system_prompt
+
+
 @router.post("/completions", response_model=CompletionResponse)
 async def create_completion(
     req: CompletionRequest,
@@ -535,7 +538,7 @@ async def create_completion(
 ):
     """
     Gera completion usando LLM.
-    Suporta cache, rate limiting e fallback automático.
+    Suporta cache, rate limiting, guardrails e fallback automático.
     """
     # Verificar rate limit
     if not check_rate_limit(email, tier):
@@ -545,6 +548,24 @@ async def create_completion(
         )
     
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    
+    # Aplicar guardrails - verificar se mensagem está no escopo
+    last_user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
+    guardrail_result = apply_guardrails(last_user_msg)
+    
+    if not guardrail_result["allowed"]:
+        # Mensagem fora do escopo - retornar redirecionamento sem chamar LLM
+        return CompletionResponse(
+            id="guardrail_blocked",
+            model=req.model,
+            content=guardrail_result["redirect"],
+            usage={"blocked": True, "reason": guardrail_result["category"]},
+            provider="guardrails",
+            cached=False,
+        )
+    
+    # Injetar system prompt para contextualizar a IA
+    messages = inject_system_prompt(messages)
     
     # Verificar cache
     if req.use_cache and not req.stream:

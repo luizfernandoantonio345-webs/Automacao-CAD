@@ -559,9 +559,10 @@ const CadDashboard: React.FC = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: "20px",
           marginBottom: "28px",
+          maxWidth: "100%",
         }}
       >
         {/* Status Card */}
@@ -671,8 +672,9 @@ const CadDashboard: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
             gap: "16px",
+            maxWidth: "100%",
           }}
         >
           <button

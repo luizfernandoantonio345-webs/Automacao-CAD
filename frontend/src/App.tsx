@@ -35,6 +35,8 @@ const AutoCADControl = lazy(() => import("./pages/AutoCADControl"));
 const AIDashboard = lazy(() => import("./pages/AIDashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const CncControl = lazy(() => import("./pages/CncControl"));
+const ChatCAD = lazy(() => import("./pages/ChatCAD"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -106,6 +108,7 @@ const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
 function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [licensed, setLicensed] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [checkingLicense, setCheckingLicense] = useState(true);
   const [restoringSession, setRestoringSession] = useState(true);
 
@@ -117,7 +120,10 @@ function AppContent() {
         const raw = window.localStorage.getItem("license");
         if (!raw) {
           // Sem licença armazenada — continuar em modo demo
-          if (mounted) setLicensed(true);
+          if (mounted) {
+            setLicensed(true);
+            setDemoMode(true);
+          }
           return;
         }
         const parsed = JSON.parse(raw) as Partial<LicenseCache>;
@@ -125,7 +131,10 @@ function AppContent() {
         const machineId = String(parsed.machineId || "").trim();
         if (!licenseKey || !machineId) {
           window.localStorage.removeItem("license");
-          if (mounted) setLicensed(true);
+          if (mounted) {
+            setLicensed(true);
+            setDemoMode(true);
+          }
           return;
         }
         try {
@@ -133,13 +142,22 @@ function AppContent() {
             license_key: licenseKey,
             machine_id: machineId,
           });
-          if (mounted) setLicensed(true);
+          if (mounted) {
+            setLicensed(true);
+            setDemoMode(false);
+          }
         } catch {
           // Servidor de licenças offline — continuar em modo demo
-          if (mounted) setLicensed(true);
+          if (mounted) {
+            setLicensed(true);
+            setDemoMode(true);
+          }
         }
       } catch {
-        if (mounted) setLicensed(true);
+        if (mounted) {
+          setLicensed(true);
+          setDemoMode(true);
+        }
       } finally {
         if (mounted) setCheckingLicense(false);
       }
@@ -191,12 +209,33 @@ function AppContent() {
   const fallback = <LoadingScreen message="Carregando módulo..." />;
 
   return (
-    <Router>
-      <RouteAnticipator />
-      <BackendHeartbeat />
+    <>
+      {demoMode && (
+        <div style={{
+          background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+          color: '#fff',
+          textAlign: 'center',
+          padding: '8px 16px',
+          fontSize: '14px',
+          fontWeight: 500,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+        }}>
+          ⚠️ Modo Demonstração — Licença não validada. Algumas funcionalidades podem estar limitadas.
+        </div>
+      )}
+      <div style={demoMode ? { marginTop: '40px' } : undefined}>
+        <Router>
+          <RouteAnticipator />
+          <BackendHeartbeat />
       <Suspense fallback={fallback}>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/planos" element={<Pricing />} />
           <Route
             path="/dashboard"
             element={
@@ -285,6 +324,14 @@ function AppContent() {
               </SidebarLayout>
             }
           />
+          <Route
+            path="/chatcad"
+            element={
+              <SidebarLayout>
+                <ChatCAD />
+              </SidebarLayout>
+            }
+          />
           {/* Redirects para rotas legadas */}
           <Route
             path="/autocad-control"
@@ -297,6 +344,8 @@ function AppContent() {
         </Routes>
       </Suspense>
     </Router>
+      </div>
+    </>
   );
 }
 
