@@ -222,6 +222,9 @@ _AUTH_WHITELIST = {
     "/api/autocad/health", "/api/autocad/buffer", "/api/autocad/status",
     # AI endpoints para frontend (somente leitura e chat)
     "/api/ai/status", "/api/ai/engines", "/api/ai/chat",
+    # ChatCAD endpoints (NLP → AutoCAD, sem dados sensíveis)
+    "/api/chatcad/examples", "/api/chatcad/chat",
+    "/api/chatcad/interpret", "/api/chatcad/execute",
     # CAM endpoints para geração de G-code (somente leitura/processamento)
     "/api/cam/materials", "/api/cam/parse", "/api/cam/generate", "/api/cam/validate",
     "/api/cam/nesting/run", "/api/cam/nesting/quick-piece", "/api/cam/library/pieces",
@@ -461,6 +464,14 @@ try:
     logger.info("AI Engines carregados com sucesso")
 except ImportError as e:
     logger.warning(f"AI Engines não disponíveis: {e}")
+
+# Include ChatCAD routes (NLP → AutoCAD)
+try:
+    from ai_engines.chatcad_routes import router as chatcad_router
+    app.include_router(chatcad_router)
+    logger.info("ChatCAD NLP carregado com sucesso")
+except ImportError as e:
+    logger.warning(f"ChatCAD não disponível: {e}")
 
 # Include LLM Gateway routes (Multi-provider AI proxy)
 try:

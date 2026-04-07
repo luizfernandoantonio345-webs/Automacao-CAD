@@ -2,18 +2,33 @@ import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { orchestrator } from "../middleware/AIOrchestrator";
 
 const CLIENT_CACHE_VERSION_KEY = "engcad_client_cache_version";
-const CLIENT_CACHE_VERSION = "2026-03-30-api-8000";
+const CLIENT_CACHE_VERSION = "2026-04-07-api-unified";
 
-const runtimeDefaultApiBase =
-  typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : "http://127.0.0.1:8000";
+// Detectar ambiente de produção da Vercel
+const isVercelProduction = typeof window !== "undefined" && 
+  window.location.hostname.includes("vercel.app");
+
+// URL de fallback para produção ou desenvolvimento
+const getDefaultApiBase = (): string => {
+  if (typeof window === "undefined") {
+    return "http://127.0.0.1:8000";
+  }
+  // Em produção Vercel, usar URL relativa ou backend específico
+  if (isVercelProduction) {
+    return "https://automacao-cad-backend.vercel.app";
+  }
+  // Em desenvolvimento local
+  return `${window.location.protocol}//${window.location.hostname}:8000`;
+};
 
 const configuredApiBase =
   (typeof window !== "undefined" && (window as any).__ENGCAD_API_URL__) ||
   process.env.REACT_APP_API_URL ||
-  runtimeDefaultApiBase;
+  getDefaultApiBase();
 export const API_BASE_URL = configuredApiBase;
+
+// Runtime fallback base captured at initialization
+const runtimeDefaultApiBase = getDefaultApiBase();
 
 export const SSE_BASE_URL =
   (typeof window !== "undefined" && (window as any).__ENGCAD_SSE_URL__) ||
@@ -21,7 +36,7 @@ export const SSE_BASE_URL =
   API_BASE_URL;
 
 const baseURL = API_BASE_URL;
-const api = axios.create({ baseURL, timeout: 15_000 });
+export const api = axios.create({ baseURL, timeout: 15_000 });
 
 const clearStaleClientCache = () => {
   if (typeof window === "undefined") return;

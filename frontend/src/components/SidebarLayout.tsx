@@ -13,6 +13,8 @@ import {
   FaBrain,
   FaTachometerAlt,
   FaFire,
+  FaRobot,
+  FaCrown,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -36,9 +38,11 @@ const NAV_ITEMS: NavEntry[] = [
   { path: "/final-report", label: "Relatório Final", icon: <FaFileAlt /> },
   { path: "/cad-dashboard", label: "Painel CAD", icon: <FaDesktop /> },
   { path: "/cnc-control", label: "Controle CNC Plasma", icon: <FaFire /> },
+  { path: "/chatcad", label: "ChatCAD (IA)", icon: <FaRobot /> },
   { path: "/ai-dashboard", label: "Central de IAs", icon: <FaBrain /> },
   { path: "/analytics", label: "Analytics", icon: <FaTachometerAlt /> },
   { path: "/cad-console", label: "Console CAD", icon: <FaTerminal /> },
+  { path: "/pricing", label: "Planos & Preços", icon: <FaCrown /> },
 ];
 
 /** Detecta modo demo via token JWT (email demo@engenharia-cad.com) */
