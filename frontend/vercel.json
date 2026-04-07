@@ -1,7 +1,12 @@
 {
   "version": 2,
-  "framework": "create-react-app",
-  "installCommand": "npm ci --legacy-peer-deps",
   "buildCommand": "npm run build",
-  "outputDirectory": "build"
+  "outputDirectory": "build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "env": {
+    "REACT_APP_API_URL": "https://automacao-cad-backend.vercel.app"
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

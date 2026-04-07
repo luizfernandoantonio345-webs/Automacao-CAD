@@ -11,5 +11,6 @@
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
-  ]
+  ],
+  "ignoreCommand": "[ \"$VERCEL_PROJECT_NAME\" = \"automacao-cad-frontend\" ] && exit 0 || exit 1"
 }
