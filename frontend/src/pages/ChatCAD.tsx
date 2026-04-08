@@ -1,26 +1,25 @@
+/**
+ * ENGENHARIA CAD – ChatCAD v2.0
+ * Interface de IA estilo ChatGPT com:
+ * - Markdown rendering nativo
+ * - Efeito de digitação (streaming)
+ * - Demo com limite de consultas
+ * - Sugestões inteligentes
+ * - Design moderno imersivo
+ */
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaPaperPlane,
-  FaRobot,
-  FaUser,
-  FaPlay,
-  FaLightbulb,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaSpinner,
-  FaCog,
-  FaChevronDown,
-  FaTrash,
+  FaPaperPlane, FaRobot, FaUser, FaPlay, FaCheckCircle,
+  FaTimesCircle, FaCog, FaTrash, FaCrown, FaCopy, FaCheck, FaBolt,
 } from "react-icons/fa";
 import { api as apiClient } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
+import { useLicense } from "../context/LicenseContext";
 
-// ═══════════════════════════════════════════════════════════════
-// ChatCAD — Interface de Linguagem Natural para o AutoCAD
-// Interpreta comandos em português → Planeja → Executa
-// ═══════════════════════════════════════════════════════════════
-
+// ─────────────────── Types ───────────────────
 interface ChatMessage {
   id: number;
   role: "user" | "assistant" | "system";
@@ -31,76 +30,169 @@ interface ChatMessage {
   execucao?: any;
   sugestoes?: string[];
   loading?: boolean;
+  streaming?: boolean;
+  copiedId?: boolean;
 }
 
-interface Example {
-  comando: string;
-  descricao: string;
+// ─────────────────── Markdown renderer ───────────────────
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const result: React.ReactNode[] = [];
+  let listBuffer: string[] = [];
+  let codeBuffer: string[] = [];
+  let inCode = false;
+  let inCodeLang = "";
+
+  const flushList = (key: string) => {
+    if (listBuffer.length > 0) {
+      result.push(
+        <ul key={`ul-${key}`} style={{ margin: "8px 0", paddingLeft: "20px" }}>
+          {listBuffer.map((li, i) => (
+            <li key={i} style={{ marginBottom: "4px", lineHeight: 1.6 }}>{parseLine(li)}</li>
+          ))}
+        </ul>
+      );
+      listBuffer = [];
+    }
+  };
+
+  const flushCode = (key: string) => {
+    if (codeBuffer.length > 0) {
+      result.push(
+        <div key={`code-${key}`} style={{ position: "relative", margin: "12px 0" }}>
+          {inCodeLang && (
+            <div style={{
+              background: "#1e293b", borderRadius: "8px 8px 0 0", padding: "4px 12px",
+              fontSize: "11px", color: "#8899aa", borderBottom: "1px solid #334155",
+            }}>
+              {inCodeLang}
+            </div>
+          )}
+          <pre style={{
+            background: "#0d1117", border: "1px solid #1e293b",
+            borderRadius: inCodeLang ? "0 0 8px 8px" : "8px",
+            padding: "14px", margin: 0, overflowX: "auto",
+            fontSize: "13px", lineHeight: 1.6, color: "#e2e8f0",
+          }}>
+            <code>{codeBuffer.join("\n")}</code>
+          </pre>
+        </div>
+      );
+      codeBuffer = [];
+      inCode = false;
+      inCodeLang = "";
+    }
+  };
+
+  const parseLine = (line: string): React.ReactNode => {
+    const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+    return <>{parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**"))
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      if (part.startsWith("`") && part.endsWith("`"))
+        return <code key={i} style={{ background: "rgba(255,255,255,0.08)", borderRadius: "4px", padding: "1px 6px", fontSize: "13px", fontFamily: "monospace" }}>{part.slice(1, -1)}</code>;
+      if (part.startsWith("*") && part.endsWith("*"))
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      return <React.Fragment key={i}>{part}</React.Fragment>;
+    })}</>;
+  };
+
+  lines.forEach((line, idx) => {
+    const key = String(idx);
+    if (line.startsWith("```")) {
+      if (inCode) { flushCode(key); } else { flushList(key); inCode = true; inCodeLang = line.slice(3).trim(); }
+      return;
+    }
+    if (inCode) { codeBuffer.push(line); return; }
+    if (line.startsWith("### ")) { flushList(key); result.push(<h3 key={key} style={{ color: "#00A1FF", fontSize: "15px", fontWeight: 700, margin: "16px 0 6px" }}>{parseLine(line.slice(4))}</h3>); return; }
+    if (line.startsWith("## ")) { flushList(key); result.push(<h2 key={key} style={{ color: "#e2e8f0", fontSize: "17px", fontWeight: 700, margin: "18px 0 8px" }}>{parseLine(line.slice(3))}</h2>); return; }
+    if (line.startsWith("# ")) { flushList(key); result.push(<h1 key={key} style={{ color: "#fff", fontSize: "19px", fontWeight: 800, margin: "20px 0 10px" }}>{parseLine(line.slice(2))}</h1>); return; }
+    if (line === "---") { flushList(key); result.push(<hr key={key} style={{ border: "none", borderTop: "1px solid #1e293b", margin: "14px 0" }} />); return; }
+    if (line.startsWith("> ")) { flushList(key); result.push(<blockquote key={key} style={{ borderLeft: "3px solid #00A1FF", paddingLeft: "12px", margin: "8px 0", color: "#8899aa", fontStyle: "italic" }}>{parseLine(line.slice(2))}</blockquote>); return; }
+    if (line.match(/^[-*•]\s/)) { listBuffer.push(line.replace(/^[-*•]\s/, "")); return; }
+    if (line.match(/^\d+\.\s/)) {
+      flushList(key);
+      result.push(<div key={key} style={{ display: "flex", gap: "8px", marginBottom: "4px" }}><span style={{ color: "#00A1FF", fontWeight: 700, minWidth: "20px", flexShrink: 0 }}>{line.match(/^(\d+)\./)?.[1]}.</span><span>{parseLine(line.replace(/^\d+\.\s/, ""))}</span></div>);
+      return;
+    }
+    if (line.trim() === "") { flushList(key); result.push(<div key={key} style={{ height: "8px" }} />); return; }
+    flushList(key);
+    result.push(<p key={key} style={{ margin: "4px 0", lineHeight: 1.7 }}>{parseLine(line)}</p>);
+  });
+  flushList("end"); flushCode("end");
+  return result;
 }
 
+// ─────────────────── Typing effect ───────────────────
+function TypingContent({ text, active }: { text: string; active: boolean }) {
+  const [displayed, setDisplayed] = useState(active ? "" : text);
+  const indexRef = useRef(active ? 0 : text.length);
+
+  useEffect(() => {
+    if (!active) { setDisplayed(text); return; }
+    setDisplayed(""); indexRef.current = 0;
+    const iv = setInterval(() => {
+      if (indexRef.current >= text.length) { clearInterval(iv); return; }
+      const chunk = text.slice(indexRef.current, indexRef.current + 10);
+      setDisplayed((p) => p + chunk);
+      indexRef.current += chunk.length;
+    }, 16);
+    return () => clearInterval(iv);
+  }, [text, active]);
+
+  return <>{renderMarkdown(displayed)}</>;
+}
+
+// ─────────────────── Starter prompts ───────────────────
+const STARTER_PROMPTS = [
+  { icon: "🔧", text: "Criar flange DN150 #150 com furações padrão ASME B16.5", cat: "Piping" },
+  { icon: "📐", text: "Gerar isométrico de linha de vapor 6' pressão 150 PSI", cat: "Isométrico" },
+  { icon: "⚙️", text: "Simular corte plasma chapa 12mm aço carbono nesting automático", cat: "CNC/Plasma" },
+  { icon: "🏭", text: "Validar P&ID da linha 100-HN-0042 norma Petrobras N-133", cat: "Validação" },
+  { icon: "💰", text: "Estimar custo fabricação tanque vertical 5000L AISI 316L", cat: "Estimativa" },
+  { icon: "🔍", text: "Listar componentes faltantes nos isométricos ISO-001 a ISO-012", cat: "Análise" },
+];
+
+// ─────────────────── Main Component ───────────────────
 const ChatCAD: React.FC = () => {
-  const { theme } = useTheme();
   const { addToast, handleApiError } = useToast();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 0,
-      role: "system",
-      content: "Bem-vindo ao ChatCAD! Descreva o que deseja criar no AutoCAD usando linguagem natural. Eu interpreto, planejo e executo para você.",
-      timestamp: new Date(),
-    },
-  ]);
+  const { license, consumeAiQuery, triggerUpgrade } = useLicense();
+  const navigate = useNavigate();
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [examples, setExamples] = useState<Record<string, Example[]>>({});
-  const [showExamples, setShowExamples] = useState(false);
   const [autoExecute, setAutoExecute] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(1);
 
-  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load examples
-  useEffect(() => {
-    apiClient
-      .get(`/api/chatcad/examples`)
-      .then((r) => setExamples(r.data))
-      .catch(() => {});
-  }, []);
-
   const addMsg = useCallback(
-    (role: ChatMessage["role"], content: string, extra?: Partial<ChatMessage>) => {
-      const msg: ChatMessage = {
-        id: nextId.current++,
-        role,
-        content,
-        timestamp: new Date(),
-        ...extra,
-      };
-      setMessages((prev) => [...prev, msg]);
-      return msg.id;
-    },
-    []
+    (role: ChatMessage["role"], content: string, extra?: Partial<ChatMessage>): number => {
+      const id = nextId.current++;
+      setMessages((prev) => [...prev, { id, role, content, timestamp: new Date(), ...extra }]);
+      return id;
+    }, []
   );
 
   const updateMsg = useCallback((id: number, updates: Partial<ChatMessage>) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...updates } : m))
-    );
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
   }, []);
 
-  // ── Send message ──
   const handleSend = async () => {
     const texto = input.trim();
     if (!texto || loading) return;
+    if (!consumeAiQuery()) return;
 
     setInput("");
+    // Reset textarea height
+    if (inputRef.current) { inputRef.current.style.height = "auto"; }
     addMsg("user", texto);
     setLoading(true);
-
     const assistantId = addMsg("assistant", "", { loading: true });
 
     try {
@@ -113,591 +205,470 @@ const ChatCAD: React.FC = () => {
       let execucao: any | undefined;
       let sugestoes: string[] | undefined;
 
-      if (data.resposta?.response) {
-        content = data.resposta.response;
-      } else if (data.tipo === "desconhecido") {
-        content = "Não entendi esse comando. Veja as sugestões abaixo.";
+      if (data.resposta?.response) content = data.resposta.response;
+      else if (data.tipo === "desconhecido") {
+        content = "Não entendi esse comando. Reformule ou use uma das sugestões abaixo.";
         sugestoes = data.interpretacao?.sugestoes;
+      } else if (data.resposta) {
+        content = typeof data.resposta === "string" ? data.resposta : JSON.stringify(data.resposta, null, 2);
       }
 
-      // Correction notice
       if (data.interpretacao?.correcao) {
-        content = `📝 *Correção:* "${data.interpretacao.correcao}"\n\n${content}`;
+        content = `> 📝 *Correção:* "${data.interpretacao.correcao}"\n\n${content}`;
       }
 
       if (!autoExecute && data.tipo !== "pergunta" && data.tipo !== "desconhecido") {
-        content = `📋 **Plano interpretado** (${data.tipo})\n\n`;
         plano = data.dados?.plano || data.plano;
-        if (plano) {
-          plano.forEach((a: any, i: number) => {
-            content += `${i + 1}. ${a.descricao || a.acao}\n`;
-          });
-          content += "\nClique ▶ Executar para rodar no AutoCAD.";
+        if (plano?.length) {
+          content = `**Plano de execução** (${plano.length} etapas):\n\n`;
+          plano.forEach((a: any, i: number) => { content += `${i + 1}. ${a.descricao || a.acao}\n`; });
+          content += `\n*Clique em **Executar** para rodar no AutoCAD.*`;
         }
       }
 
-      if (data.execucao) {
-        execucao = data.execucao;
-        plano = data.interpretacao?.dados?.plano;
-      }
-
+      if (data.execucao) { execucao = data.execucao; plano = data.interpretacao?.dados?.plano; }
       sugestoes = sugestoes || data.interpretacao?.sugestoes;
 
       updateMsg(assistantId, {
-        content: content || "Comando processado.",
-        loading: false,
-        tipo: data.tipo,
-        plano,
-        execucao,
-        sugestoes,
+        content: content || "Comando processado com sucesso.",
+        loading: false, streaming: true,
+        tipo: data.tipo, plano, execucao, sugestoes,
       });
 
-      if (data.executado) {
-        addToast(
-          data.execucao?.falhas === 0 ? "success" : "warning",
-          "ChatCAD",
-          data.resposta?.response || "Comando executado"
-        );
-      }
+      if (data.executado) addToast(data.execucao?.falhas === 0 ? "success" : "warning", "ChatCAD", data.resposta?.response || "Executado");
     } catch (err: any) {
-      handleApiError(err);
       updateMsg(assistantId, {
-        content: "❌ Erro ao processar comando. Verifique se o servidor está rodando.",
+        content: !err?.response
+          ? "❌ Servidor indisponível. Verifique sua conexão e tente novamente."
+          : `❌ Erro ao processar (${err?.response?.status}). Tente novamente.`,
         loading: false,
       });
+      if (err?.response) handleApiError(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Execute pending plan ──
   const handleExecutePlan = async (plano: any[]) => {
+    if (!consumeAiQuery()) return;
     setLoading(true);
     const execId = addMsg("assistant", "", { loading: true });
 
     try {
-      const res = await apiClient.post(`/api/chatcad/execute`, { plano });
+      const res = await apiClient.post("/api/chatcad/execute", { plano });
       const data = res.data;
-      const ok = data.executadas || 0;
-      const total = data.total || 0;
-      const falhas = data.falhas || 0;
-
-      let content = falhas === 0
-        ? `✅ Executado com sucesso! ${ok}/${total} operações concluídas.`
-        : `⚠️ ${ok}/${total} OK, ${falhas} falhas.`;
-
-      if (data.resultados) {
-        content += "\n\n";
-        data.resultados.forEach((r: any) => {
-          content += `${r.success ? "✅" : "❌"} ${r.descricao || r.acao}: ${r.message}\n`;
-        });
-      }
-
-      updateMsg(execId, { content, loading: false, execucao: data });
-      addToast(
-        falhas === 0 ? "success" : "warning",
-        "Execução",
-        `${ok}/${total} operações concluídas`
-      );
-    } catch (err: any) {
-      handleApiError(err);
+      const ok = data.executadas || 0, total = data.total || 0, falhas = data.falhas || 0;
       updateMsg(execId, {
-        content: "❌ Erro ao executar plano.",
-        loading: false,
+        content: falhas === 0
+          ? `✅ Plano executado! **${ok}/${total}** operações concluídas.`
+          : `⚠️ Execução parcial: **${ok}/${total}** OK, **${falhas}** falhas.`,
+        loading: false, streaming: true, execucao: data,
       });
+      addToast(falhas === 0 ? "success" : "warning", "Execução", `${ok}/${total} concluídas`);
+    } catch {
+      updateMsg(execId, { content: "❌ Erro ao executar plano no AutoCAD.", loading: false });
     } finally {
       setLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const handleExampleClick = (cmd: string) => {
-    setInput(cmd);
-    setShowExamples(false);
-    inputRef.current?.focus();
+  const handleCopy = (id: number, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      updateMsg(id, { copiedId: true });
+      setTimeout(() => updateMsg(id, { copiedId: false }), 2500);
+    });
   };
 
-  const handleClearChat = () => {
-    setMessages([
-      {
-        id: 0,
-        role: "system",
-        content: "Chat limpo. Descreva o que deseja criar no AutoCAD.",
-        timestamp: new Date(),
-      },
-    ]);
-    nextId.current = 1;
-  };
-
-  // ── Styles ──
-  const s = buildStyles(theme);
+  const remaining = license.aiQueriesLimit - license.aiQueriesUsed;
+  const isLow = license.isDemo && (remaining / license.aiQueriesLimit) <= 0.3;
 
   return (
-    <div style={s.container}>
-      <div style={s.wrapper}>
-        {/* Header */}
-        <div style={s.header}>
-          <div style={s.headerLeft}>
-            <span style={{ color: theme.accentPrimary, fontSize: "1.5rem", display: "flex" }}><FaRobot /></span>
-            <div>
-              <h1 style={s.title}>
-                Chat<span style={{ color: theme.accentPrimary }}>CAD</span>
-              </h1>
-              <p style={s.subtitle}>Linguagem natural → AutoCAD</p>
-            </div>
-          </div>
-          <div style={s.headerActions}>
-            <label style={s.toggleLabel}>
-              <input
-                type="checkbox"
-                checked={autoExecute}
-                onChange={(e) => setAutoExecute(e.target.checked)}
-                style={s.checkbox}
-              />
-              <span style={{ fontWeight: 500 }}>Auto-executar</span>
-            </label>
-            <button onClick={() => setShowExamples(!showExamples)} style={s.iconBtn} title="Exemplos">
-              <FaLightbulb />
-            </button>
-            <button onClick={handleClearChat} style={s.iconBtn} title="Limpar chat">
-              <FaTrash />
-            </button>
+    <div style={{
+      height: "100vh", display: "flex", flexDirection: "column",
+      background: "#0d1117", color: "#e2e8f0",
+      fontFamily: "'Inter','Segoe UI',Roboto,sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "14px 24px", borderBottom: "1px solid #1e293b",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexShrink: 0, background: "rgba(13,17,23,0.97)", backdropFilter: "blur(12px)",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px", height: "36px", borderRadius: "10px",
+            background: "linear-gradient(135deg, #00A1FF, #0077CC)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#FFF", fontSize: "16px", boxShadow: "0 4px 16px rgba(0,161,255,0.3)",
+          }}><FaRobot /></div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "17px", fontWeight: 800 }}>
+              Chat<span style={{ color: "#00A1FF" }}>CAD</span>
+            </h1>
+            <p style={{ margin: 0, fontSize: "11px", color: "#556677" }}>IA para AutoCAD • Linguagem Natural</p>
           </div>
         </div>
 
-        {/* Examples panel */}
-        {showExamples && (
-          <div style={s.examplesPanel}>
-            {Object.entries(examples).map(([category, items]) => (
-              <div key={category} style={{ marginBottom: "12px" }}>
-                <div style={s.exampleCategory}>{category}</div>
-                <div style={s.exampleGrid}>
-                  {(items as Example[]).map((ex, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleExampleClick(ex.comando)}
-                      style={s.exampleChip}
-                    >
-                      <span style={s.exampleCmd}>{ex.comando}</span>
-                      <span style={s.exampleDesc}>{ex.descricao}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" as const }}>
+          {license.isDemo && (
+            <button
+              onClick={() => triggerUpgrade("Faça upgrade para consultas de IA ilimitadas!")}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px",
+                background: isLow ? "rgba(245,158,11,0.15)" : "rgba(0,161,255,0.08)",
+                border: `1px solid ${isLow ? "rgba(245,158,11,0.4)" : "rgba(0,161,255,0.2)"}`,
+                borderRadius: "20px", color: isLow ? "#F59E0B" : "#8899aa",
+                fontSize: "12px", cursor: "pointer", fontWeight: 600,
+              }}
+            >
+              <FaBolt size={11} />
+              {remaining}/{license.aiQueriesLimit} consultas
+            </button>
+          )}
+
+          {!license.isPaid && (
+            <motion.button
+              whileHover={{ boxShadow: "0 4px 20px rgba(0,161,255,0.3)" }}
+              onClick={() => navigate("/pricing")}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px",
+                background: "linear-gradient(135deg, #00A1FF, #0077CC)",
+                border: "none", borderRadius: "8px", color: "#FFF",
+                fontSize: "12px", fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              <FaCrown size={11} /> Upgrade
+            </motion.button>
+          )}
+
+          {/* Auto-execute toggle */}
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#8899aa", fontSize: "12px" }}>
+            <div
+              onClick={() => setAutoExecute(!autoExecute)}
+              style={{
+                width: "36px", height: "20px", borderRadius: "10px",
+                background: autoExecute ? "#00A1FF" : "#1e293b",
+                position: "relative" as const, cursor: "pointer", border: "1px solid #334155", transition: "background 0.2s",
+              }}
+            >
+              <div style={{
+                position: "absolute" as const, top: "2px", left: autoExecute ? "18px" : "2px",
+                width: "14px", height: "14px", borderRadius: "50%", background: "#FFF", transition: "left 0.2s",
+              }} />
+            </div>
+            Auto-executar
+          </label>
+
+          <button
+            onClick={() => setMessages([])}
+            style={{
+              background: "none", border: "1px solid #1e293b", borderRadius: "8px",
+              padding: "7px 10px", color: "#556677", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: "4px", fontSize: "12px",
+            }}
+          >
+            <FaTrash size={11} /> Limpar
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {/* Empty state */}
+        {messages.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{ maxWidth: "700px", margin: "0 auto", padding: "60px 24px 20px" }}
+          >
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                style={{
+                  width: "64px", height: "64px", borderRadius: "18px",
+                  background: "linear-gradient(135deg, #00A1FF, #0077CC)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#FFF", fontSize: "28px", margin: "0 auto 20px",
+                  boxShadow: "0 8px 32px rgba(0,161,255,0.4)",
+                }}
+              >
+                <FaRobot />
+              </motion.div>
+              <h2 style={{ color: "#FFF", fontSize: "26px", fontWeight: 800, margin: "0 0 10px" }}>Como posso ajudar?</h2>
+              <p style={{ color: "#8899aa", fontSize: "15px", lineHeight: 1.6, margin: 0 }}>
+                Descreva o que quer criar no AutoCAD em linguagem natural.<br />
+                Interpreto, planejo e executo para você.
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "12px" }}>
+              {STARTER_PROMPTS.map((p, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => { setInput(p.text); inputRef.current?.focus(); }}
+                  style={{
+                    padding: "16px", background: "rgba(255,255,255,0.02)",
+                    border: "1px solid #1e293b", borderRadius: "12px",
+                    cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s",
+                  }}
+                >
+                  <div style={{ fontSize: "22px", marginBottom: "8px" }}>{p.icon}</div>
+                  <div style={{ fontSize: "13px", color: "#d4dde8", lineHeight: 1.5 }}>{p.text}</div>
+                  <div style={{ marginTop: "8px", fontSize: "10px", color: "#00A1FF", fontWeight: 600, letterSpacing: "0.05em" }}>{p.cat}</div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
         )}
 
-        {/* Messages */}
-        <div style={s.messagesContainer}>
-          {messages.map((msg) => (
-            <div key={msg.id} style={s.messageRow(msg.role)}>
-              <div style={s.avatar(msg.role)}>
-                {msg.role === "user" ? <FaUser /> : msg.role === "system" ? <FaCog /> : <FaRobot />}
-              </div>
-              <div style={s.messageBubble(msg.role)}>
-                {msg.loading ? (
-                  <div style={s.loadingDots}>
-                    <span style={{ animation: "spin 1s linear infinite", display: "inline-flex" }}><FaSpinner /></span>
-                    <span style={{ marginLeft: 8, color: theme.textTertiary }}>Processando...</span>
-                  </div>
-                ) : (
-                  <>
-                    <div style={s.messageContent}>{msg.content}</div>
+        {/* Chat messages */}
+        {messages.length > 0 && (
+          <div style={{ maxWidth: "780px", margin: "0 auto", padding: "20px 24px" }}>
+            {messages.map((msg, idx) => {
+              if (msg.role === "user") {
+                return (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                    style={{ display: "flex", gap: "12px", flexDirection: "row-reverse" as const, marginBottom: "24px" }}
+                  >
+                    <div style={{
+                      width: "34px", height: "34px", borderRadius: "10px", flexShrink: 0,
+                      background: "rgba(0,161,255,0.15)", border: "1px solid rgba(0,161,255,0.3)",
+                      display: "flex", alignItems: "center", justifyContent: "center", color: "#00A1FF",
+                    }}><FaUser size={14} /></div>
+                    <div style={{
+                      maxWidth: "70%", padding: "12px 16px",
+                      background: "rgba(0,161,255,0.1)", border: "1px solid rgba(0,161,255,0.2)",
+                      borderRadius: "12px 2px 12px 12px",
+                    }}>
+                      <div style={{ fontSize: "14px", lineHeight: 1.7, color: "#e2e8f0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.content}</div>
+                      <div style={{ fontSize: "10px", color: "#556677", marginTop: "6px", textAlign: "right" as const }}>
+                        {msg.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
 
-                    {/* Execution results */}
-                    {msg.execucao && (
-                      <div style={s.execResult(msg.execucao.falhas === 0)}>
-                        <div style={s.execHeader}>
-                          {msg.execucao.falhas === 0 ? (
-                            <span style={{ color: theme.accentSecondary }}><FaCheckCircle /></span>
-                          ) : (
-                            <span style={{ color: theme.accentDanger }}><FaTimesCircle /></span>
-                          )}
-                          <span>
+              const isLatest = idx === messages.length - 1;
+              return (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                  style={{ display: "flex", gap: "14px", alignItems: "flex-start", marginBottom: "24px" }}
+                >
+                  <div style={{
+                    width: "34px", height: "34px", borderRadius: "10px", flexShrink: 0,
+                    background: "rgba(0,161,255,0.1)", border: "1px solid rgba(0,161,255,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center", color: "#00A1FF",
+                  }}><FaRobot size={15} /></div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#00A1FF" }}>ChatCAD</span>
+                      <span style={{ fontSize: "10px", color: "#556677" }}>
+                        {msg.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: "14px", lineHeight: 1.7, color: "#d4dde8", wordBreak: "break-word" }}>
+                      {msg.loading ? (
+                        <div style={{ display: "flex", gap: "4px", padding: "6px 0" }}>
+                          {[0, 1, 2].map((i) => (
+                            <motion.div
+                              key={i}
+                              animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
+                              transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+                              style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#00A1FF" }}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <TypingContent text={msg.content} active={isLatest && !!msg.streaming && !loading} />
+                      )}
+                    </div>
+
+                    {/* Execution result */}
+                    {msg.execucao && !msg.loading && (
+                      <div style={{
+                        marginTop: "12px", padding: "12px", borderRadius: "10px",
+                        background: msg.execucao.falhas === 0 ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                        border: `1px solid ${msg.execucao.falhas === 0 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                          {msg.execucao.falhas === 0 ? <FaCheckCircle color="#10B981" /> : <FaTimesCircle color="#EF4444" />}
+                          <span style={{ fontSize: "13px", fontWeight: 600, color: msg.execucao.falhas === 0 ? "#10B981" : "#EF4444" }}>
                             {msg.execucao.executadas}/{msg.execucao.total} operações
                           </span>
                         </div>
                         {msg.execucao.resultados?.map((r: any, i: number) => (
-                          <div key={i} style={s.execLine(r.success)}>
-                            <span>{r.success ? "✓" : "✗"}</span>
-                            <span>{r.descricao || r.acao}</span>
+                          <div key={i} style={{ fontSize: "12px", color: r.success ? "#8899aa" : "#ef9999", marginBottom: "4px", display: "flex", gap: "6px" }}>
+                            <span>{r.success ? "✓" : "✗"}</span><span>{r.descricao || r.acao}</span>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Plan preview (when not auto-executing) */}
-                    {msg.plano && !msg.execucao && (
-                      <div style={{ marginTop: 12 }}>
-                        <button onClick={() => handleExecutePlan(msg.plano!)} style={s.execBtn} disabled={loading}>
-                          <FaPlay /> Executar Plano
-                        </button>
-                      </div>
+                    {/* Pending plan */}
+                    {msg.plano && !msg.execucao && !msg.loading && (
+                      <button
+                        onClick={() => handleExecutePlan(msg.plano!)}
+                        style={{
+                          marginTop: "10px", padding: "8px 14px",
+                          background: "rgba(0,161,255,0.15)", border: "1px solid rgba(0,161,255,0.4)",
+                          borderRadius: "8px", color: "#00A1FF", cursor: "pointer",
+                          fontSize: "13px", fontWeight: 600,
+                          display: "flex", alignItems: "center", gap: "6px",
+                        }}
+                      >
+                        <FaPlay size={11} /> Executar no AutoCAD
+                      </button>
                     )}
 
                     {/* Suggestions */}
-                    {msg.sugestoes && msg.sugestoes.length > 0 && (
-                      <div style={s.suggestions}>
-                        {msg.sugestoes.map((sug, i) => (
-                          <button key={i} onClick={() => handleExampleClick(sug)} style={s.suggestionChip}>
-                            {sug}
+                    {msg.sugestoes && msg.sugestoes.length > 0 && !msg.loading && (
+                      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "6px", marginTop: "10px" }}>
+                        {msg.sugestoes.slice(0, 4).map((s, i) => (
+                          <button
+                            key={i}
+                            onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                            style={{
+                              padding: "6px 12px", background: "rgba(255,255,255,0.04)",
+                              border: "1px solid #1e293b", borderRadius: "20px",
+                              color: "#8899aa", cursor: "pointer", fontSize: "12px",
+                            }}
+                          >
+                            {s}
                           </button>
                         ))}
                       </div>
                     )}
-                  </>
-                )}
-                <div style={s.timestamp}>
-                  {msg.timestamp.toLocaleTimeString("pt-BR", { hour12: false })}
-                </div>
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
 
-        {/* Input */}
-        <div style={s.inputArea}>
+                    {/* Copy */}
+                    {!msg.loading && msg.content && (
+                      <button
+                        onClick={() => handleCopy(msg.id, msg.content)}
+                        style={{
+                          marginTop: "8px", padding: "4px 8px", background: "transparent",
+                          border: "1px solid #1e293b", borderRadius: "6px",
+                          color: msg.copiedId ? "#10B981" : "#556677", cursor: "pointer",
+                          fontSize: "11px", display: "flex", alignItems: "center", gap: "4px",
+                        }}
+                      >
+                        {msg.copiedId ? <FaCheck size={10} /> : <FaCopy size={10} />}
+                        {msg.copiedId ? "Copiado!" : "Copiar"}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding: "16px 24px 24px", background: "rgba(13,17,23,0.97)",
+        borderTop: "1px solid #1e293b", flexShrink: 0,
+      }}>
+        {/* Low usage warning */}
+        <AnimatePresence>
+          {license.isDemo && isLow && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "10px 14px", marginBottom: "12px",
+                background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)",
+                borderRadius: "10px", gap: "12px", maxWidth: "780px", margin: "0 auto 12px",
+              }}
+            >
+              <span style={{ fontSize: "13px", color: "#F59E0B" }}>
+                ⚠️ Apenas <strong>{remaining}</strong> consulta{remaining !== 1 ? "s" : ""} restante{remaining !== 1 ? "s" : ""} no demo
+              </span>
+              <button
+                onClick={() => navigate("/pricing")}
+                style={{
+                  padding: "6px 14px", background: "#F59E0B", border: "none",
+                  borderRadius: "6px", color: "#000", fontSize: "12px",
+                  fontWeight: 700, cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                Upgrade
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div style={{
+          maxWidth: "780px", margin: "0 auto",
+          display: "flex", gap: "12px", alignItems: "flex-end",
+          background: "#161d28", border: "1px solid #1e293b",
+          borderRadius: "14px", padding: "12px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+        }}>
           <textarea
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
+            }}
             onKeyDown={handleKeyDown}
-            placeholder='Descreva o que quer criar... Ex: "tubo 6 polegadas 1000mm eixo x"'
-            style={s.textarea}
-            rows={1}
+            placeholder='Descreva o que quer criar no AutoCAD... ou clique em uma sugestão acima'
             disabled={loading}
+            style={{
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              resize: "none", color: "#e2e8f0", fontSize: "14px", lineHeight: 1.6,
+              fontFamily: "inherit", minHeight: "24px", maxHeight: "200px", overflowY: "auto",
+            }}
+            rows={1}
           />
-          <button
+          <motion.button
+            whileHover={{ scale: input.trim() && !loading ? 1.05 : 1 }}
+            whileTap={{ scale: input.trim() && !loading ? 0.95 : 1 }}
             onClick={handleSend}
             disabled={!input.trim() || loading}
             style={{
-              ...s.sendBtn,
-              opacity: !input.trim() || loading ? 0.4 : 1,
+              width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
+              background: input.trim() && !loading ? "linear-gradient(135deg, #00A1FF, #0077CC)" : "#1e293b",
+              border: "none", cursor: input.trim() && !loading ? "pointer" : "not-allowed",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: input.trim() && !loading ? "#FFF" : "#334155", transition: "all 0.2s",
             }}
           >
-            <FaPaperPlane />
-          </button>
+            {loading ? (
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                <FaCog size={16} />
+              </motion.div>
+            ) : (
+              <FaPaperPlane size={14} />
+            )}
+          </motion.button>
         </div>
-      </div>
 
-      {/* Spinner keyframes */}
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <p style={{
+          textAlign: "center", color: "#334455", fontSize: "11px",
+          margin: "8px 0 0", maxWidth: "780px", marginLeft: "auto", marginRight: "auto",
+        }}>
+          Enter para enviar • Shift+Enter para nova linha • ChatCAD executa comandos no AutoCAD automaticamente
+        </p>
+      </div>
     </div>
   );
 };
-
-// ── Styles factory ──
-function buildStyles(theme: any) {
-  const isDark = theme.background === "#121212" || theme.bg === "#121212";
-
-  return {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: theme.background,
-      color: theme.textPrimary,
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      display: "flex",
-      flexDirection: "column" as const,
-    },
-    wrapper: {
-      maxWidth: 900,
-      width: "100%",
-      margin: "0 auto",
-      display: "flex",
-      flexDirection: "column" as const,
-      height: "100vh",
-      padding: "0 16px",
-    },
-
-    // Header
-    header: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "20px 0 16px",
-      borderBottom: `1px solid ${theme.border}`,
-      flexShrink: 0,
-    },
-    headerLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-    },
-    title: {
-      margin: 0,
-      fontSize: "1.35rem",
-      fontWeight: 700,
-      letterSpacing: "0.02em",
-      color: theme.textPrimary,
-    },
-    subtitle: {
-      margin: 0,
-      fontSize: "0.75rem",
-      color: theme.textTertiary,
-      letterSpacing: "0.04em",
-    },
-    headerActions: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    },
-    toggleLabel: {
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      fontSize: "0.8rem",
-      color: theme.textSecondary,
-      cursor: "pointer",
-    },
-    checkbox: {
-      accentColor: theme.accentPrimary,
-    },
-    iconBtn: {
-      background: "none",
-      border: `1px solid ${theme.border}`,
-      borderRadius: 8,
-      padding: "8px 10px",
-      color: theme.textSecondary,
-      cursor: "pointer",
-      fontSize: "0.85rem",
-      transition: "all 0.15s",
-    } as React.CSSProperties,
-
-    // Examples
-    examplesPanel: {
-      padding: "16px 0",
-      borderBottom: `1px solid ${theme.border}`,
-      maxHeight: 300,
-      overflowY: "auto" as const,
-      flexShrink: 0,
-    },
-    exampleCategory: {
-      fontSize: "0.7rem",
-      fontWeight: 600,
-      textTransform: "uppercase" as const,
-      letterSpacing: "0.08em",
-      color: theme.textTertiary,
-      marginBottom: 8,
-    },
-    exampleGrid: {
-      display: "flex",
-      flexWrap: "wrap" as const,
-      gap: 8,
-    },
-    exampleChip: {
-      background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-      border: `1px solid ${theme.border}`,
-      borderRadius: 8,
-      padding: "8px 14px",
-      cursor: "pointer",
-      textAlign: "left" as const,
-      transition: "all 0.15s",
-      maxWidth: 400,
-    } as React.CSSProperties,
-    exampleCmd: {
-      display: "block",
-      fontSize: "0.82rem",
-      fontWeight: 500,
-      color: theme.accentPrimary,
-    },
-    exampleDesc: {
-      display: "block",
-      fontSize: "0.7rem",
-      color: theme.textTertiary,
-      marginTop: 2,
-    },
-
-    // Messages
-    messagesContainer: {
-      flex: 1,
-      overflowY: "auto" as const,
-      padding: "20px 0",
-      display: "flex",
-      flexDirection: "column" as const,
-      gap: 16,
-    },
-    messageRow: (role: string) =>
-      ({
-        display: "flex",
-        gap: 12,
-        alignItems: "flex-start",
-        flexDirection: role === "user" ? "row-reverse" : "row",
-      } as React.CSSProperties),
-    avatar: (role: string) =>
-      ({
-        width: 34,
-        height: 34,
-        borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.8rem",
-        flexShrink: 0,
-        backgroundColor:
-          role === "user"
-            ? theme.accentPrimary + "20"
-            : role === "system"
-            ? theme.accentWarning + "20"
-            : isDark
-            ? "rgba(255,255,255,0.06)"
-            : "rgba(0,0,0,0.04)",
-        color:
-          role === "user"
-            ? theme.accentPrimary
-            : role === "system"
-            ? theme.accentWarning
-            : theme.textSecondary,
-      } as React.CSSProperties),
-    messageBubble: (role: string) =>
-      ({
-        maxWidth: "75%",
-        padding: "12px 16px",
-        borderRadius: 12,
-        backgroundColor:
-          role === "user"
-            ? theme.accentPrimary + (isDark ? "18" : "10")
-            : role === "system"
-            ? theme.accentWarning + "08"
-            : isDark
-            ? "rgba(255,255,255,0.04)"
-            : "rgba(0,0,0,0.02)",
-        border: `1px solid ${
-          role === "user"
-            ? theme.accentPrimary + "30"
-            : role === "system"
-            ? theme.accentWarning + "20"
-            : theme.border
-        }`,
-      } as React.CSSProperties),
-    messageContent: {
-      fontSize: "0.88rem",
-      lineHeight: 1.6,
-      whiteSpace: "pre-wrap" as const,
-      wordBreak: "break-word" as const,
-      color: theme.textPrimary,
-    },
-    timestamp: {
-      fontSize: "0.65rem",
-      color: theme.textTertiary,
-      marginTop: 6,
-      textAlign: "right" as const,
-    },
-    loadingDots: {
-      display: "flex",
-      alignItems: "center",
-      padding: "4px 0",
-    },
-
-    // Execution results
-    execResult: (success: boolean) =>
-      ({
-        marginTop: 10,
-        padding: "10px 14px",
-        borderRadius: 8,
-        backgroundColor: success
-          ? (theme.accentSecondary || "#32CD32") + "10"
-          : theme.accentDanger + "10",
-        border: `1px solid ${
-          success ? (theme.accentSecondary || "#32CD32") + "30" : theme.accentDanger + "30"
-        }`,
-        fontSize: "0.8rem",
-      } as React.CSSProperties),
-    execHeader: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      fontWeight: 600,
-      marginBottom: 6,
-      fontSize: "0.82rem",
-    },
-    execLine: (success: boolean) =>
-      ({
-        padding: "3px 0",
-        color: success ? theme.textSecondary : theme.accentDanger,
-        display: "flex",
-        gap: 8,
-        fontSize: "0.78rem",
-      } as React.CSSProperties),
-    execBtn: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 8,
-      padding: "8px 20px",
-      backgroundColor: theme.accentPrimary,
-      color: "#fff",
-      border: "none",
-      borderRadius: 8,
-      fontSize: "0.85rem",
-      fontWeight: 600,
-      cursor: "pointer",
-      transition: "opacity 0.15s",
-    } as React.CSSProperties,
-
-    // Suggestions
-    suggestions: {
-      marginTop: 10,
-      display: "flex",
-      flexWrap: "wrap" as const,
-      gap: 6,
-    },
-    suggestionChip: {
-      background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-      border: `1px solid ${theme.border}`,
-      borderRadius: 6,
-      padding: "4px 12px",
-      fontSize: "0.75rem",
-      color: theme.accentPrimary,
-      cursor: "pointer",
-      transition: "all 0.15s",
-    } as React.CSSProperties,
-
-    // Input area
-    inputArea: {
-      display: "flex",
-      gap: 10,
-      padding: "16px 0 20px",
-      borderTop: `1px solid ${theme.border}`,
-      alignItems: "flex-end",
-      flexShrink: 0,
-    },
-    textarea: {
-      flex: 1,
-      padding: "12px 16px",
-      backgroundColor: theme.inputBackground || theme.surface,
-      border: `1px solid ${theme.inputBorder || theme.border}`,
-      borderRadius: 12,
-      color: theme.textPrimary,
-      fontSize: "0.9rem",
-      fontFamily: "'Inter', sans-serif",
-      resize: "none" as const,
-      outline: "none",
-      minHeight: 44,
-      maxHeight: 120,
-      lineHeight: 1.5,
-    } as React.CSSProperties,
-    sendBtn: {
-      padding: "12px 16px",
-      backgroundColor: theme.accentPrimary,
-      color: "#fff",
-      border: "none",
-      borderRadius: 12,
-      cursor: "pointer",
-      fontSize: "1rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "opacity 0.15s",
-      flexShrink: 0,
-    } as React.CSSProperties,
-  };
-}
 
 export default ChatCAD;

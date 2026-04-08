@@ -195,7 +195,9 @@ const CadConsole: React.FC = () => {
 
     sse.onerror = () => {
       setRunning(false);
-      pushLog("WARN", "> Conexao SSE encerrada.");
+      setProgressLabel("Erro de conexão");
+      pushLog("WARN", "> Conexao SSE encerrada. Tente novamente.");
+      sse.close();
     };
   };
 

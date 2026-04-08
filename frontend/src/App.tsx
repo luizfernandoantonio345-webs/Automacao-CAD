@@ -15,6 +15,8 @@ import { LICENSING_BASE_URL } from "./services/endpoints";
 import { ThemeProvider } from "./context/ThemeContext";
 import { GlobalProvider } from "./context/GlobalContext";
 import { ToastProvider } from "./context/ToastContext";
+import { LicenseProvider } from "./context/LicenseContext";
+import DemoUpgradeModal from "./components/DemoUpgradeModal";
 import { UIGuard } from "./middleware/UIGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import {
@@ -37,6 +39,7 @@ const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const CncControl = lazy(() => import("./pages/CncControl"));
 const ChatCAD = lazy(() => import("./pages/ChatCAD"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -49,7 +52,12 @@ const licensingApi = axios.create({
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider>
     <GlobalProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <LicenseProvider>
+        <ToastProvider>
+          {children}
+          <DemoUpgradeModal />
+        </ToastProvider>
+      </LicenseProvider>
     </GlobalProvider>
   </ThemeProvider>
 );
@@ -236,6 +244,7 @@ function AppContent() {
           <Route path="/" element={<Login />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/planos" element={<Pricing />} />
+          <Route path="/checkout" element={<Checkout />} />
           <Route
             path="/dashboard"
             element={

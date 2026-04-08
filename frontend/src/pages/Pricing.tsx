@@ -227,9 +227,12 @@ const Pricing: React.FC = () => {
   };
 
   const handleSelectPlan = (planId: string) => {
-    // Redireciona para checkout ou contato
     if (planId === "enterprise") {
-      window.open("mailto:comercial@engenharia-cad.com?subject=Interesse no Plano Enterprise", "_blank");
+      // WhatsApp direto para consultor
+      const text = encodeURIComponent(
+        "Olá! Tenho interesse no plano *Enterprise* do Engenharia CAD. Gostaria de receber uma proposta personalizada."
+      );
+      window.open(`https://wa.me/5511999999999?text=${text}`, "_blank");
     } else {
       navigate(`/checkout?plan=${planId}&billing=${billingPeriod}`);
     }

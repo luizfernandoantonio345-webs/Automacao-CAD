@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaChartLine,
@@ -15,6 +15,8 @@ import {
   FaFire,
   FaRobot,
   FaCrown,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -64,6 +66,9 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   const location = useLocation();
   const { theme } = useTheme();
   const demo = isDemoMode();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const closeSidebar = () => setSidebarOpen(false);
 
   // Estilos dinâmicos baseados no tema
   const sidebarStyles: Record<string, React.CSSProperties> = {
@@ -174,6 +179,12 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
       overflowY: "auto",
       backgroundColor: theme.background,
     },
+    hamburger: {
+      display: "none",
+    },
+    overlay: {
+      display: "none",
+    },
   };
 
   const getNavStyle = (path: string): React.CSSProperties => {
@@ -189,17 +200,99 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <div style={sidebarStyles.container}>
+      <style>{`
+        @media (max-width: 900px) {
+          .sl-hamburger {
+            display: flex !important;
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 1100;
+            background: ${theme.surface};
+            border: 1px solid ${theme.border};
+            color: ${theme.textPrimary};
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+          }
+          .sl-sidebar {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            height: 100vh !important;
+            z-index: 1050;
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+          }
+          .sl-sidebar.open {
+            transform: translateX(0);
+          }
+          .sl-overlay {
+            display: block !important;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1040;
+          }
+          .sl-main {
+            padding-top: 60px;
+          }
+        }
+      `}</style>
+
+      {/* Hamburger button (mobile only) */}
+      <button
+        className="sl-hamburger"
+        style={sidebarStyles.hamburger}
+        onClick={() => setSidebarOpen((o) => !o)}
+        aria-label="Abrir menu"
+      >
+        {sidebarOpen ? <FaTimes /> : <FaBars />}
+      </button>
+
+      {/* Overlay (mobile only, when sidebar open) */}
+      {sidebarOpen && (
+        <div className="sl-overlay" style={sidebarStyles.overlay} onClick={closeSidebar} />
+      )}
+
       {/* Sidebar */}
-      <aside style={sidebarStyles.sidebar as React.CSSProperties}>
+      <aside
+        className={`sl-sidebar${sidebarOpen ? " open" : ""}`}
+        style={sidebarStyles.sidebar as React.CSSProperties}
+      >
         <div style={sidebarStyles.brand}>
           ENGENHARIA <span style={{ color: theme.accentPrimary }}>CAD</span>
           <span style={sidebarStyles.versionTag}>v1.0</span>
         </div>
 
         {demo && (
-          <div style={sidebarStyles.demoBanner as React.CSSProperties}>
-            <span style={sidebarStyles.demoDot as React.CSSProperties} />
-            MODO DEMONSTRAÇÃO
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", margin: "8px 12px" }}>
+            <div style={sidebarStyles.demoBanner as React.CSSProperties}>
+              <span style={sidebarStyles.demoDot as React.CSSProperties} />
+              MODO DEMONSTRAÇÃO
+            </div>
+            <button
+              onClick={() => navigate("/pricing")}
+              style={{
+                width: "100%",
+                padding: "10px 0",
+                background: "linear-gradient(135deg, #00A1FF, #7C3AED)",
+                border: "none",
+                borderRadius: "8px",
+                color: "#fff",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                letterSpacing: "0.5px",
+              }}
+            >
+              🚀 Fazer Upgrade
+            </button>
           </div>
         )}
 
@@ -208,7 +301,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
             <div
               key={item.path}
               style={getNavStyle(item.path)}
-              onClick={() => navigate(item.path)}
+              onClick={() => { navigate(item.path); closeSidebar(); }}
               onMouseEnter={(e) => {
                 if (location.pathname !== item.path) {
                   e.currentTarget.style.backgroundColor = `${theme.accentPrimary}08`;
@@ -246,7 +339,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
       </aside>
 
       {/* Área de Trabalho */}
-      <main style={sidebarStyles.main}>{children}</main>
+      <main className="sl-main" style={sidebarStyles.main}>{children}</main>
     </div>
   );
 };

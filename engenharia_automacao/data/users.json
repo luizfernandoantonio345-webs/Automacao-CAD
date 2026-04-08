@@ -7,10 +7,33 @@
     "usado": 6
   },
   {
-    "email": "luizfernandoantonio345@gmail.com",
-    "senha": "$2b$12$ZX9uuzkvYHrWmizgO5o4Fem5CZd81anHJMMqEv6N/rtpE1Lz8n5PS",
-    "empresa": "Usuário Luiz Fernando",
-    "limite": 200,
-    "usado": 0
+    "email": "master@forgecad.com",
+    "senha": "$2b$12$XKm0LRHkg6jsmKSVby/GG.GzUIRAVkDypYcUPszSwv3PJNk8HCKha",
+    "empresa": "ForgeCAD - Conta Master",
+    "limite": 999999,
+    "usado": 0,
+    "role": "admin",
+    "plan": "enterprise",
+    "features": ["all"],
+    "hwid_limit": 999,
+    "permissions": {
+      "cad": true,
+      "cnc": true,
+      "ai": true,
+      "analytics": true,
+      "admin": true,
+      "licensing": true,
+      "api_full": true
+    }
+  },
+  {
+    "email": "engenharia@admin.com",
+    "senha": "$2b$12$dH7IaK8pYlT0QIrr3qPykem/3EEYK9xn6BB5dOr2nAJcF8WmvoQYS",
+    "empresa": "Engenharia CAD - Conta Master",
+    "limite": 999999,
+    "usado": 0,
+    "role": "admin",
+    "plan": "enterprise",
+    "features": ["all"]
   }
 ]

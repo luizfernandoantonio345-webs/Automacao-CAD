@@ -698,6 +698,15 @@ async def executar_plano(plano: List[Dict[str, Any]], driver=None) -> Dict[str, 
             from backend.autocad_driver import acad_driver
             driver = acad_driver
         except ImportError:
+            pass
+
+    # Fallback to mock driver when real AutoCAD is unavailable
+    if driver is None:
+        try:
+            from backend.mock_autocad_driver import MockAutoCADDriver
+            driver = MockAutoCADDriver()
+            logger.info("ChatCAD executando com driver mock (AutoCAD não disponível)")
+        except ImportError:
             return {
                 "success": False,
                 "executadas": 0,

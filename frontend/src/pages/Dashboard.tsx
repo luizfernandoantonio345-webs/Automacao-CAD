@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ApiService, ProjectStats, ProjectRecord } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { useLicense } from "../context/LicenseContext";
 import createStyles, { spacing, radius } from "../styles/shared";
 import {
   WelcomeHero,
@@ -40,7 +41,11 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { license } = useLicense();
   const styles = createStyles(theme);
+  const isDemo = license.tier === "demo";
+  const queriesUsed = license.aiQueriesUsed;
+  const queriesLimit = license.aiQueriesLimit;
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,6 +207,55 @@ const Dashboard = () => {
   return (
     <div style={{ ...styles.pageContainer, padding: 0, overflow: "hidden" }}>
       <main style={{ flex: 1, padding: spacing.lg, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", boxSizing: "border-box" }}>
+
+        {/* Demo Upgrade Banner */}
+        {isDemo && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: `linear-gradient(90deg, ${theme.warning}18, ${theme.accentPrimary}18)`,
+              border: `1px solid ${theme.warning}50`,
+              borderRadius: 10,
+              padding: "14px 20px",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>⚡</span>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: theme.textPrimary }}>
+                  Você está no Modo Demo — {queriesUsed}/{queriesLimit} consultas de IA usadas
+                </p>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: theme.textSecondary }}>
+                  Desbloqueie projetos ilimitados, CNC plasma, exportação DXF e muito mais.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/pricing")}
+              style={{
+                background: theme.accentPrimary,
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "8px 18px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Ver Planos &amp; Preços
+            </button>
+          </motion.div>
+        )}
+
         {/* Welcome Hero */}
         <WelcomeHero userName="Operador" theme={widgetTheme} />
 

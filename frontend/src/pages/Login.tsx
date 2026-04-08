@@ -12,6 +12,7 @@ import {
   FaIndustry,
   FaCogs,
   FaLayerGroup,
+  FaCrown,
 } from "react-icons/fa";
 import { API_BASE_URL, ApiService } from "../services/api";
 
@@ -182,6 +183,7 @@ const Login = () => {
   };
 
   return (
+    <>
     <div style={s.container}>
       <AnimatedBackground />
 
@@ -414,6 +416,17 @@ const Login = () => {
             Acesso completo sem cadastro — veja o sistema em ação
           </p>
 
+          {/* Ver Planos */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/pricing")}
+            style={s.pricingBtn}
+          >
+            <FaCrown size={14} />
+            <span>Ver Planos & Preços</span>
+          </motion.button>
+
           {/* Footer */}
           <div style={s.footer}>
             <motion.div
@@ -426,6 +439,19 @@ const Login = () => {
         </div>
       </motion.div>
     </div>
+    {/* Mobile / Responsive CSS */}
+    <style>{`
+      @media (max-width: 900px) {
+        .login-container { flex-direction: column !important; height: auto !important; min-height: 100vh !important; overflow-y: auto !important; }
+        .login-left { display: none !important; }
+        .login-right { width: 100% !important; min-height: 100vh !important; padding: 32px 20px !important; }
+        .login-form-container { width: 100% !important; max-width: 420px !important; margin: 0 auto !important; }
+      }
+      @media (max-width: 480px) {
+        .login-right { padding: 24px 16px !important; }
+      }
+    `}</style>
+    </>
   );
 };
 
@@ -435,7 +461,7 @@ const Login = () => {
 
 const s: Record<string, React.CSSProperties> = {
   container: {
-    height: "100vh",
+    minHeight: "100vh",
     display: "flex",
     position: "relative",
     overflow: "hidden",
@@ -709,6 +735,24 @@ const s: Record<string, React.CSSProperties> = {
     textAlign: "center",
     marginTop: "12px",
     lineHeight: "1.6",
+  },
+  pricingBtn: {
+    width: "100%",
+    padding: "12px",
+    backgroundColor: "transparent",
+    border: "1px solid #1a2030",
+    color: "#8899aa",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "13px",
+    letterSpacing: "1px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    transition: "all 0.2s ease",
+    marginTop: "12px",
   },
   footer: {
     marginTop: "32px",

@@ -18,6 +18,7 @@ import React, {
   useMemo,
 } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { useLicense } from "../context/LicenseContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Componentes visuais avançados
@@ -302,6 +303,7 @@ const CUTTING_TABLES: Record<
 
 const CncControl: React.FC = () => {
   const { theme } = useTheme();
+  const { canUse, triggerUpgrade } = useLicense();
 
   // ── State ──
   const [step, setStep] = useState<ProcessingStep>("idle");
@@ -1685,6 +1687,86 @@ M02 (Fim do programa)
     alignItems: "center",
     gap: "8px",
   });
+
+  // ── Feature gate: CNC requires paid plan ──
+  if (!canUse("cnc")) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#050507",
+        gap: "24px",
+        padding: "32px",
+        textAlign: "center",
+      }}>
+        <div style={{ fontSize: "64px" }}>🔒</div>
+        <h2 style={{ color: "#fff", fontSize: "24px", fontWeight: 700, margin: 0 }}>CNC Plasma Otimizado</h2>
+        <p style={{ color: "#8899aa", fontSize: "15px", maxWidth: "480px", lineHeight: 1.6, margin: 0 }}>
+          Este módulo está disponível nos planos <strong style={{ color: "#00A1FF" }}>Professional</strong> e <strong style={{ color: "#A855F7" }}>Enterprise</strong>.
+          Gere G-code otimizado, aninhamento inteligente e controle de corte plasma com IA.
+        </p>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+          <button
+            onClick={() => triggerUpgrade("Módulo CNC Plasma está disponível nos planos Professional e Enterprise.")}
+            style={{
+              padding: "14px 32px",
+              background: "linear-gradient(135deg, #00A1FF, #0077BB)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "15px",
+              fontWeight: 700,
+              cursor: "pointer",
+              letterSpacing: "0.5px",
+            }}
+          >
+            🚀 Ver Planos
+          </button>
+          <button
+            onClick={() => {
+              const t = encodeURIComponent("Olá! Quero saber mais sobre o módulo CNC do Engenharia CAD.");
+              window.open(`https://wa.me/5511999999999?text=${t}`, "_blank");
+            }}
+            style={{
+              padding: "14px 32px",
+              background: "#25D366",
+              color: "#fff",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "15px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            💬 Falar com Consultor
+          </button>
+        </div>
+        <div style={{
+          display: "flex",
+          gap: "16px",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          marginTop: "8px",
+        }}>
+          {["G-code automático", "Nesting IA", "Corte plasma otimizado", "Controle multi-máquina"].map(f => (
+            <div key={f} style={{
+              background: "#111827",
+              border: "1px solid #1e3050",
+              borderRadius: "8px",
+              padding: "8px 16px",
+              color: "#a0b0c0",
+              fontSize: "13px",
+              opacity: 0.6,
+              filter: "blur(0.5px)",
+            }}>🔒 {f}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={containerStyle}>

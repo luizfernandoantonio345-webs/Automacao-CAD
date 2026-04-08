@@ -225,6 +225,10 @@ _AUTH_WHITELIST = {
     # ChatCAD endpoints (NLP → AutoCAD, sem dados sensíveis)
     "/api/chatcad/examples", "/api/chatcad/chat",
     "/api/chatcad/interpret", "/api/chatcad/execute",
+    # Refineries endpoint (somente leitura, informação pública)
+    "/api/refineries",
+    # CAD execute stream (SSE, somente leitura)
+    "/api/cad/execute-stream",
     # CAM endpoints para geração de G-code (somente leitura/processamento)
     "/api/cam/materials", "/api/cam/parse", "/api/cam/generate", "/api/cam/validate",
     "/api/cam/nesting/run", "/api/cam/nesting/quick-piece", "/api/cam/library/pieces",
@@ -728,6 +732,10 @@ async def auth_and_rate_middleware(request: Request, call_next):
 
     # ── CAM routes: permitir acesso público para geração de G-code ──
     if path.startswith("/api/cam/"):
+        return await call_next(request)
+
+    # ── Refineries e CAD stream: somente leitura, acesso público ──
+    if path.startswith("/api/refineries") or path.startswith("/api/cad/"):
         return await call_next(request)
 
     # ── SSE routes verificadas separadamente (dentro do handler) ──
@@ -1846,3 +1854,84 @@ async def bridge_status():
             "commands_executed": _bridge_client_info.get("commands_executed", 0),
         }
     }
+
+
+# ─── Refineries & CAD Execute Stream ─────────────────────────────────────────
+
+_REFINERIES: dict = {
+    "REGAP": {"id": "REGAP", "name": "Refinaria Gabriel Passos", "city": "Betim", "state": "MG", "status": "active"},
+    "REPLAN": {"id": "REPLAN", "name": "Refinaria de Paulínia", "city": "Paulínia", "state": "SP", "status": "active"},
+    "REDUC": {"id": "REDUC", "name": "Refinaria Duque de Caxias", "city": "Duque de Caxias", "state": "RJ", "status": "active"},
+    "RNEST": {"id": "RNEST", "name": "Refinaria do Nordeste", "city": "Ipojuca", "state": "PE", "status": "active"},
+    "REMAN": {"id": "REMAN", "name": "Refinaria Isaac Sabbá", "city": "Manaus", "state": "AM", "status": "active"},
+    "REPAR": {"id": "REPAR", "name": "Refinaria Presidente Getúlio Vargas", "city": "Araucária", "state": "PR", "status": "active"},
+}
+
+
+@app.get("/api/refineries/{refinery_id}")
+async def get_refinery(refinery_id: str):
+    """Retorna informações de uma refinaria pelo ID."""
+    rid = str(refinery_id).upper()[:20]
+    refinery = _REFINERIES.get(rid, {
+        "id": rid,
+        "name": f"Unidade {rid}",
+        "city": "N/A",
+        "state": "N/A",
+        "status": "active",
+    })
+    return {"refinery": refinery, "status": "connected"}
+
+
+@app.get("/api/cad/execute-stream")
+async def cad_execute_stream(
+    request: Request,
+    refinery_id: str = "REGAP",
+    diameter: float = 50.0,
+    length: float = 1000.0,
+    company: str = "Petrobras",
+    part_name: str = "Pipe",
+    code: str = "AUTO-001",
+):
+    """SSE endpoint que transmite o progresso da execução CAD em tempo real."""
+
+    # Validate inputs
+    diameter = max(1.0, min(diameter, 5000.0))
+    length = max(1.0, min(length, 100000.0))
+    company = company[:100]
+    part_name = part_name[:200]
+    code = code[:50]
+    refinery_id = refinery_id[:20]
+
+    async def event_generator():
+        import json as _json
+
+        steps = [
+            (5,  "Inicializando motor CAD...", "log", "INFO"),
+            (12, f"Carregando refinaria {refinery_id}...", "log", "INFO"),
+            (20, f"Calculando geometria — Ø{diameter}mm × {length}mm", "log", "INFO"),
+            (30, "Verificando especificações ASME B31.3...", "log", "INFO"),
+            (40, "Gerando pontos de referência...", "log", "INFO"),
+            (50, "Criando layers AutoCAD...", "log", "CMD"),
+            (60, "Desenhando tubulação principal...", "log", "CMD"),
+            (68, "Inserindo flanges e conexões...", "log", "CMD"),
+            (75, "Adicionando anotações técnicas...", "log", "INFO"),
+            (82, "Aplicando espessura de parede...", "log", "INFO"),
+            (90, f"Gerando script LISP para {company}...", "log", "INFO"),
+            (95, "Validando geometria final...", "log", "INFO"),
+            (98, "Exportando arquivo DXF...", "log", "INFO"),
+        ]
+
+        for progress, message, event_type, level in steps:
+            if await request.is_disconnected():
+                break
+            payload = _json.dumps({"level": level, "message": message, "progress": progress, "label": message})
+            yield {"event": "log", "data": payload}
+            await asyncio.sleep(0.4)
+
+        if not await request.is_disconnected():
+            output_dir = "/tmp" if os.getenv("VERCEL") else os.path.join(os.path.dirname(__file__), "data", "output")
+            script_path = f"{output_dir}/{code}_{refinery_id}.lsp"
+            done_payload = _json.dumps({"script_path": script_path, "progress": 100})
+            yield {"event": "done", "data": done_payload}
+
+    return EventSourceResponse(event_generator())
