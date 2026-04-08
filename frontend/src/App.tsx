@@ -216,9 +216,12 @@ function AppContent() {
   // Usuário autenticado - exibir aplicação com rotas
   const fallback = <LoadingScreen message="Carregando módulo..." />;
 
+  // Banner de demo: só para quem entrou via "Explorar Demonstração" (sem login)
+  const showDemoBanner = demoMode && !user;
+
   return (
     <>
-      {demoMode && (
+      {showDemoBanner && (
         <div
           style={{
             background: "linear-gradient(90deg, #f59e0b, #d97706)",
@@ -238,7 +241,7 @@ function AppContent() {
           podem estar limitadas.
         </div>
       )}
-      <div style={demoMode ? { marginTop: "40px" } : undefined}>
+      <div style={showDemoBanner ? { marginTop: "40px" } : undefined}>
         <Router>
           <RouteAnticipator />
           <BackendHeartbeat />

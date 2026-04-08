@@ -60,7 +60,7 @@ const PLAN_DATA: Record<string, any> = {
 type Step = "summary" | "contact" | "payment" | "success";
 
 const PIX_KEY = "pagamentos@engenharia-cad.com.br";
-const WHATSAPP_NUMBER = "5531999999999";
+const WHATSAPP_NUMBER = "5531992681231";
 
 // ─────────────────── Animated BG ───────────────────
 const AnimatedBg: React.FC = () => (

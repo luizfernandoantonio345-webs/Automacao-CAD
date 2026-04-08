@@ -13,6 +13,7 @@ Endpoints REST para o ChatCAD:
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter
@@ -28,6 +29,9 @@ from ai_engines.chatcad_interpreter import (
 logger = logging.getLogger("engcad.chatcad.routes")
 
 router = APIRouter(prefix="/api/chatcad", tags=["ChatCAD - NLP"])
+
+# ── LLM disponível? ──
+_LLM_AVAILABLE = bool(os.getenv("OPENAI_API_KEY", "") or os.getenv("ANTHROPIC_API_KEY", ""))
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -73,6 +77,34 @@ async def chat_and_execute(req: ChatCadPromptRequest):
     # Se for pergunta, usar o assistente existente
     if interpretacao.tipo == ComandoTipo.PERGUNTA:
         try:
+            # Tentar LLM primeiro (OpenAI/Anthropic) para resposta interativa estilo ChatGPT
+            if _LLM_AVAILABLE:
+                try:
+                    from ai_engines.llm_gateway import call_llm, OPENAI_API_KEY, ANTHROPIC_API_KEY
+                    from ai_engines.ai_guardrails import inject_system_prompt
+                    
+                    model = "gpt-4o-mini" if OPENAI_API_KEY else "claude-3-haiku-20240307"
+                    messages = inject_system_prompt([
+                        {"role": "user", "content": req.texto}
+                    ])
+                    
+                    full_response = ""
+                    async for chunk in call_llm(model, messages, 0.7, 2048, stream=False):
+                        full_response += chunk
+                    
+                    if full_response.strip():
+                        return {
+                            "success": True,
+                            "tipo": "pergunta",
+                            "interpretacao": interpretacao.to_dict(),
+                            "resposta": {"response": full_response.strip()},
+                            "executado": False,
+                            "llm": True,
+                        }
+                except Exception as llm_err:
+                    logger.warning(f"LLM falhou, usando chatbot padrão: {llm_err}")
+            
+            # Fallback: chatbot baseado em padrões
             from ai_engines.router import ai_router as engine_router
             chat_result = await engine_router.chat(req.texto, req.contexto)
             return {
@@ -92,8 +124,51 @@ async def chat_and_execute(req: ChatCadPromptRequest):
                 "executado": False,
             }
 
-    # Se desconhecido, retornar sugestões
+    # Se desconhecido, tentar LLM ou retornar sugestões
     if interpretacao.tipo == ComandoTipo.DESCONHECIDO:
+        # Tentar LLM para resposta inteligente
+        if _LLM_AVAILABLE:
+            try:
+                from ai_engines.llm_gateway import call_llm, OPENAI_API_KEY, ANTHROPIC_API_KEY
+                from ai_engines.ai_guardrails import inject_system_prompt
+                
+                model = "gpt-4o-mini" if OPENAI_API_KEY else "claude-3-haiku-20240307"
+                messages = inject_system_prompt([
+                    {"role": "user", "content": req.texto}
+                ])
+                
+                full_response = ""
+                async for chunk in call_llm(model, messages, 0.7, 2048, stream=False):
+                    full_response += chunk
+                
+                if full_response.strip():
+                    return {
+                        "success": True,
+                        "tipo": "pergunta",
+                        "interpretacao": interpretacao.to_dict(),
+                        "resposta": {"response": full_response.strip()},
+                        "executado": False,
+                        "llm": True,
+                    }
+            except Exception as llm_err:
+                logger.warning(f"LLM falhou no desconhecido: {llm_err}")
+        
+        # Fallback: tentar chatbot padrão
+        try:
+            from ai_engines.router import ai_router as engine_router
+            chat_result = await engine_router.chat(req.texto, req.contexto)
+            resp_text = chat_result.get("response", "") if isinstance(chat_result, dict) else str(chat_result)
+            if resp_text and "Desculpe" not in resp_text and len(resp_text) > 30:
+                return {
+                    "success": True,
+                    "tipo": "pergunta",
+                    "interpretacao": interpretacao.to_dict(),
+                    "resposta": {"response": resp_text},
+                    "executado": False,
+                }
+        except Exception:
+            pass
+        
         return {
             "success": True,
             "tipo": "desconhecido",

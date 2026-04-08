@@ -146,7 +146,7 @@ const DemoUpgradeModal: React.FC = () => {
                 onClick={() => {
                   dismissUpgrade();
                   window.open(
-                    "https://wa.me/5511999999999?text=Olá!%20Tenho%20interesse%20no%20plano%20Professional%20do%20Engenharia%20CAD.",
+                    "https://wa.me/5531992681231?text=Olá!%20Tenho%20interesse%20no%20plano%20Professional%20do%20Engenharia%20CAD.",
                     "_blank",
                   );
                 }}

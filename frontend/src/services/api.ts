@@ -5,7 +5,8 @@ const CLIENT_CACHE_VERSION_KEY = "engcad_client_cache_version";
 const CLIENT_CACHE_VERSION = "2026-04-07-api-unified";
 
 // Detectar ambiente de produção da Vercel
-const isVercelProduction = typeof window !== "undefined" && 
+const isVercelProduction =
+  typeof window !== "undefined" &&
   window.location.hostname.includes("vercel.app");
 
 // URL de fallback para produção ou desenvolvimento
@@ -397,6 +398,9 @@ export type AutoCADHealthResponse = {
   driver_status: string;
   engine: string;
   com_available: boolean;
+  cloud_mode?: boolean;
+  healthy?: boolean;
+  mode?: string;
   stats: AutoCADDriverStatus;
   document: { name: string; path: string; saved: boolean } | null;
 };

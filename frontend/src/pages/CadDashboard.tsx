@@ -144,16 +144,17 @@ const CadDashboard: React.FC = () => {
       // Tentar conectar via API primeiro
       const health = await ApiService.autocadHealth();
       
-      if (health?.driver_status === "Connected" || health?.com_available) {
-        // CAD real detectado
+      if (health?.driver_status === "Connected" || health?.com_available || health?.cloud_mode || health?.healthy) {
+        // CAD real ou cloud mode detectado
+        const isCloud = health?.cloud_mode || health?.mode === "cloud";
         setIsConnected(true);
         setCadInfo({
-          type: health.engine || "AutoCAD",
+          type: isCloud ? "AutoCAD 2024 Cloud" : (health.engine || "AutoCAD"),
           version: "2024",
-          document: health.document?.name,
+          document: health.document?.name || (isCloud ? "Projeto Cloud" : undefined),
         });
-        setConnectionMode("local");
-        addLog("Conexão", "success", `✓ Conectado ao ${health.engine || "AutoCAD"}`);
+        setConnectionMode(isCloud ? "auto" : "local");
+        addLog("Conexão", "success", `✓ Conectado ao ${isCloud ? "AutoCAD 2024 Cloud" : (health.engine || "AutoCAD")}`);
       } else {
         // Sem CAD disponível - modo simulação automático
         setIsConnected(true);

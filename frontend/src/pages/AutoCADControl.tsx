@@ -479,6 +479,7 @@ const AutoCADControl: React.FC = () => {
       case "Bridge":
         return "#00BFFF";
       case "Connected":
+      case "Cloud":
         return "#00FF87";
       case "Simulation":
         return "#FFD700";
@@ -663,7 +664,7 @@ const AutoCADControl: React.FC = () => {
               onClick={handleSetModeBridge}
               label="Modo PONTE"
               theme={theme}
-              variant={driverStatus?.mode === "bridge" ? "active" : "ghost"}
+              variant={driverStatus?.mode === "bridge" || driverStatus?.mode === "cloud" ? "active" : "ghost"}
             />
             <ActionBtn
               onClick={handleSetModeCOM}

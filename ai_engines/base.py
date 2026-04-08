@@ -12,7 +12,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Generic
 
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class AIStatus(Enum):
     """Estados possíveis de uma IA."""
+    ONLINE = "online"
     IDLE = "idle"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -111,7 +112,7 @@ class BaseAI(ABC):
     def __init__(self, name: str, version: str = "1.0.0"):
         self.name = name
         self.version = version
-        self.status = AIStatus.IDLE
+        self.status = AIStatus.ONLINE
         self.metrics = AIMetrics()
         self._cache: Dict[str, AIResult] = {}
         self._cache_ttl_seconds = 300  # 5 minutos
@@ -204,7 +205,7 @@ class BaseAI(ABC):
             if use_cache and result.success:
                 self._cache[cache_key] = result
             
-            self.status = AIStatus.COMPLETED if result.success else AIStatus.ERROR
+            self.status = AIStatus.ONLINE if result.success else AIStatus.ERROR
             
         except asyncio.TimeoutError:
             result = AIResult(

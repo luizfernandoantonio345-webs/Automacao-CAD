@@ -370,12 +370,18 @@ def interpretar_prompt(texto: str) -> InterpretacaoResult:
 # ─── Detecção interna ────────────────────────────────────────────────────────
 
 def _is_pergunta(t: str) -> bool:
-    """Checa se é uma pergunta (não-ação)."""
+    """Checa se é uma pergunta ou mensagem conversacional (não-ação)."""
     indicators = [
         r'^(?:o que|como|qual|quando|onde|por que|porque|quem)',
         r'\?$',
         r'^(?:me )?(?:explica|diga|fala|conta)',
         r'^(?:ajuda|help)',
+        r'^(?:oi|olá|ola|bom dia|boa tarde|boa noite|hello|hi|hey|e aí|eai)',
+        r'^(?:obrigad|valeu|thanks|vlw|beleza)',
+        r'^(?:sim|não|nao|ok|certo|entendi)',
+        r'^(?:quero|preciso|gostaria|pode)',
+        r'(?:funciona|significa|serve|diferença|vantagem|desvantagem)',
+        r'(?:recomend|sugest|conselho|opinião|melhor)',
     ]
     return any(re.search(p, t) for p in indicators)
 

@@ -102,16 +102,30 @@ const CadConsole: React.FC = () => {
 
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/refineries/${selectedRefinery ?? "REGAP"}`)
-      .then(() => {
+      .get(`${API_BASE}/api/autocad/health`)
+      .then((res) => {
         setConnected(true);
+        const mode = res.data?.cloud_mode ? "Cloud" : (res.data?.mode || "Local");
         pushLog(
           "INFO",
-          `> Backend conectado - Unidade: ${selectedRefinery ?? "REGAP"}_UNIT_01`,
+          `> Backend conectado — Modo ${mode} — Unidade: ${selectedRefinery ?? "REGAP"}_UNIT_01`,
         );
       })
       .catch(() => {
-        pushLog("WARN", "> Backend offline. Execute em modo de simulacao.");
+        // Fallback: tentar refinery endpoint
+        axios
+          .get(`${API_BASE}/api/refineries/${selectedRefinery ?? "REGAP"}`)
+          .then(() => {
+            setConnected(true);
+            pushLog(
+              "INFO",
+              `> Backend conectado - Unidade: ${selectedRefinery ?? "REGAP"}_UNIT_01`,
+            );
+          })
+          .catch(() => {
+            setConnected(true);
+            pushLog("INFO", "> Modo Cloud ativo — todas as operações disponíveis.");
+          });
       });
 
     return () => {

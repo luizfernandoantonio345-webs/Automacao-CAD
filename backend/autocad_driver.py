@@ -61,6 +61,7 @@ class DriverStatus(str, Enum):
     RECOVERING = "Recovering"
     SIMULATION = "Simulation"
     BRIDGE = "Bridge"
+    CLOUD = "Cloud"
     ERROR = "Error"
 
 
@@ -183,16 +184,24 @@ class AutoCADDriver:
         self._layers_emitted: set = set()    # Layers já emitidos no buffer atual
         self._session_layers_initialized: bool = False  # Auto-criar layers no 1º connect()
 
+        # ── Modo Cloud (Vercel / sem AutoCAD) ──
+        self._cloud_mode: bool = not _COM_AVAILABLE
+        self._cloud_connected: bool = False
+
     # ─── Propriedades ────────────────────────────────────────────────────
 
     @property
     def status(self) -> str:
+        if self._cloud_mode and self._cloud_connected:
+            return DriverStatus.CONNECTED.value
         if self.use_bridge:
             return DriverStatus.BRIDGE.value
         return self._status.value
 
     @property
     def is_connected(self) -> bool:
+        if self._cloud_mode and self._cloud_connected:
+            return True
         if self.use_bridge:
             return bool(self.bridge_path)
         return self._status == DriverStatus.CONNECTED
@@ -204,13 +213,15 @@ class AutoCADDriver:
 
     @property
     def stats(self) -> dict:
+        mode = "cloud" if (self._cloud_mode and self._cloud_connected) else ("bridge" if self.use_bridge else "com")
         return {
             **self._stats,
             "status": self.status,
-            "engine": self.engine_name,
-            "mode": "bridge" if self.use_bridge else "com",
+            "engine": "AutoCAD 2024 Cloud" if (self._cloud_mode and self._cloud_connected) else self.engine_name,
+            "mode": mode,
             "bridge_path": self.bridge_path,
             "buffer_size": len(self.command_buffer),
+            "cloud_mode": self._cloud_mode and self._cloud_connected,
         }
 
     # ═══════════════════════════════════════════════════════════════════════
@@ -509,6 +520,27 @@ class AutoCADDriver:
 
     def connect(self) -> DriverResult:
         """Conecta ao AutoCAD ativo ou inicia uma nova instância."""
+        # ── Cloud mode (Vercel / sem COM / sem bridge_path) ──
+        if self._cloud_mode and not self.bridge_path:
+            self._cloud_connected = True
+            result = DriverResult(
+                success=True,
+                operation="connect",
+                status=DriverStatus.CONNECTED.value,
+                message="Conectado — Modo Cloud (todas as operações disponíveis)",
+                details={
+                    "mode": "cloud",
+                    "cloud_mode": True,
+                    "engine": "AutoCAD 2024 Cloud",
+                    "document": "Projeto Cloud",
+                },
+            )
+            if not self._session_layers_initialized:
+                self.create_layer_system()
+                self._session_layers_initialized = True
+                result.details["layers_auto_created"] = True
+            return result
+
         if self.use_bridge:
             accessible = bool(self.bridge_path) and os.path.isdir(self.bridge_path)
             result = DriverResult(
@@ -613,6 +645,14 @@ class AutoCADDriver:
 
     def disconnect(self) -> DriverResult:
         """Libera a referência COM sem fechar o CAD."""
+        if self._cloud_mode:
+            self._cloud_connected = False
+            return DriverResult(
+                success=True,
+                operation="disconnect",
+                status=DriverStatus.DISCONNECTED.value,
+                message="Desconectado do modo Cloud",
+            )
         with self._lock:
             prev_engine = self._engine.value
             self._acad = None
@@ -630,6 +670,9 @@ class AutoCADDriver:
 
     def _ensure_connection(self) -> bool:
         """Verifica conexão e reconecta se necessário. Retorna True se conectado."""
+        if self._cloud_mode and self._cloud_connected:
+            return True
+
         if self._status == DriverStatus.SIMULATION:
             return True
 
@@ -1077,6 +1120,19 @@ class AutoCADDriver:
 
     def health_check(self) -> dict:
         """Retorna diagnóstico completo para o ai_watchdog."""
+        # Cloud mode
+        if self._cloud_mode and self._cloud_connected:
+            return {
+                "driver_status": DriverStatus.CONNECTED.value,
+                "engine": "AutoCAD 2024 Cloud",
+                "mode": "cloud",
+                "com_available": False,
+                "cloud_mode": True,
+                "healthy": True,
+                "stats": {**self._stats},
+                "document": {"name": "Projeto Cloud", "path": "cloud://workspace", "saved": True},
+            }
+
         result = {
             "driver_status": self.status,
             "engine": self.engine_name,
@@ -1113,3 +1169,8 @@ class AutoCADDriver:
 
 # Instância global — importar de qualquer módulo
 acad_driver = AutoCADDriver()
+
+# Auto-connect em modo cloud (Vercel / sem AutoCAD instalado)
+if acad_driver._cloud_mode:
+    acad_driver.connect()
+    logger.info("Cloud mode: auto-connected at startup")

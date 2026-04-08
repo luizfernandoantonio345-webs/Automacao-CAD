@@ -1762,7 +1762,7 @@ M02 (Fim do programa)
               const t = encodeURIComponent(
                 "Olá! Quero saber mais sobre o módulo CNC do Engenharia CAD.",
               );
-              window.open(`https://wa.me/5511999999999?text=${t}`, "_blank");
+              window.open(`https://wa.me/5531992681231?text=${t}`, "_blank");
             }}
             style={{
               padding: "14px 32px",
