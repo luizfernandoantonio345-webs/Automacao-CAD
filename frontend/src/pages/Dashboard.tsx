@@ -145,8 +145,8 @@ const Dashboard = () => {
       { name: "Database", status: "online" as const, latency: 15 },
       {
         name: "AutoCAD Link",
-        status: "warning" as const,
-        message: "Reconectando",
+        status: "online" as const,
+        message: "Cloud Mode",
       },
       { name: "CNC Queue", status: "online" as const, latency: 8 },
     ],

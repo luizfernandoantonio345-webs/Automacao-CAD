@@ -84,14 +84,16 @@ class AssistantChatbotAI(BaseAI):
     
     # Patterns de intenção
     INTENT_PATTERNS = {
-        "greeting": [r"oi", r"olá", r"bom dia", r"boa tarde", r"boa noite", r"hello", r"hi"],
-        "help": [r"ajuda", r"help", r"como", r"onde", r"o que", r"explica"],
-        "calculate": [r"calcul", r"quanto", r"qual o valor", r"compute"],
-        "norm": [r"norma", r"asme", r"api", r"iso", r"abnt", r"padrão"],
-        "material": [r"material", r"aço", r"inox", r"carbono", r"pvc", r"tubo"],
-        "command": [r"comando", r"command", r"autocad", r"cad", r"desenho"],
-        "error": [r"erro", r"error", r"problema", r"não funciona", r"bug"],
-        "status": [r"status", r"estado", r"situação", r"andamento"],
+        "greeting": [r"\b(oi|olá|bom dia|boa tarde|boa noite|hello|hi|hey)\b"],
+        "help": [r"ajuda", r"\bhelp\b", r"como fa[çz]o", r"onde fica", r"o que é", r"explica", r"me ensina", r"tutorial"],
+        "calculate": [r"calcul", r"quanto", r"qual o valor", r"compute", r"dimensionar", r"fórmula"],
+        "norm": [r"norma", r"asme", r"\bapi\s?\d", r"\biso\b", r"abnt", r"padrão", r"regulament", r"especificação"],
+        "material": [r"material", r"aço", r"inox", r"carbono", r"\bpvc\b", r"\btubo\b", r"tubulação", r"liga", r"metalurg"],
+        "command": [r"comando", r"command", r"autocad", r"\bcad\b", r"desenho", r"layer", r"block", r"offset", r"trim"],
+        "error": [r"erro", r"error", r"problema", r"não funciona", r"bug", r"falha", r"crash", r"travou", r"parou"],
+        "status": [r"status", r"estado", r"situação", r"andamento", r"funcionando", r"online"],
+        "project": [r"projeto", r"project", r"planta", r"isométric", r"p&id", r"fluxograma", r"layout"],
+        "pricing": [r"preço", r"plano", r"assinatura", r"pagar", r"custo", r"licença", r"pricing"],
     }
     
     def __init__(self):
@@ -242,6 +244,12 @@ class AssistantChatbotAI(BaseAI):
             
         elif intent == "status":
             response = self._handle_status_query(context)
+            
+        elif intent == "project":
+            response = self._handle_project_query(message)
+            
+        elif intent == "pricing":
+            response = self._handle_pricing_query()
             
         else:
             response = self._handle_general_help(message)
@@ -493,18 +501,82 @@ Descreva seu problema com mais detalhes:
 Use o menu "AI Dashboard" para acessar as IAs."""
     
     def _handle_general_help(self, message: str) -> str:
-        """Resposta genérica de ajuda."""
-        return f"""Entendi sua pergunta: "{message}"
+        """Resposta inteligente quando nenhum intent específico é detectado."""
+        message_lower = message.lower()
+        
+        # Tentar extrair palavras-chave para resposta mais contextual
+        keywords_responses = {
+            "vapor": "Para sistemas de vapor, recomendo consultar a norma **ASME B31.1**. Posso detalhar requisitos de materiais, espessura e temperatura. Pergunte 'norma ASME B31.1' ou 'material para vapor'.",
+            "pressão": "Para cálculos de pressão, posso ajudar com espessura de parede (ASME B31.3) e dimensionamento de vasos (ASME VIII). Pergunte 'calcular espessura de parede'.",
+            "corrosão": "Para ambientes corrosivos, recomendo **Aço Inox 316** ou revestimentos especiais. Pergunte 'material para ambiente corrosivo' para mais detalhes.",
+            "solda": "Para requisitos de soldagem, consulte ASME IX (qualificação) e ASME B31.3 (procedimentos de campo). Pergunte sobre normas para mais informações.",
+            "tanque": "Para tanques de armazenamento atmosféricos, a norma principal é **API 650**. Pergunte 'norma API 650' para detalhes.",
+            "inspeção": "Inspeções devem seguir a norma aplicável (ASME B31.3 para tubulação industrial). Inclui exame visual, radiografia, teste hidrostático e ultrassom.",
+            "temperatura": "A seleção de material depende da faixa de temperatura. Aço carbono: até 427°C. Inox 304/316: até 816°C. Pergunte sobre materiais para detalhes.",
+        }
+        
+        for keyword, resp in keywords_responses.items():
+            if keyword in message_lower:
+                return f"💡 {resp}"
+        
+        return f"""Entendi sua pergunta sobre: *"{message}"*
 
-Posso ajudar com:
+Sou especializado em engenharia industrial e CAD. Posso ajudar com:
 
-📚 **Normas** - "Qual norma usar para vapor?"
-🔧 **Materiais** - "Qual material para ambiente corrosivo?"
-🖥️ **Comandos** - "Como usar o comando OFFSET?"
-📐 **Cálculos** - "Como calcular espessura de parede?"
-🔧 **Problemas** - "Não consigo conectar ao AutoCAD"
+📚 **Normas** — "Qual norma usar para vapor a alta pressão?"
+🔧 **Materiais** — "Qual material para ambiente corrosivo?"
+🖥️ **Comandos CAD** — "Como usar o comando OFFSET?"
+📐 **Cálculos** — "Como calcular espessura de parede?"
+🔧 **Problemas** — "Não consigo conectar ao AutoCAD"
+📊 **Status** — "Qual o status do sistema?"
 
-Digite sua pergunta de forma específica para eu ajudar melhor!"""
+Tente reformular com mais detalhes para que eu possa ajudar melhor!"""
+
+    def _handle_project_query(self, message: str) -> str:
+        """Responde perguntas sobre projetos."""
+        return """📋 **Gestão de Projetos no ForgeCad:**
+
+**Criar novo projeto:**
+1. Acesse o **Dashboard** → "Novo Projeto"
+2. Preencha nome, tipo e descrição
+3. Importe ou crie desenhos DWG
+
+**Tipos de projeto suportados:**
+- 🏭 **Tubulação Industrial** — P&IDs, isométricos, plantas
+- 🔩 **Estruturas Metálicas** — Perfis, conexões, detalhes
+- ⚙️ **Mecânico** — Componentes, montagens
+- 📐 **Civil** — Layouts, fundações
+
+**Funcionalidades:**
+- Controle de revisão automático
+- Geração de lista de materiais (BOM)
+- Análise por IA (conflitos, otimização)
+- Exportação DXF/PDF/G-code
+
+Acesse o Dashboard para gerenciar seus projetos."""
+
+    def _handle_pricing_query(self) -> str:
+        """Responde perguntas sobre planos e preços."""
+        return """💰 **Planos ForgeCad:**
+
+**🟢 Starter — R$ 297/mês**
+- 5 projetos ativos
+- IAs básicas (análise + otimização)
+- Suporte por email
+
+**🔵 Professional — R$ 697/mês**
+- 25 projetos ativos
+- Todas as 8 IAs
+- Nesting engine + CAM
+- Suporte prioritário
+
+**🟣 Enterprise — R$ 1.497/mês**
+- Projetos ilimitados
+- IA dedicada + GPU
+- API completa
+- Suporte 24/7 + SLA
+
+Acesse a página **Pricing** no menu para assinar ou alterar seu plano."""
     
     def _get_suggestions(self) -> List[str]:
         """Retorna sugestões padrão."""
@@ -537,6 +609,16 @@ Digite sua pergunta de forma específica para eu ajudar melhor!"""
                 "Calcular perda de carga",
                 "Determinar schedule de tubo",
                 "Velocidade máxima recomendada",
+            ],
+            "project": [
+                "Criar novo projeto de tubulação",
+                "Importar desenho DWG existente",
+                "Gerar lista de materiais do projeto",
+            ],
+            "pricing": [
+                "Qual plano é ideal para mim?",
+                "Funcionalidades do plano Enterprise",
+                "Como atualizar meu plano?",
             ],
         }
         

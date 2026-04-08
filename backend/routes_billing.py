@@ -47,13 +47,16 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 PRICING_TIERS = {
     "starter": {
         "name": "Starter",
-        "price_monthly": 99,
-        "price_yearly": 990,
+        "price_monthly": 297,
+        "price_yearly": 2970,
+        "currency": "BRL",
         "stripe_price_id": os.getenv("STRIPE_PRICE_STARTER", "price_starter_mock"),
         "features": {
             "cam_jobs_per_month": 500,
             "max_users": 1,
-            "max_machines": 2,
+            "max_machines": 1,
+            "max_projects": 5,
+            "ai_queries_per_month": 100,
             "support": "email",
             "sla": "99%",
             "api_access": False,
@@ -61,13 +64,16 @@ PRICING_TIERS = {
     },
     "professional": {
         "name": "Professional",
-        "price_monthly": 299,
-        "price_yearly": 2990,
+        "price_monthly": 697,
+        "price_yearly": 6970,
+        "currency": "BRL",
         "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", "price_pro_mock"),
         "features": {
             "cam_jobs_per_month": 2500,
             "max_users": 5,
-            "max_machines": 10,
+            "max_machines": 2,
+            "max_projects": 20,
+            "ai_queries_per_month": 500,
             "support": "priority",
             "sla": "99.5%",
             "api_access": True,
@@ -75,13 +81,16 @@ PRICING_TIERS = {
     },
     "enterprise": {
         "name": "Enterprise",
-        "price_monthly": 999,
-        "price_yearly": 9990,
+        "price_monthly": 1497,
+        "price_yearly": 14970,
+        "currency": "BRL",
         "stripe_price_id": os.getenv("STRIPE_PRICE_ENTERPRISE", "price_enterprise_mock"),
         "features": {
             "cam_jobs_per_month": -1,  # Unlimited
             "max_users": 25,
             "max_machines": -1,  # Unlimited
+            "max_projects": -1,
+            "ai_queries_per_month": -1,
             "support": "dedicated",
             "sla": "99.9%",
             "api_access": True,
@@ -116,7 +125,8 @@ def get_stripe():
 # DATA STORE (JSON File - Produção usaria PostgreSQL)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-_BILLING_FILE = Path(__file__).parent.parent / "data" / "billing.json"
+_BILLING_BASE = Path("/tmp") if os.getenv("VERCEL") else Path(__file__).parent.parent / "data"
+_BILLING_FILE = _BILLING_BASE / "billing.json"
 _BILLING_LOCK = Lock()
 
 

@@ -204,7 +204,7 @@ const AutoCADControl: React.FC = () => {
     };
 
     fetchStatus();
-    const id = setInterval(fetchStatus, 3000);
+    const id = setInterval(fetchStatus, 8000);
     return () => {
       cancelled = true;
       clearInterval(id);

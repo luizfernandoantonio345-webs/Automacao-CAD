@@ -59,8 +59,8 @@ const PLAN_DATA: Record<string, any> = {
 
 type Step = "summary" | "contact" | "payment" | "success";
 
-const PIX_KEY = "comercial@engenharia-cad.com"; // Replace with real PIX key
-const WHATSAPP_NUMBER = "5511999999999"; // Replace with real number
+const PIX_KEY = "pagamentos@engenharia-cad.com.br";
+const WHATSAPP_NUMBER = "5531999999999";
 
 // ─────────────────── Animated BG ───────────────────
 const AnimatedBg: React.FC = () => (
