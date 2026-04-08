@@ -689,26 +689,58 @@ const AnalyticsDashboard: React.FC = () => {
   // ── Feature gate: Analytics requires paid plan ──
   if (!canUse("analytics")) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: theme.background || "#050507",
-        gap: "24px",
-        padding: "32px",
-        textAlign: "center",
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: theme.background || "#050507",
+          gap: "24px",
+          padding: "32px",
+          textAlign: "center",
+        }}
+      >
         <div style={{ fontSize: "64px" }}>📊</div>
-        <h2 style={{ color: theme.textPrimary || "#fff", fontSize: "24px", fontWeight: 700, margin: 0 }}>Analytics Avançado</h2>
-        <p style={{ color: "#8899aa", fontSize: "15px", maxWidth: "480px", lineHeight: 1.6, margin: 0 }}>
-          Acesse KPIs em tempo real, saúde do sistema, performance de IA e atividade de usuários com os planos
-          <strong style={{ color: "#00A1FF" }}> Professional</strong> ou <strong style={{ color: "#A855F7" }}>Enterprise</strong>.
+        <h2
+          style={{
+            color: theme.textPrimary || "#fff",
+            fontSize: "24px",
+            fontWeight: 700,
+            margin: 0,
+          }}
+        >
+          Analytics Avançado
+        </h2>
+        <p
+          style={{
+            color: "#8899aa",
+            fontSize: "15px",
+            maxWidth: "480px",
+            lineHeight: 1.6,
+            margin: 0,
+          }}
+        >
+          Acesse KPIs em tempo real, saúde do sistema, performance de IA e
+          atividade de usuários com os planos
+          <strong style={{ color: "#00A1FF" }}> Professional</strong> ou{" "}
+          <strong style={{ color: "#A855F7" }}>Enterprise</strong>.
         </p>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
           <button
-            onClick={() => triggerUpgrade("Analytics Avançado está disponível no plano Professional ou Enterprise.")}
+            onClick={() =>
+              triggerUpgrade(
+                "Analytics Avançado está disponível no plano Professional ou Enterprise.",
+              )
+            }
             style={{
               padding: "14px 32px",
               background: "linear-gradient(135deg, #00A1FF, #0077BB)",
@@ -724,7 +756,9 @@ const AnalyticsDashboard: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              const t = encodeURIComponent("Olá! Quero saber mais sobre o Analytics do Engenharia CAD.");
+              const t = encodeURIComponent(
+                "Olá! Quero saber mais sobre o Analytics do Engenharia CAD.",
+              );
               window.open(`https://wa.me/5511999999999?text=${t}`, "_blank");
             }}
             style={{
@@ -741,17 +775,35 @@ const AnalyticsDashboard: React.FC = () => {
             💬 Falar com Consultor
           </button>
         </div>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", marginTop: "8px" }}>
-          {["KPIs em tempo real", "Saúde do sistema", "Performance IA", "Atividade de usuários"].map(f => (
-            <div key={f} style={{
-              background: "#111827",
-              border: "1px solid #1e3050",
-              borderRadius: "8px",
-              padding: "8px 16px",
-              color: "#a0b0c0",
-              fontSize: "13px",
-              opacity: 0.6,
-            }}>🔒 {f}</div>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            marginTop: "8px",
+          }}
+        >
+          {[
+            "KPIs em tempo real",
+            "Saúde do sistema",
+            "Performance IA",
+            "Atividade de usuários",
+          ].map((f) => (
+            <div
+              key={f}
+              style={{
+                background: "#111827",
+                border: "1px solid #1e3050",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                color: "#a0b0c0",
+                fontSize: "13px",
+                opacity: 0.6,
+              }}
+            >
+              🔒 {f}
+            </div>
           ))}
         </div>
       </div>

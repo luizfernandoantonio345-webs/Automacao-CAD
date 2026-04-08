@@ -519,20 +519,35 @@ const AutoCADControl: React.FC = () => {
               ENGENHARIA <span style={{ color: theme.accentPrimary }}>CAD</span>
               <span style={st.badge}>Controle AutoCAD</span>
               {driverStatus?.engine && driverStatus.engine !== "Unknown" && (
-                <span style={{
-                  ...st.badge,
-                  backgroundColor: driverStatus.engine === "GstarCAD" ? (theme.accentSecondary + "18") : (theme.accentPrimary + "18"),
-                  color: driverStatus.engine === "GstarCAD" ? theme.accentSecondary : theme.accentPrimary,
-                  border: `1px solid ${driverStatus.engine === "GstarCAD" ? theme.accentSecondary : theme.accentPrimary}30`,
-                }}>
+                <span
+                  style={{
+                    ...st.badge,
+                    backgroundColor:
+                      driverStatus.engine === "GstarCAD"
+                        ? theme.accentSecondary + "18"
+                        : theme.accentPrimary + "18",
+                    color:
+                      driverStatus.engine === "GstarCAD"
+                        ? theme.accentSecondary
+                        : theme.accentPrimary,
+                    border: `1px solid ${driverStatus.engine === "GstarCAD" ? theme.accentSecondary : theme.accentPrimary}30`,
+                  }}
+                >
                   ⚙ {driverStatus.engine}
                 </span>
               )}
             </h1>
-            <p style={st.pageSubtitle}>Driver híbrido COM + Ponte de Rede • Norma N-58 Petrobras</p>
+            <p style={st.pageSubtitle}>
+              Driver híbrido COM + Ponte de Rede • Norma N-58 Petrobras
+            </p>
           </div>
           <label style={st.toggleLabel}>
-            <input type="checkbox" checked={polling} onChange={(e) => setPolling(e.target.checked)} style={{ accentColor: theme.accentPrimary }} />
+            <input
+              type="checkbox"
+              checked={polling}
+              onChange={(e) => setPolling(e.target.checked)}
+              style={{ accentColor: theme.accentPrimary }}
+            />
             <span>Auto-refresh (3s)</span>
           </label>
         </header>
@@ -541,30 +556,121 @@ const AutoCADControl: React.FC = () => {
         <Section title="Status do Driver" theme={theme} st={st}>
           {driverStatus ? (
             <div style={st.statusGrid}>
-              <MetricCard label="Modo" value={driverStatus.mode.toUpperCase()} color={statusColor(driverStatus.status)} theme={theme} st={st} />
-              <MetricCard label="Engine" value={driverStatus.engine || "—"} color={driverStatus.engine === "GstarCAD" ? theme.accentSecondary : theme.accentPrimary} theme={theme} st={st} />
-              <MetricCard label="Status" value={driverStatus.status} color={statusColor(driverStatus.status)} theme={theme} st={st} />
-              <MetricCard label="Buffer" value={`${driverStatus.buffer_size} cmds`} color={theme.accentWarning} theme={theme} st={st} />
-              <MetricCard label="Operações" value={`${driverStatus.operations_success}/${driverStatus.operations_total}`} color={theme.accentSecondary} theme={theme} st={st} />
-              <MetricCard label="Falhas" value={String(driverStatus.operations_failed)} color={driverStatus.operations_failed > 0 ? theme.accentDanger : theme.accentSecondary} theme={theme} st={st} />
-              <MetricCard label="Commits" value={String(driverStatus.bridge_commits)} color={theme.accentPrimary} theme={theme} st={st} />
-              <MetricCard label="Enviados" value={String(driverStatus.bridge_commands_sent)} color={theme.accentPrimary} theme={theme} st={st} />
+              <MetricCard
+                label="Modo"
+                value={driverStatus.mode.toUpperCase()}
+                color={statusColor(driverStatus.status)}
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Engine"
+                value={driverStatus.engine || "—"}
+                color={
+                  driverStatus.engine === "GstarCAD"
+                    ? theme.accentSecondary
+                    : theme.accentPrimary
+                }
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Status"
+                value={driverStatus.status}
+                color={statusColor(driverStatus.status)}
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Buffer"
+                value={`${driverStatus.buffer_size} cmds`}
+                color={theme.accentWarning}
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Operações"
+                value={`${driverStatus.operations_success}/${driverStatus.operations_total}`}
+                color={theme.accentSecondary}
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Falhas"
+                value={String(driverStatus.operations_failed)}
+                color={
+                  driverStatus.operations_failed > 0
+                    ? theme.accentDanger
+                    : theme.accentSecondary
+                }
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Commits"
+                value={String(driverStatus.bridge_commits)}
+                color={theme.accentPrimary}
+                theme={theme}
+                st={st}
+              />
+              <MetricCard
+                label="Enviados"
+                value={String(driverStatus.bridge_commands_sent)}
+                color={theme.accentPrimary}
+                theme={theme}
+                st={st}
+              />
             </div>
           ) : (
-            <div style={{ padding: "16px", color: theme.accentDanger, fontSize: "0.85rem", border: `1px solid ${theme.accentDanger}30`, borderRadius: 8, backgroundColor: theme.accentDanger + "08" }}>
-              Driver offline ou inacessível — verifique se o servidor está rodando em {API}
+            <div
+              style={{
+                padding: "16px",
+                color: theme.accentDanger,
+                fontSize: "0.85rem",
+                border: `1px solid ${theme.accentDanger}30`,
+                borderRadius: 8,
+                backgroundColor: theme.accentDanger + "08",
+              }}
+            >
+              Driver offline ou inacessível — verifique se o servidor está
+              rodando em {API}
             </div>
           )}
           {driverStatus?.last_error && (
-            <div style={{ marginTop: 12, padding: "10px 14px", backgroundColor: theme.accentDanger + "0A", border: `1px solid ${theme.accentDanger}30`, borderRadius: 8, fontSize: "0.8rem", color: theme.accentDanger }}>
+            <div
+              style={{
+                marginTop: 12,
+                padding: "10px 14px",
+                backgroundColor: theme.accentDanger + "0A",
+                border: `1px solid ${theme.accentDanger}30`,
+                borderRadius: 8,
+                fontSize: "0.8rem",
+                color: theme.accentDanger,
+              }}
+            >
               Último erro: {driverStatus.last_error}
             </div>
           )}
           <div style={st.btnRow}>
             <ActionBtn onClick={handleConnect} label="Conectar" theme={theme} />
-            <ActionBtn onClick={handleDisconnect} label="Desconectar" theme={theme} variant="ghost" />
-            <ActionBtn onClick={handleSetModeBridge} label="Modo PONTE" theme={theme} variant={driverStatus?.mode === "bridge" ? "active" : "ghost"} />
-            <ActionBtn onClick={handleSetModeCOM} label="Modo COM" theme={theme} variant={driverStatus?.mode === "com" ? "active" : "ghost"} />
+            <ActionBtn
+              onClick={handleDisconnect}
+              label="Desconectar"
+              theme={theme}
+              variant="ghost"
+            />
+            <ActionBtn
+              onClick={handleSetModeBridge}
+              label="Modo PONTE"
+              theme={theme}
+              variant={driverStatus?.mode === "bridge" ? "active" : "ghost"}
+            />
+            <ActionBtn
+              onClick={handleSetModeCOM}
+              label="Modo COM"
+              theme={theme}
+              variant={driverStatus?.mode === "com" ? "active" : "ghost"}
+            />
           </div>
         </Section>
 
@@ -572,14 +678,25 @@ const AutoCADControl: React.FC = () => {
         <Section title="Configurar Ponte (Bridge Path)" theme={theme} st={st}>
           <div style={st.inlineGroup}>
             <input
-              type="text" value={bridgePath} onChange={(e) => setBridgePath(e.target.value)}
+              type="text"
+              value={bridgePath}
+              onChange={(e) => setBridgePath(e.target.value)}
               placeholder={driverStatus?.bridge_path || "Ex: Z:/AutoCAD_Drop/"}
               style={st.input}
             />
-            <ActionBtn onClick={handleSetBridgePath} label="Salvar" theme={theme} />
+            <ActionBtn
+              onClick={handleSetBridgePath}
+              label="Salvar"
+              theme={theme}
+            />
           </div>
           {driverStatus?.bridge_path && (
-            <p style={st.hint}>Caminho atual: <span style={{ color: theme.accentPrimary }}>{driverStatus.bridge_path}</span></p>
+            <p style={st.hint}>
+              Caminho atual:{" "}
+              <span style={{ color: theme.accentPrimary }}>
+                {driverStatus.bridge_path}
+              </span>
+            </p>
           )}
         </Section>
 
@@ -592,62 +709,176 @@ const AutoCADControl: React.FC = () => {
               <div style={st.grid2Inner}>
                 <FieldGroup label="Ponto A (X, Y, Z)" theme={theme} st={st}>
                   <div style={st.coordRow}>
-                    <input style={st.coordInput} value={pipeAx} onChange={(e) => setPipeAx(e.target.value)} placeholder="X" />
-                    <input style={st.coordInput} value={pipeAy} onChange={(e) => setPipeAy(e.target.value)} placeholder="Y" />
-                    <input style={st.coordInput} value={pipeAz} onChange={(e) => setPipeAz(e.target.value)} placeholder="Z" />
+                    <input
+                      style={st.coordInput}
+                      value={pipeAx}
+                      onChange={(e) => setPipeAx(e.target.value)}
+                      placeholder="X"
+                    />
+                    <input
+                      style={st.coordInput}
+                      value={pipeAy}
+                      onChange={(e) => setPipeAy(e.target.value)}
+                      placeholder="Y"
+                    />
+                    <input
+                      style={st.coordInput}
+                      value={pipeAz}
+                      onChange={(e) => setPipeAz(e.target.value)}
+                      placeholder="Z"
+                    />
                   </div>
                 </FieldGroup>
                 <FieldGroup label="Ponto B (X, Y, Z)" theme={theme} st={st}>
                   <div style={st.coordRow}>
-                    <input style={st.coordInput} value={pipeBx} onChange={(e) => setPipeBx(e.target.value)} placeholder="X" />
-                    <input style={st.coordInput} value={pipeBy} onChange={(e) => setPipeBy(e.target.value)} placeholder="Y" />
-                    <input style={st.coordInput} value={pipeBz} onChange={(e) => setPipeBz(e.target.value)} placeholder="Z" />
+                    <input
+                      style={st.coordInput}
+                      value={pipeBx}
+                      onChange={(e) => setPipeBx(e.target.value)}
+                      placeholder="X"
+                    />
+                    <input
+                      style={st.coordInput}
+                      value={pipeBy}
+                      onChange={(e) => setPipeBy(e.target.value)}
+                      placeholder="Y"
+                    />
+                    <input
+                      style={st.coordInput}
+                      value={pipeBz}
+                      onChange={(e) => setPipeBz(e.target.value)}
+                      placeholder="Z"
+                    />
                   </div>
                 </FieldGroup>
               </div>
               <FieldGroup label="Diâmetro" theme={theme} st={st}>
-                <select style={st.select} value={pipeDiameter} onChange={(e) => setPipeDiameter(Number(e.target.value))}>
-                  {DIAMETERS.map((d) => (<option key={d.value} value={d.value}>{d.label}</option>))}
+                <select
+                  style={st.select}
+                  value={pipeDiameter}
+                  onChange={(e) => setPipeDiameter(Number(e.target.value))}
+                >
+                  {DIAMETERS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
               </FieldGroup>
-              <ActionBtn onClick={handleDrawPipe} label="Traçar Tubo" theme={theme} style={{ width: "100%", marginTop: 12 }} />
+              <ActionBtn
+                onClick={handleDrawPipe}
+                label="Traçar Tubo"
+                theme={theme}
+                style={{ width: "100%", marginTop: 12 }}
+              />
             </div>
 
             {/* ── Inserir Válvula ── */}
             <div style={st.card}>
               <h3 style={st.cardTitle}>Inserir Válvula / Componente</h3>
               <FieldGroup label="Bloco" theme={theme} st={st}>
-                <select style={st.select} value={valveBlock} onChange={(e) => setValveBlock(e.target.value)}>
-                  {VALVE_BLOCKS.map((b) => (<option key={b} value={b}>{b}</option>))}
+                <select
+                  style={st.select}
+                  value={valveBlock}
+                  onChange={(e) => setValveBlock(e.target.value)}
+                >
+                  {VALVE_BLOCKS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
                 </select>
               </FieldGroup>
-              <FieldGroup label="Ponto de Inserção (X, Y, Z)" theme={theme} st={st}>
+              <FieldGroup
+                label="Ponto de Inserção (X, Y, Z)"
+                theme={theme}
+                st={st}
+              >
                 <div style={st.coordRow}>
-                  <input style={st.coordInput} value={valveX} onChange={(e) => setValveX(e.target.value)} placeholder="X" />
-                  <input style={st.coordInput} value={valveY} onChange={(e) => setValveY(e.target.value)} placeholder="Y" />
-                  <input style={st.coordInput} value={valveZ} onChange={(e) => setValveZ(e.target.value)} placeholder="Z" />
+                  <input
+                    style={st.coordInput}
+                    value={valveX}
+                    onChange={(e) => setValveX(e.target.value)}
+                    placeholder="X"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={valveY}
+                    onChange={(e) => setValveY(e.target.value)}
+                    placeholder="Y"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={valveZ}
+                    onChange={(e) => setValveZ(e.target.value)}
+                    placeholder="Z"
+                  />
                 </div>
               </FieldGroup>
               <div style={st.grid2Inner}>
                 <FieldGroup label="Rotação (°)" theme={theme} st={st}>
-                  <input style={st.input} value={valveRotation} onChange={(e) => setValveRotation(e.target.value)} placeholder="0" />
+                  <input
+                    style={st.input}
+                    value={valveRotation}
+                    onChange={(e) => setValveRotation(e.target.value)}
+                    placeholder="0"
+                  />
                 </FieldGroup>
                 <FieldGroup label="Escala" theme={theme} st={st}>
-                  <input style={st.input} value={valveScale} onChange={(e) => setValveScale(e.target.value)} placeholder="1" />
+                  <input
+                    style={st.input}
+                    value={valveScale}
+                    onChange={(e) => setValveScale(e.target.value)}
+                    placeholder="1"
+                  />
                 </FieldGroup>
               </div>
-              <ActionBtn onClick={handleInsertValve} label="Inserir Componente" theme={theme} style={{ width: "100%", marginTop: 12 }} />
+              <ActionBtn
+                onClick={handleInsertValve}
+                label="Inserir Componente"
+                theme={theme}
+                style={{ width: "100%", marginTop: 12 }}
+              />
             </div>
           </div>
 
           {/* Ações rápidas */}
           <div style={{ ...st.btnRow, marginTop: 16 }}>
-            <ActionBtn onClick={handleCreateLayers} label="Criar Layers N-58" theme={theme} variant="ghost" />
-            <ActionBtn onClick={handleFinalize} label="Finalizar Visualização" theme={theme} />
-            <ActionBtn onClick={handleCommit} label="Commit → .lsp" theme={theme} variant="active" />
-            <ActionBtn onClick={handleSave} label="Salvar Documento" theme={theme} variant="ghost" />
-            <ActionBtn onClick={handleGetBuffer} label="Ver Buffer" theme={theme} variant="ghost" />
-            <ActionBtn onClick={handleGetHealth} label="Health Check" theme={theme} variant="ghost" />
+            <ActionBtn
+              onClick={handleCreateLayers}
+              label="Criar Layers N-58"
+              theme={theme}
+              variant="ghost"
+            />
+            <ActionBtn
+              onClick={handleFinalize}
+              label="Finalizar Visualização"
+              theme={theme}
+            />
+            <ActionBtn
+              onClick={handleCommit}
+              label="Commit → .lsp"
+              theme={theme}
+              variant="active"
+            />
+            <ActionBtn
+              onClick={handleSave}
+              label="Salvar Documento"
+              theme={theme}
+              variant="ghost"
+            />
+            <ActionBtn
+              onClick={handleGetBuffer}
+              label="Ver Buffer"
+              theme={theme}
+              variant="ghost"
+            />
+            <ActionBtn
+              onClick={handleGetHealth}
+              label="Health Check"
+              theme={theme}
+              variant="ghost"
+            />
           </div>
         </Section>
 
@@ -658,19 +889,49 @@ const AutoCADControl: React.FC = () => {
             <div style={st.card}>
               <h3 style={st.cardTitle}>Anotação de Texto</h3>
               <FieldGroup label="Texto" theme={theme} st={st}>
-                <input style={st.input} value={textContent} onChange={(e) => setTextContent(e.target.value)} placeholder="Ex: TAG-001" />
+                <input
+                  style={st.input}
+                  value={textContent}
+                  onChange={(e) => setTextContent(e.target.value)}
+                  placeholder="Ex: TAG-001"
+                />
               </FieldGroup>
               <FieldGroup label="Posição (X, Y, Z)" theme={theme} st={st}>
                 <div style={st.coordRow}>
-                  <input style={st.coordInput} value={textX} onChange={(e) => setTextX(e.target.value)} placeholder="X" />
-                  <input style={st.coordInput} value={textY} onChange={(e) => setTextY(e.target.value)} placeholder="Y" />
-                  <input style={st.coordInput} value={textZ} onChange={(e) => setTextZ(e.target.value)} placeholder="Z" />
+                  <input
+                    style={st.coordInput}
+                    value={textX}
+                    onChange={(e) => setTextX(e.target.value)}
+                    placeholder="X"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={textY}
+                    onChange={(e) => setTextY(e.target.value)}
+                    placeholder="Y"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={textZ}
+                    onChange={(e) => setTextZ(e.target.value)}
+                    placeholder="Z"
+                  />
                 </div>
               </FieldGroup>
               <FieldGroup label="Altura" theme={theme} st={st}>
-                <input style={st.input} value={textHeight} onChange={(e) => setTextHeight(e.target.value)} placeholder="2.5" />
+                <input
+                  style={st.input}
+                  value={textHeight}
+                  onChange={(e) => setTextHeight(e.target.value)}
+                  placeholder="2.5"
+                />
               </FieldGroup>
-              <ActionBtn onClick={handleAddText} label="Inserir Texto" theme={theme} style={{ width: "100%", marginTop: 8 }} />
+              <ActionBtn
+                onClick={handleAddText}
+                label="Inserir Texto"
+                theme={theme}
+                style={{ width: "100%", marginTop: 8 }}
+              />
             </div>
 
             {/* Linha */}
@@ -678,17 +939,42 @@ const AutoCADControl: React.FC = () => {
               <h3 style={st.cardTitle}>Desenhar Linha</h3>
               <FieldGroup label="Início (X, Y)" theme={theme} st={st}>
                 <div style={st.coordRow}>
-                  <input style={st.coordInput} value={lineStartX} onChange={(e) => setLineStartX(e.target.value)} placeholder="X" />
-                  <input style={st.coordInput} value={lineStartY} onChange={(e) => setLineStartY(e.target.value)} placeholder="Y" />
+                  <input
+                    style={st.coordInput}
+                    value={lineStartX}
+                    onChange={(e) => setLineStartX(e.target.value)}
+                    placeholder="X"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={lineStartY}
+                    onChange={(e) => setLineStartY(e.target.value)}
+                    placeholder="Y"
+                  />
                 </div>
               </FieldGroup>
               <FieldGroup label="Fim (X, Y)" theme={theme} st={st}>
                 <div style={st.coordRow}>
-                  <input style={st.coordInput} value={lineEndX} onChange={(e) => setLineEndX(e.target.value)} placeholder="X" />
-                  <input style={st.coordInput} value={lineEndY} onChange={(e) => setLineEndY(e.target.value)} placeholder="Y" />
+                  <input
+                    style={st.coordInput}
+                    value={lineEndX}
+                    onChange={(e) => setLineEndX(e.target.value)}
+                    placeholder="X"
+                  />
+                  <input
+                    style={st.coordInput}
+                    value={lineEndY}
+                    onChange={(e) => setLineEndY(e.target.value)}
+                    placeholder="Y"
+                  />
                 </div>
               </FieldGroup>
-              <ActionBtn onClick={handleDrawLine} label="Desenhar Linha" theme={theme} style={{ width: "100%", marginTop: 8 }} />
+              <ActionBtn
+                onClick={handleDrawLine}
+                label="Desenhar Linha"
+                theme={theme}
+                style={{ width: "100%", marginTop: 8 }}
+              />
             </div>
 
             {/* Comando Direto */}
@@ -696,24 +982,52 @@ const AutoCADControl: React.FC = () => {
               <h3 style={st.cardTitle}>Comando Direto (LISP)</h3>
               <FieldGroup label="Comando" theme={theme} st={st}>
                 <textarea
-                  style={{ ...st.input, minHeight: 80, fontFamily: "'Cascadia Code', 'Fira Code', monospace", resize: "vertical" as const }}
-                  value={rawCommand} onChange={(e) => setRawCommand(e.target.value)}
+                  style={{
+                    ...st.input,
+                    minHeight: 80,
+                    fontFamily: "'Cascadia Code', 'Fira Code', monospace",
+                    resize: "vertical" as const,
+                  }}
+                  value={rawCommand}
+                  onChange={(e) => setRawCommand(e.target.value)}
                   placeholder='Ex: (command "_CIRCLE" "0,0" 100)'
                 />
               </FieldGroup>
-              <ActionBtn onClick={handleSendCommand} label="Enviar Comando" theme={theme} variant="active" style={{ width: "100%", marginTop: 8 }} />
+              <ActionBtn
+                onClick={handleSendCommand}
+                label="Enviar Comando"
+                theme={theme}
+                variant="active"
+                style={{ width: "100%", marginTop: 8 }}
+              />
             </div>
           </div>
         </Section>
 
         {/* ═══ PAINEL 5: Batch Draw ═══ */}
         <Section title="Batch Draw — Desenho em Lote" theme={theme} st={st}>
-          <p style={st.hint}>Envie JSON com múltiplas tubulações + componentes. Execução sequencial com auto-commit em modo PONTE.</p>
+          <p style={st.hint}>
+            Envie JSON com múltiplas tubulações + componentes. Execução
+            sequencial com auto-commit em modo PONTE.
+          </p>
           <textarea
-            style={{ ...st.input, minHeight: 180, fontFamily: "'Cascadia Code', 'Fira Code', monospace", fontSize: "0.8rem", resize: "vertical" as const }}
-            value={batchJson} onChange={(e) => setBatchJson(e.target.value)}
+            style={{
+              ...st.input,
+              minHeight: 180,
+              fontFamily: "'Cascadia Code', 'Fira Code', monospace",
+              fontSize: "0.8rem",
+              resize: "vertical" as const,
+            }}
+            value={batchJson}
+            onChange={(e) => setBatchJson(e.target.value)}
           />
-          <ActionBtn onClick={handleBatchDraw} label={batchRunning ? "Executando..." : "Executar Batch Draw"} theme={theme} variant="active" style={{ marginTop: 12 }} />
+          <ActionBtn
+            onClick={handleBatchDraw}
+            label={batchRunning ? "Executando..." : "Executar Batch Draw"}
+            theme={theme}
+            variant="active"
+            style={{ marginTop: 12 }}
+          />
         </Section>
 
         {/* ═══ PAINEL 6: Health ═══ */}
@@ -724,16 +1038,44 @@ const AutoCADControl: React.FC = () => {
         )}
 
         {/* ═══ PAINEL 7: Console ═══ */}
-        <Section title="Console de Retorno" theme={theme} st={st} action={<ActionBtn onClick={handleClearLog} label="Limpar" theme={theme} variant="ghost" />}>
+        <Section
+          title="Console de Retorno"
+          theme={theme}
+          st={st}
+          action={
+            <ActionBtn
+              onClick={handleClearLog}
+              label="Limpar"
+              theme={theme}
+              variant="ghost"
+            />
+          }
+        >
           <div ref={logRef} style={st.console}>
-            {logs.length === 0 && <div style={{ color: theme.textTertiary }}>Aguardando comandos...</div>}
+            {logs.length === 0 && (
+              <div style={{ color: theme.textTertiary }}>
+                Aguardando comandos...
+              </div>
+            )}
             {logs.map((entry, i) => (
               <div key={i} style={{ marginBottom: 2 }}>
                 <span style={{ color: theme.textTertiary }}>[{entry.ts}]</span>{" "}
-                <span style={{ color: logColor(entry.level), fontWeight: 700 }}>[{entry.level}]</span>{" "}
+                <span style={{ color: logColor(entry.level), fontWeight: 700 }}>
+                  [{entry.level}]
+                </span>{" "}
                 <span>{entry.text}</span>
                 {entry.json && (
-                  <pre style={{ margin: "2px 0 6px 24px", color: theme.textSecondary, fontSize: "0.75rem", whiteSpace: "pre-wrap", wordBreak: "break-all" as const }}>{JSON.stringify(entry.json, null, 2)}</pre>
+                  <pre
+                    style={{
+                      margin: "2px 0 6px 24px",
+                      color: theme.textSecondary,
+                      fontSize: "0.75rem",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all" as const,
+                    }}
+                  >
+                    {JSON.stringify(entry.json, null, 2)}
+                  </pre>
                 )}
               </div>
             ))}
@@ -756,7 +1098,14 @@ const Section: React.FC<{
   action?: React.ReactNode;
 }> = ({ title, theme, st, children, action }) => (
   <section style={st.section}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+      }}
+    >
       <h2 style={st.sectionTitle}>{title}</h2>
       {action}
     </div>
@@ -810,21 +1159,45 @@ const ActionBtn: React.FC<{
 
   if (variant === "active") {
     return (
-      <button onClick={onClick} style={{ ...base, backgroundColor: theme.accentPrimary, color: "#fff", border: `1px solid ${theme.accentPrimary}` }}>
+      <button
+        onClick={onClick}
+        style={{
+          ...base,
+          backgroundColor: theme.accentPrimary,
+          color: "#fff",
+          border: `1px solid ${theme.accentPrimary}`,
+        }}
+      >
         {label}
       </button>
     );
   }
   if (variant === "ghost") {
     return (
-      <button onClick={onClick} style={{ ...base, backgroundColor: "transparent", color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
+      <button
+        onClick={onClick}
+        style={{
+          ...base,
+          backgroundColor: "transparent",
+          color: theme.textSecondary,
+          border: `1px solid ${theme.border}`,
+        }}
+      >
         {label}
       </button>
     );
   }
   // primary
   return (
-    <button onClick={onClick} style={{ ...base, backgroundColor: theme.accentSecondary + "18", color: theme.accentSecondary, border: `1px solid ${theme.accentSecondary}30` }}>
+    <button
+      onClick={onClick}
+      style={{
+        ...base,
+        backgroundColor: theme.accentSecondary + "18",
+        color: theme.accentSecondary,
+        border: `1px solid ${theme.accentSecondary}30`,
+      }}
+    >
       {label}
     </button>
   );
@@ -839,7 +1212,8 @@ function buildUIStyles(theme: any) {
       backgroundColor: theme.background,
       color: theme.textPrimary,
       padding: "24px",
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily:
+        "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     } as React.CSSProperties,
     container: {
       maxWidth: 1400,

@@ -83,7 +83,10 @@ const TIER_FEATURES: Record<PlanTier, Set<FeatureKey>> = {
   ]),
 };
 
-const TIER_META: Record<PlanTier, Omit<LicenseInfo, "aiQueriesUsed" | "projectsUsed">> = {
+const TIER_META: Record<
+  PlanTier,
+  Omit<LicenseInfo, "aiQueriesUsed" | "projectsUsed">
+> = {
   demo: {
     tier: "demo",
     isDemo: true,
@@ -146,7 +149,9 @@ function detectTier(): PlanTier {
   return "demo";
 }
 
-export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const LicenseProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [tier, setTier] = useState<PlanTier>(detectTier);
   const [aiQueriesUsed, setAiQueriesUsed] = useState<number>(() => {
     const saved = sessionStorage.getItem("ai_queries_used");
@@ -166,7 +171,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     (feature: FeatureKey): boolean => {
       return TIER_FEATURES[tier].has(feature);
     },
-    [tier]
+    [tier],
   );
 
   const consumeAiQuery = useCallback((): boolean => {
@@ -176,7 +181,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       setUpgradeReason(
         tier === "demo"
           ? `Você atingiu o limite de ${limit} consultas de IA no modo demo. Faça upgrade para continuar!`
-          : `Você atingiu o limite de ${limit} consultas de IA do seu plano ${meta.planName}.`
+          : `Você atingiu o limite de ${limit} consultas de IA do seu plano ${meta.planName}.`,
       );
       setShowUpgradeModal(true);
       return false;
@@ -206,7 +211,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ license_key: key, machine_id: machineId }),
-          }
+          },
         );
         if (response.ok) {
           const data = await response.json();
@@ -214,7 +219,12 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
           setTier(newTier);
           localStorage.setItem(
             "license",
-            JSON.stringify({ licenseKey: key, machineId, tier: newTier, validated: true })
+            JSON.stringify({
+              licenseKey: key,
+              machineId,
+              tier: newTier,
+              validated: true,
+            }),
           );
           return true;
         }
@@ -223,7 +233,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       return false;
     },
-    []
+    [],
   );
 
   // Sync tier if localStorage changes (e.g., after checkout)
@@ -253,6 +263,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
 export const useLicense = (): LicenseContextType => {
   const ctx = useContext(LicenseContext);
-  if (!ctx) throw new Error("useLicense deve ser usado dentro de LicenseProvider");
+  if (!ctx)
+    throw new Error("useLicense deve ser usado dentro de LicenseProvider");
   return ctx;
 };

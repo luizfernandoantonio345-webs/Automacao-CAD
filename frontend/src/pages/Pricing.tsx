@@ -27,13 +27,17 @@ import { COLORS, SHADOWS, premiumStyles, animations } from "../styles/premium";
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AnimatedBackground: React.FC = () => (
-  <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}>
-    <div style={{
-      position: "absolute",
-      inset: 0,
-      background: COLORS.gradientDark,
-    }} />
-    
+  <div
+    style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}
+  >
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: COLORS.gradientDark,
+      }}
+    />
+
     <motion.div
       animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
       transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
@@ -58,11 +62,12 @@ const AnimatedBackground: React.FC = () => (
         width: "500px",
         height: "500px",
         borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
+        background:
+          "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
         filter: "blur(60px)",
       }}
     />
-    
+
     <div style={premiumStyles.gridOverlay} />
   </div>
 );
@@ -216,7 +221,9 @@ const BENEFITS = [
 
 const Pricing: React.FC = () => {
   const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">(
+    "monthly",
+  );
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
 
   const getPrice = (basePrice: number) => {
@@ -230,7 +237,7 @@ const Pricing: React.FC = () => {
     if (planId === "enterprise") {
       // WhatsApp direto para consultor
       const text = encodeURIComponent(
-        "Olá! Tenho interesse no plano *Enterprise* do Engenharia CAD. Gostaria de receber uma proposta personalizada."
+        "Olá! Tenho interesse no plano *Enterprise* do Engenharia CAD. Gostaria de receber uma proposta personalizada.",
       );
       window.open(`https://wa.me/5511999999999?text=${text}`, "_blank");
     } else {
@@ -271,7 +278,8 @@ const Pricing: React.FC = () => {
             <span style={{ color: COLORS.primary }}>operação</span>
           </h2>
           <p style={styles.subtitle}>
-            Todos os planos incluem atualizações gratuitas, suporte técnico e garantia de satisfação de 30 dias
+            Todos os planos incluem atualizações gratuitas, suporte técnico e
+            garantia de satisfação de 30 dias
           </p>
 
           {/* Billing Toggle */}
@@ -310,11 +318,16 @@ const Pricing: React.FC = () => {
               onMouseLeave={() => setHoveredPlan(null)}
               style={{
                 ...styles.planCard,
-                borderColor: hoveredPlan === plan.id || plan.popular ? `${plan.color}60` : COLORS.border,
-                boxShadow: hoveredPlan === plan.id || plan.popular
-                  ? `0 8px 40px ${plan.color}25, 0 0 30px ${plan.color}15`
-                  : SHADOWS.card,
-                transform: hoveredPlan === plan.id ? "translateY(-8px)" : "none",
+                borderColor:
+                  hoveredPlan === plan.id || plan.popular
+                    ? `${plan.color}60`
+                    : COLORS.border,
+                boxShadow:
+                  hoveredPlan === plan.id || plan.popular
+                    ? `0 8px 40px ${plan.color}25, 0 0 30px ${plan.color}15`
+                    : SHADOWS.card,
+                transform:
+                  hoveredPlan === plan.id ? "translateY(-8px)" : "none",
               }}
             >
               {plan.popular && (
@@ -324,11 +337,19 @@ const Pricing: React.FC = () => {
               )}
 
               {/* Accent line */}
-              <div style={{ ...premiumStyles.accentLine, background: plan.color }} />
+              <div
+                style={{ ...premiumStyles.accentLine, background: plan.color }}
+              />
 
               {/* Plan Header */}
               <div style={styles.planHeader}>
-                <div style={{ ...styles.planIcon, background: `${plan.color}20`, color: plan.color }}>
+                <div
+                  style={{
+                    ...styles.planIcon,
+                    background: `${plan.color}20`,
+                    color: plan.color,
+                  }}
+                >
                   {plan.icon}
                 </div>
                 <h3 style={styles.planName}>{plan.name}</h3>
@@ -344,7 +365,8 @@ const Pricing: React.FC = () => {
                 <span style={styles.period}>{plan.period}</span>
                 {billingPeriod === "annual" && (
                   <p style={styles.annualNote}>
-                    Cobrado anualmente (R$ {(getPrice(plan.price) * 12).toLocaleString()}/ano)
+                    Cobrado anualmente (R${" "}
+                    {(getPrice(plan.price) * 12).toLocaleString()}/ano)
                   </p>
                 )}
               </div>
@@ -353,23 +375,34 @@ const Pricing: React.FC = () => {
               <div style={styles.limitsGrid}>
                 <div style={styles.limitItem}>
                   <FaServer size={14} />
-                  <span>{plan.limits.machines} máquina{plan.limits.machines > 1 ? "s" : ""}</span>
+                  <span>
+                    {plan.limits.machines} máquina
+                    {plan.limits.machines > 1 ? "s" : ""}
+                  </span>
                 </div>
                 <div style={styles.limitItem}>
                   <FaChartLine size={14} />
                   <span>
-                    {plan.limits.projects === "unlimited" ? "∞" : plan.limits.projects} projetos
+                    {plan.limits.projects === "unlimited"
+                      ? "∞"
+                      : plan.limits.projects}{" "}
+                    projetos
                   </span>
                 </div>
                 <div style={styles.limitItem}>
                   <FaBrain size={14} />
                   <span>
-                    {plan.limits.aiQueries === "unlimited" ? "∞" : plan.limits.aiQueries} IA/mês
+                    {plan.limits.aiQueries === "unlimited"
+                      ? "∞"
+                      : plan.limits.aiQueries}{" "}
+                    IA/mês
                   </span>
                 </div>
                 <div style={styles.limitItem}>
                   <FaHeadset size={14} />
-                  <span style={{ fontSize: "11px" }}>{plan.limits.support}</span>
+                  <span style={{ fontSize: "11px" }}>
+                    {plan.limits.support}
+                  </span>
                 </div>
               </div>
 
@@ -388,7 +421,13 @@ const Pricing: React.FC = () => {
                     ) : (
                       <FaTimes size={12} color={COLORS.textTertiary} />
                     )}
-                    <span style={feature.highlight ? { color: plan.color, fontWeight: 600 } : {}}>
+                    <span
+                      style={
+                        feature.highlight
+                          ? { color: plan.color, fontWeight: 600 }
+                          : {}
+                      }
+                    >
                       {feature.text}
                     </span>
                   </div>
@@ -407,7 +446,9 @@ const Pricing: React.FC = () => {
                   color: plan.popular ? "#FFF" : plan.color,
                 }}
               >
-                {plan.id === "enterprise" ? "Falar com Consultor" : "Começar Agora"}
+                {plan.id === "enterprise"
+                  ? "Falar com Consultor"
+                  : "Começar Agora"}
                 <FaArrowRight size={14} />
               </motion.button>
             </motion.div>
@@ -421,9 +462,7 @@ const Pricing: React.FC = () => {
           transition={{ delay: 0.8 }}
           style={styles.benefitsSection}
         >
-          <h3 style={styles.benefitsTitle}>
-            Presente em todos os planos
-          </h3>
+          <h3 style={styles.benefitsTitle}>Presente em todos os planos</h3>
           <div style={styles.benefitsGrid}>
             {BENEFITS.map((benefit, i) => (
               <motion.div
@@ -447,7 +486,8 @@ const Pricing: React.FC = () => {
           style={styles.trustSection}
         >
           <p style={styles.trustText}>
-            <FaLock size={14} /> Pagamento 100% seguro • Garantia de 30 dias • Cancelamento a qualquer momento
+            <FaLock size={14} /> Pagamento 100% seguro • Garantia de 30 dias •
+            Cancelamento a qualquer momento
           </p>
         </motion.div>
 

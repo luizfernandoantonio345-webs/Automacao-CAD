@@ -206,8 +206,16 @@ const Dashboard = () => {
 
   return (
     <div style={{ ...styles.pageContainer, padding: 0, overflow: "hidden" }}>
-      <main style={{ flex: 1, padding: spacing.lg, overflowY: "auto", overflowX: "hidden", maxWidth: "100%", boxSizing: "border-box" }}>
-
+      <main
+        style={{
+          flex: 1,
+          padding: spacing.lg,
+          overflowY: "auto",
+          overflowX: "hidden",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+        }}
+      >
         {/* Demo Upgrade Banner */}
         {isDemo && (
           <motion.div
@@ -229,11 +237,26 @@ const Dashboard = () => {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 20 }}>⚡</span>
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: theme.textPrimary }}>
-                  Você está no Modo Demo — {queriesUsed}/{queriesLimit} consultas de IA usadas
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: theme.textPrimary,
+                  }}
+                >
+                  Você está no Modo Demo — {queriesUsed}/{queriesLimit}{" "}
+                  consultas de IA usadas
                 </p>
-                <p style={{ margin: "2px 0 0", fontSize: 12, color: theme.textSecondary }}>
-                  Desbloqueie projetos ilimitados, CNC plasma, exportação DXF e muito mais.
+                <p
+                  style={{
+                    margin: "2px 0 0",
+                    fontSize: 12,
+                    color: theme.textSecondary,
+                  }}
+                >
+                  Desbloqueie projetos ilimitados, CNC plasma, exportação DXF e
+                  muito mais.
                 </p>
               </div>
             </div>

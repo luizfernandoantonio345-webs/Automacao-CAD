@@ -219,140 +219,143 @@ function AppContent() {
   return (
     <>
       {demoMode && (
-        <div style={{
-          background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-          color: '#fff',
-          textAlign: 'center',
-          padding: '8px 16px',
-          fontSize: '14px',
-          fontWeight: 500,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-        }}>
-          ⚠️ Modo Demonstração — Licença não validada. Algumas funcionalidades podem estar limitadas.
+        <div
+          style={{
+            background: "linear-gradient(90deg, #f59e0b, #d97706)",
+            color: "#fff",
+            textAlign: "center",
+            padding: "8px 16px",
+            fontSize: "14px",
+            fontWeight: 500,
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 9999,
+          }}
+        >
+          ⚠️ Modo Demonstração — Licença não validada. Algumas funcionalidades
+          podem estar limitadas.
         </div>
       )}
-      <div style={demoMode ? { marginTop: '40px' } : undefined}>
+      <div style={demoMode ? { marginTop: "40px" } : undefined}>
         <Router>
           <RouteAnticipator />
           <BackendHeartbeat />
-      <Suspense fallback={fallback}>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/planos" element={<Pricing />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route
-            path="/dashboard"
-            element={
-              <SidebarLayout>
-                <Dashboard />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/ingestion"
-            element={
-              <SidebarLayout>
-                <DataIngestion />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/autopilot"
-            element={
-              <SidebarLayout>
-                <AutoCADControl />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/quality"
-            element={
-              <SidebarLayout>
-                <QualityGate />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/final-report"
-            element={
-              <SidebarLayout>
-                <FinalReport />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/global-setup"
-            element={
-              <SidebarLayout>
-                <GlobalSetup />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/cad-console"
-            element={
-              <SidebarLayout>
-                <CadConsole />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/cad-dashboard"
-            element={
-              <SidebarLayout>
-                <CadDashboard />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/cnc-control"
-            element={
-              <SidebarLayout>
-                <CncControl />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/ai-dashboard"
-            element={
-              <SidebarLayout>
-                <AIDashboard />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <SidebarLayout>
-                <AnalyticsDashboard />
-              </SidebarLayout>
-            }
-          />
-          <Route
-            path="/chatcad"
-            element={
-              <SidebarLayout>
-                <ChatCAD />
-              </SidebarLayout>
-            }
-          />
-          {/* Redirects para rotas legadas */}
-          <Route
-            path="/autocad-control"
-            element={<Navigate to="/autopilot" replace />}
-          />
-          <Route
-            path="/setup"
-            element={<Navigate to="/global-setup" replace />}
-          />
-        </Routes>
-      </Suspense>
-    </Router>
+          <Suspense fallback={fallback}>
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/planos" element={<Pricing />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <SidebarLayout>
+                    <Dashboard />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/ingestion"
+                element={
+                  <SidebarLayout>
+                    <DataIngestion />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/autopilot"
+                element={
+                  <SidebarLayout>
+                    <AutoCADControl />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/quality"
+                element={
+                  <SidebarLayout>
+                    <QualityGate />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/final-report"
+                element={
+                  <SidebarLayout>
+                    <FinalReport />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/global-setup"
+                element={
+                  <SidebarLayout>
+                    <GlobalSetup />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/cad-console"
+                element={
+                  <SidebarLayout>
+                    <CadConsole />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/cad-dashboard"
+                element={
+                  <SidebarLayout>
+                    <CadDashboard />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/cnc-control"
+                element={
+                  <SidebarLayout>
+                    <CncControl />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/ai-dashboard"
+                element={
+                  <SidebarLayout>
+                    <AIDashboard />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <SidebarLayout>
+                    <AnalyticsDashboard />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/chatcad"
+                element={
+                  <SidebarLayout>
+                    <ChatCAD />
+                  </SidebarLayout>
+                }
+              />
+              {/* Redirects para rotas legadas */}
+              <Route
+                path="/autocad-control"
+                element={<Navigate to="/autopilot" replace />}
+              />
+              <Route
+                path="/setup"
+                element={<Navigate to="/global-setup" replace />}
+              />
+            </Routes>
+          </Suspense>
+        </Router>
       </div>
     </>
   );

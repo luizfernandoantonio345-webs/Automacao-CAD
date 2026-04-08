@@ -21,19 +21,24 @@ import { API_BASE_URL, ApiService } from "../services/api";
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AnimatedBackground: React.FC = () => (
-  <div style={{
-    position: "absolute",
-    inset: 0,
-    overflow: "hidden",
-    zIndex: 0,
-  }}>
-    {/* Gradient base */}
-    <div style={{
+  <div
+    style={{
       position: "absolute",
       inset: 0,
-      background: "linear-gradient(135deg, #030508 0%, #0a1628 40%, #071020 70%, #030508 100%)",
-    }} />
-    
+      overflow: "hidden",
+      zIndex: 0,
+    }}
+  >
+    {/* Gradient base */}
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background:
+          "linear-gradient(135deg, #030508 0%, #0a1628 40%, #071020 70%, #030508 100%)",
+      }}
+    />
+
     {/* Animated orbs */}
     <motion.div
       animate={{
@@ -49,7 +54,8 @@ const AnimatedBackground: React.FC = () => (
         width: "400px",
         height: "400px",
         borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
+        background:
+          "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
         filter: "blur(40px)",
       }}
     />
@@ -67,22 +73,25 @@ const AnimatedBackground: React.FC = () => (
         width: "500px",
         height: "500px",
         borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(0,161,255,0.1) 0%, transparent 70%)",
+        background:
+          "radial-gradient(circle, rgba(0,161,255,0.1) 0%, transparent 70%)",
         filter: "blur(60px)",
       }}
     />
-    
+
     {/* Grid overlay */}
-    <div style={{
-      position: "absolute",
-      inset: 0,
-      backgroundImage: `
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: `
         linear-gradient(rgba(0,161,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,161,255,0.03) 1px, transparent 1px)
       `,
-      backgroundSize: "60px 60px",
-      opacity: 0.5,
-    }} />
+        backgroundSize: "60px 60px",
+        opacity: 0.5,
+      }}
+    />
   </div>
 );
 
@@ -184,263 +193,276 @@ const Login = () => {
 
   return (
     <>
-    <div style={s.container}>
-      <AnimatedBackground />
+      <div style={s.container}>
+        <AnimatedBackground />
 
-      {/* ═══════════════ LEFT PANEL - BRANDING ═══════════════ */}
-      <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8 }}
-        style={s.leftPanel}
-      >
-        <div style={s.heroContent}>
-          {/* Logo */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            style={s.logoRow}
-          >
-            <div style={s.logoIcon}>
-              <FaMicrochip size={32} />
-            </div>
-            <div>
-              <h1 style={s.brand}>
-                ENGENHARIA <span style={s.brandHighlight}>CAD</span>
-              </h1>
-              <p style={s.version}>PLATAFORMA INDUSTRIAL v2.0</p>
-            </div>
-          </motion.div>
-
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            style={s.tagline}
-          >
-            Plataforma de Automação CAD Industrial com{" "}
-            <span style={{ color: "#00A1FF" }}>Inteligência Artificial</span> para
-            engenharia de piping, validação de normas e controle de qualidade.
-          </motion.p>
-
-          {/* Features Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            style={s.featuresGrid}
-          >
-            {FEATURES.map((f, i) => (
-              <motion.div
-                key={i}
-                whileHover={{ scale: 1.02, y: -4 }}
-                style={{
-                  ...s.featureCard,
-                  borderColor: `${f.color}40`,
-                  boxShadow: `0 4px 20px ${f.color}10`,
-                }}
-              >
-                <div style={{ ...s.featureIcon, color: f.color }}>{f.icon}</div>
-                <div>
-                  <div style={s.featureTitle}>{f.title}</div>
-                  <div style={s.featureDesc}>{f.desc}</div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            style={s.statsRow}
-          >
-            {STATS.map((stat, i) => (
-              <div key={i} style={s.stat}>
-                <span style={s.statValue}>{stat.value}</span>
-                <span style={s.statLabel}>{stat.label}</span>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* ═══════════════ RIGHT PANEL - LOGIN FORM ═══════════════ */}
-      <motion.div
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8 }}
-        style={s.rightPanel}
-      >
-        <div style={s.formContainer}>
-          {/* Glow effect */}
-          <div style={s.formGlow} />
-          
-          {/* Top accent line */}
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            style={s.accentLine}
-          />
-
-          {/* Header */}
-          <div style={s.formHeader}>
+        {/* ═══════════════ LEFT PANEL - BRANDING ═══════════════ */}
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          style={s.leftPanel}
+        >
+          <div style={s.heroContent}>
+            {/* Logo */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: "spring" }}
-              style={s.lockIcon}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              style={s.logoRow}
             >
-              <FaShieldAlt size={24} />
+              <div style={s.logoIcon}>
+                <FaMicrochip size={32} />
+              </div>
+              <div>
+                <h1 style={s.brand}>
+                  ENGENHARIA <span style={s.brandHighlight}>CAD</span>
+                </h1>
+                <p style={s.version}>PLATAFORMA INDUSTRIAL v2.0</p>
+              </div>
             </motion.div>
-            <h2 style={s.formTitle}>Acesso ao Sistema</h2>
-            <p style={s.formSubtitle}>
-              Faça login para acessar sua conta
-            </p>
-          </div>
 
-          {/* Form */}
-          <form onSubmit={handleLogin} style={s.form}>
-            <div style={s.inputGroup}>
-              <label style={s.label}>E-MAIL</label>
-              <motion.input
-                type="email"
-                placeholder="operador@empresa.com.br"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setFocusedInput("email")}
-                onBlur={() => setFocusedInput(null)}
-                style={{
-                  ...s.input,
-                  borderColor: focusedInput === "email" ? "#00A1FF" : "#1a2030",
-                  boxShadow: focusedInput === "email" ? "0 0 20px rgba(0,161,255,0.2)" : "none",
-                }}
-                whileFocus={{ scale: 1.01 }}
-              />
-            </div>
+            {/* Tagline */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              style={s.tagline}
+            >
+              Plataforma de Automação CAD Industrial com{" "}
+              <span style={{ color: "#00A1FF" }}>Inteligência Artificial</span>{" "}
+              para engenharia de piping, validação de normas e controle de
+              qualidade.
+            </motion.p>
 
-            <div style={s.inputGroup}>
-              <label style={s.label}>SENHA</label>
-              <motion.input
-                type="password"
-                placeholder="••••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setFocusedInput("password")}
-                onBlur={() => setFocusedInput(null)}
-                style={{
-                  ...s.input,
-                  borderColor: focusedInput === "password" ? "#00A1FF" : "#1a2030",
-                  boxShadow: focusedInput === "password" ? "0 0 20px rgba(0,161,255,0.2)" : "none",
-                }}
-                whileFocus={{ scale: 1.01 }}
-              />
-            </div>
-
-            <AnimatePresence>
-              {error && (
+            {/* Features Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              style={s.featuresGrid}
+            >
+              {FEATURES.map((f, i) => (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  style={s.errorBox}
+                  key={i}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  style={{
+                    ...s.featureCard,
+                    borderColor: `${f.color}40`,
+                    boxShadow: `0 4px 20px ${f.color}10`,
+                  }}
                 >
-                  {error}
+                  <div style={{ ...s.featureIcon, color: f.color }}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <div style={s.featureTitle}>{f.title}</div>
+                    <div style={s.featureDesc}>{f.desc}</div>
+                  </div>
                 </motion.div>
-              )}
-            </AnimatePresence>
+              ))}
+            </motion.div>
 
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              style={s.statsRow}
+            >
+              {STATS.map((stat, i) => (
+                <div key={i} style={s.stat}>
+                  <span style={s.statValue}>{stat.value}</span>
+                  <span style={s.statLabel}>{stat.label}</span>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* ═══════════════ RIGHT PANEL - LOGIN FORM ═══════════════ */}
+        <motion.div
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          style={s.rightPanel}
+        >
+          <div style={s.formContainer}>
+            {/* Glow effect */}
+            <div style={s.formGlow} />
+
+            {/* Top accent line */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              style={s.accentLine}
+            />
+
+            {/* Header */}
+            <div style={s.formHeader}>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+                style={s.lockIcon}
+              >
+                <FaShieldAlt size={24} />
+              </motion.div>
+              <h2 style={s.formTitle}>Acesso ao Sistema</h2>
+              <p style={s.formSubtitle}>Faça login para acessar sua conta</p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleLogin} style={s.form}>
+              <div style={s.inputGroup}>
+                <label style={s.label}>E-MAIL</label>
+                <motion.input
+                  type="email"
+                  placeholder="operador@empresa.com.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedInput("email")}
+                  onBlur={() => setFocusedInput(null)}
+                  style={{
+                    ...s.input,
+                    borderColor:
+                      focusedInput === "email" ? "#00A1FF" : "#1a2030",
+                    boxShadow:
+                      focusedInput === "email"
+                        ? "0 0 20px rgba(0,161,255,0.2)"
+                        : "none",
+                  }}
+                  whileFocus={{ scale: 1.01 }}
+                />
+              </div>
+
+              <div style={s.inputGroup}>
+                <label style={s.label}>SENHA</label>
+                <motion.input
+                  type="password"
+                  placeholder="••••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setFocusedInput("password")}
+                  onBlur={() => setFocusedInput(null)}
+                  style={{
+                    ...s.input,
+                    borderColor:
+                      focusedInput === "password" ? "#00A1FF" : "#1a2030",
+                    boxShadow:
+                      focusedInput === "password"
+                        ? "0 0 20px rgba(0,161,255,0.2)"
+                        : "none",
+                  }}
+                  whileFocus={{ scale: 1.01 }}
+                />
+              </div>
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    style={s.errorBox}
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.button
+                type="submit"
+                disabled={loading || demoLoading}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                style={{
+                  ...s.submitBtn,
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {loading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  >
+                    <FaCogs size={18} />
+                  </motion.div>
+                ) : (
+                  <>
+                    <span>ENTRAR</span>
+                    <FaFingerprint size={18} />
+                  </>
+                )}
+              </motion.button>
+            </form>
+
+            {/* Divider */}
+            <div style={s.divider}>
+              <div style={s.dividerLine} />
+              <span style={s.dividerText}>ou</span>
+              <div style={s.dividerLine} />
+            </div>
+
+            {/* Demo Button */}
             <motion.button
-              type="submit"
+              onClick={handleDemo}
               disabled={loading || demoLoading}
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
+              whileHover={{ scale: demoLoading ? 1 : 1.02 }}
+              whileTap={{ scale: demoLoading ? 1 : 0.98 }}
               style={{
-                ...s.submitBtn,
-                opacity: loading ? 0.7 : 1,
+                ...s.demoBtn,
+                opacity: demoLoading ? 0.7 : 1,
               }}
             >
-              {loading ? (
+              {demoLoading ? (
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 >
-                  <FaCogs size={18} />
+                  <FaCogs size={16} />
                 </motion.div>
               ) : (
                 <>
-                  <span>ENTRAR</span>
-                  <FaFingerprint size={18} />
+                  <FaRocket size={16} />
+                  <span>EXPLORAR DEMONSTRAÇÃO</span>
                 </>
               )}
             </motion.button>
-          </form>
+            <p style={s.demoHint}>
+              Acesso completo sem cadastro — veja o sistema em ação
+            </p>
 
-          {/* Divider */}
-          <div style={s.divider}>
-            <div style={s.dividerLine} />
-            <span style={s.dividerText}>ou</span>
-            <div style={s.dividerLine} />
-          </div>
+            {/* Ver Planos */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/pricing")}
+              style={s.pricingBtn}
+            >
+              <FaCrown size={14} />
+              <span>Ver Planos & Preços</span>
+            </motion.button>
 
-          {/* Demo Button */}
-          <motion.button
-            onClick={handleDemo}
-            disabled={loading || demoLoading}
-            whileHover={{ scale: demoLoading ? 1 : 1.02 }}
-            whileTap={{ scale: demoLoading ? 1 : 0.98 }}
-            style={{
-              ...s.demoBtn,
-              opacity: demoLoading ? 0.7 : 1,
-            }}
-          >
-            {demoLoading ? (
+            {/* Footer */}
+            <div style={s.footer}>
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              >
-                <FaCogs size={16} />
-              </motion.div>
-            ) : (
-              <>
-                <FaRocket size={16} />
-                <span>EXPLORAR DEMONSTRAÇÃO</span>
-              </>
-            )}
-          </motion.button>
-          <p style={s.demoHint}>
-            Acesso completo sem cadastro — veja o sistema em ação
-          </p>
-
-          {/* Ver Planos */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate("/pricing")}
-            style={s.pricingBtn}
-          >
-            <FaCrown size={14} />
-            <span>Ver Planos & Preços</span>
-          </motion.button>
-
-          {/* Footer */}
-          <div style={s.footer}>
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={s.statusDot}
-            />
-            <span style={s.statusText}>CONEXÃO SEGURA AES-256</span>
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={s.statusDot}
+              />
+              <span style={s.statusText}>CONEXÃO SEGURA AES-256</span>
+            </div>
           </div>
-        </div>
-      </motion.div>
-    </div>
-    {/* Mobile / Responsive CSS */}
-    <style>{`
+        </motion.div>
+      </div>
+      {/* Mobile / Responsive CSS */}
+      <style>{`
       @media (max-width: 900px) {
         .login-container { flex-direction: column !important; height: auto !important; min-height: 100vh !important; overflow-y: auto !important; }
         .login-left { display: none !important; }
@@ -601,7 +623,8 @@ const s: Record<string, React.CSSProperties> = {
     transform: "translateX(-50%)",
     width: "200px",
     height: "200px",
-    background: "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
+    background:
+      "radial-gradient(circle, rgba(0,161,255,0.15) 0%, transparent 70%)",
     filter: "blur(40px)",
     pointerEvents: "none",
   },
@@ -622,7 +645,8 @@ const s: Record<string, React.CSSProperties> = {
     width: "56px",
     height: "56px",
     borderRadius: "16px",
-    background: "linear-gradient(135deg, rgba(0,161,255,0.2) 0%, rgba(0,161,255,0.05) 100%)",
+    background:
+      "linear-gradient(135deg, rgba(0,161,255,0.2) 0%, rgba(0,161,255,0.05) 100%)",
     border: "1px solid rgba(0,161,255,0.3)",
     display: "flex",
     alignItems: "center",

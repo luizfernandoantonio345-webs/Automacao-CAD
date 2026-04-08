@@ -257,7 +257,11 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
 
       {/* Overlay (mobile only, when sidebar open) */}
       {sidebarOpen && (
-        <div className="sl-overlay" style={sidebarStyles.overlay} onClick={closeSidebar} />
+        <div
+          className="sl-overlay"
+          style={sidebarStyles.overlay}
+          onClick={closeSidebar}
+        />
       )}
 
       {/* Sidebar */}
@@ -271,7 +275,14 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         {demo && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", margin: "8px 12px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              margin: "8px 12px",
+            }}
+          >
             <div style={sidebarStyles.demoBanner as React.CSSProperties}>
               <span style={sidebarStyles.demoDot as React.CSSProperties} />
               MODO DEMONSTRAÇÃO
@@ -301,7 +312,10 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
             <div
               key={item.path}
               style={getNavStyle(item.path)}
-              onClick={() => { navigate(item.path); closeSidebar(); }}
+              onClick={() => {
+                navigate(item.path);
+                closeSidebar();
+              }}
               onMouseEnter={(e) => {
                 if (location.pathname !== item.path) {
                   e.currentTarget.style.backgroundColor = `${theme.accentPrimary}08`;
@@ -339,7 +353,9 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
       </aside>
 
       {/* Área de Trabalho */}
-      <main className="sl-main" style={sidebarStyles.main}>{children}</main>
+      <main className="sl-main" style={sidebarStyles.main}>
+        {children}
+      </main>
     </div>
   );
 };

@@ -97,10 +97,24 @@ const STEPS: { key: Step; label: string }[] = [
 const StepIndicator: React.FC<{ current: Step }> = ({ current }) => {
   const idx = STEPS.findIndex((s) => s.key === current);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: "40px" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0,
+        marginBottom: "40px",
+      }}
+    >
       {STEPS.map((step, i) => (
         <React.Fragment key={step.key}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
             <div
               style={{
                 width: "32px",
@@ -110,8 +124,8 @@ const StepIndicator: React.FC<{ current: Step }> = ({ current }) => {
                   i < idx
                     ? COLORS.success
                     : i === idx
-                    ? COLORS.primary
-                    : COLORS.bgCard,
+                      ? COLORS.primary
+                      : COLORS.bgCard,
                 border: `2px solid ${i <= idx ? (i < idx ? COLORS.success : COLORS.primary) : COLORS.border}`,
                 display: "flex",
                 alignItems: "center",
@@ -211,7 +225,7 @@ const Checkout: React.FC = () => {
         `📧 E-mail: ${form.email}\n` +
         `📱 Telefone: ${form.phone}\n` +
         `💰 Plano: ${plan.name} – R$ ${finalPrice}/mês (${billing === "annual" ? "anual" : "mensal"})\n\n` +
-        `Por favor, envie as instruções de pagamento e ativação.`
+        `Por favor, envie as instruções de pagamento e ativação.`,
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, "_blank");
     setStep("success");
@@ -219,12 +233,12 @@ const Checkout: React.FC = () => {
 
   const handleEmailOrder = () => {
     const subject = encodeURIComponent(
-      `Contratação Plano ${plan.name} – Engenharia CAD`
+      `Contratação Plano ${plan.name} – Engenharia CAD`,
     );
     const body = encodeURIComponent(
       `Olá,\n\nGostaria de contratar o plano ${plan.name} do Engenharia CAD.\n\n` +
         `Nome: ${form.name}\nEmpresa: ${form.company}\nE-mail: ${form.email}\nTelefone: ${form.phone}\n\n` +
-        `Plano: ${plan.name} – R$ ${finalPrice}/mês\n\nAguardo instruções de pagamento e ativação.\n\nAtenciosamente,\n${form.name}`
+        `Plano: ${plan.name} – R$ ${finalPrice}/mês\n\nAguardo instruções de pagamento e ativação.\n\nAtenciosamente,\n${form.name}`,
     );
     window.location.href = `mailto:comercial@engenharia-cad.com?subject=${subject}&body=${body}`;
     setStep("success");
@@ -255,7 +269,11 @@ const Checkout: React.FC = () => {
         {/* Back */}
         <motion.button
           whileHover={{ x: -4 }}
-          onClick={() => (step === "summary" ? navigate("/pricing") : setStep(STEPS[STEPS.findIndex((s) => s.key === step) - 1].key))}
+          onClick={() =>
+            step === "summary"
+              ? navigate("/pricing")
+              : setStep(STEPS[STEPS.findIndex((s) => s.key === step) - 1].key)
+          }
           style={{
             display: "flex",
             alignItems: "center",
@@ -286,7 +304,14 @@ const Checkout: React.FC = () => {
           >
             ENGENHARIA <span style={{ color: COLORS.primary }}>CAD</span>
           </h1>
-          <p style={{ color: COLORS.textTertiary, fontSize: "11px", letterSpacing: "2px", margin: "4px 0 0" }}>
+          <p
+            style={{
+              color: COLORS.textTertiary,
+              fontSize: "11px",
+              letterSpacing: "2px",
+              margin: "4px 0 0",
+            }}
+          >
             CHECKOUT SEGURO
           </p>
         </div>
@@ -320,7 +345,14 @@ const Checkout: React.FC = () => {
             {/* ──────── STEP: SUMMARY ──────── */}
             {step === "summary" && (
               <>
-                <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "14px",
+                    marginBottom: "24px",
+                  }}
+                >
                   <div
                     style={{
                       width: "52px",
@@ -338,7 +370,14 @@ const Checkout: React.FC = () => {
                     {plan.icon}
                   </div>
                   <div>
-                    <h2 style={{ color: "#FFF", fontSize: "20px", fontWeight: 700, margin: 0 }}>
+                    <h2
+                      style={{
+                        color: "#FFF",
+                        fontSize: "20px",
+                        fontWeight: 700,
+                        margin: 0,
+                      }}
+                    >
                       Plano {plan.name}
                     </h2>
                     {plan.popular && (
@@ -369,15 +408,43 @@ const Checkout: React.FC = () => {
                     textAlign: "center",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "4px" }}>
-                    <span style={{ color: COLORS.textSecondary, fontSize: "16px" }}>R$</span>
-                    <span style={{ color: plan.color, fontSize: "48px", fontWeight: 900, lineHeight: 1 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <span
+                      style={{ color: COLORS.textSecondary, fontSize: "16px" }}
+                    >
+                      R$
+                    </span>
+                    <span
+                      style={{
+                        color: plan.color,
+                        fontSize: "48px",
+                        fontWeight: 900,
+                        lineHeight: 1,
+                      }}
+                    >
                       {finalPrice.toLocaleString()}
                     </span>
-                    <span style={{ color: COLORS.textSecondary, fontSize: "14px" }}>/mês</span>
+                    <span
+                      style={{ color: COLORS.textSecondary, fontSize: "14px" }}
+                    >
+                      /mês
+                    </span>
                   </div>
                   {billing === "annual" && (
-                    <p style={{ color: COLORS.textTertiary, fontSize: "13px", margin: "8px 0 0" }}>
+                    <p
+                      style={{
+                        color: COLORS.textTertiary,
+                        fontSize: "13px",
+                        margin: "8px 0 0",
+                      }}
+                    >
                       Cobrado anualmente: R$ {annualTotal.toLocaleString()}/ano
                       <span
                         style={{
@@ -399,9 +466,24 @@ const Checkout: React.FC = () => {
                 {/* Features */}
                 <div style={{ marginBottom: "28px" }}>
                   {plan.features.map((f: string, i: number) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "10px",
+                      }}
+                    >
                       <FaCheck size={12} color={COLORS.success} />
-                      <span style={{ color: COLORS.textSecondary, fontSize: "14px" }}>{f}</span>
+                      <span
+                        style={{
+                          color: COLORS.textSecondary,
+                          fontSize: "14px",
+                        }}
+                      >
+                        {f}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -455,32 +537,89 @@ const Checkout: React.FC = () => {
             {/* ──────── STEP: CONTACT ──────── */}
             {step === "contact" && (
               <>
-                <h2 style={{ color: "#FFF", fontSize: "20px", fontWeight: 700, margin: "0 0 8px" }}>
+                <h2
+                  style={{
+                    color: "#FFF",
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    margin: "0 0 8px",
+                  }}
+                >
                   Seus dados
                 </h2>
-                <p style={{ color: COLORS.textSecondary, fontSize: "14px", margin: "0 0 24px" }}>
+                <p
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: "14px",
+                    margin: "0 0 24px",
+                  }}
+                >
                   Preencha para receber sua licença pelo WhatsApp ou e-mail.
                 </p>
 
                 {[
-                  { field: "name", label: "NOME COMPLETO *", icon: <FaUser />, type: "text", placeholder: "João da Silva" },
-                  { field: "email", label: "E-MAIL *", icon: <FaEnvelope />, type: "email", placeholder: "joao@empresa.com.br" },
-                  { field: "phone", label: "TELEFONE/WHATSAPP *", icon: <FaPhone />, type: "tel", placeholder: "(11) 99999-9999" },
-                  { field: "company", label: "EMPRESA", icon: <FaBuilding />, type: "text", placeholder: "Engenharia Santos Ltda" },
+                  {
+                    field: "name",
+                    label: "NOME COMPLETO *",
+                    icon: <FaUser />,
+                    type: "text",
+                    placeholder: "João da Silva",
+                  },
+                  {
+                    field: "email",
+                    label: "E-MAIL *",
+                    icon: <FaEnvelope />,
+                    type: "email",
+                    placeholder: "joao@empresa.com.br",
+                  },
+                  {
+                    field: "phone",
+                    label: "TELEFONE/WHATSAPP *",
+                    icon: <FaPhone />,
+                    type: "tel",
+                    placeholder: "(11) 99999-9999",
+                  },
+                  {
+                    field: "company",
+                    label: "EMPRESA",
+                    icon: <FaBuilding />,
+                    type: "text",
+                    placeholder: "Engenharia Santos Ltda",
+                  },
                 ].map(({ field, label, icon, type, placeholder }) => (
                   <div key={field} style={{ marginBottom: "16px" }}>
-                    <label style={{ color: COLORS.textTertiary, fontSize: "10px", letterSpacing: "1px", fontWeight: 600, display: "block", marginBottom: "6px" }}>
+                    <label
+                      style={{
+                        color: COLORS.textTertiary,
+                        fontSize: "10px",
+                        letterSpacing: "1px",
+                        fontWeight: 600,
+                        display: "block",
+                        marginBottom: "6px",
+                      }}
+                    >
                       {label}
                     </label>
                     <div style={{ position: "relative" }}>
-                      <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: COLORS.textTertiary, fontSize: "13px" }}>
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: "12px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: COLORS.textTertiary,
+                          fontSize: "13px",
+                        }}
+                      >
                         {icon}
                       </span>
                       <input
                         type={type}
                         placeholder={placeholder}
                         value={(form as any)[field]}
-                        onChange={(e) => handleFormChange(field, e.target.value)}
+                        onChange={(e) =>
+                          handleFormChange(field, e.target.value)
+                        }
                         style={{
                           width: "100%",
                           padding: "12px 12px 12px 36px",
@@ -498,7 +637,15 @@ const Checkout: React.FC = () => {
                 ))}
 
                 {formError && (
-                  <p style={{ color: COLORS.danger, fontSize: "13px", marginBottom: "12px" }}>{formError}</p>
+                  <p
+                    style={{
+                      color: COLORS.danger,
+                      fontSize: "13px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {formError}
+                  </p>
                 )}
 
                 <button
@@ -528,16 +675,32 @@ const Checkout: React.FC = () => {
             {/* ──────── STEP: PAYMENT ──────── */}
             {step === "payment" && (
               <>
-                <h2 style={{ color: "#FFF", fontSize: "20px", fontWeight: 700, margin: "0 0 8px" }}>
+                <h2
+                  style={{
+                    color: "#FFF",
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    margin: "0 0 8px",
+                  }}
+                >
                   Método de Pagamento
                 </h2>
-                <p style={{ color: COLORS.textSecondary, fontSize: "14px", margin: "0 0 24px" }}>
+                <p
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: "14px",
+                    margin: "0 0 24px",
+                  }}
+                >
                   Escolha a forma mais conveniente para você:
                 </p>
 
                 {/* Option 1: WhatsApp */}
                 <motion.button
-                  whileHover={{ scale: 1.02, boxShadow: "0 4px 20px rgba(37,211,102,0.3)" }}
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 4px 20px rgba(37,211,102,0.3)",
+                  }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleWhatsAppOrder}
                   style={{
@@ -556,14 +719,33 @@ const Checkout: React.FC = () => {
                 >
                   <FaWhatsapp size={28} color="#25D366" />
                   <div>
-                    <div style={{ color: "#FFF", fontWeight: 700, fontSize: "15px", marginBottom: "2px" }}>
+                    <div
+                      style={{
+                        color: "#FFF",
+                        fontWeight: 700,
+                        fontSize: "15px",
+                        marginBottom: "2px",
+                      }}
+                    >
                       Contratar via WhatsApp
                     </div>
                     <div style={{ color: "#8899aa", fontSize: "12px" }}>
-                      Nossa equipe envia PIX/boleto e ativa sua licença em minutos
+                      Nossa equipe envia PIX/boleto e ativa sua licença em
+                      minutos
                     </div>
                   </div>
-                  <span style={{ marginLeft: "auto", background: "#25D366", color: "#FFF", fontSize: "10px", padding: "3px 10px", borderRadius: "20px", fontWeight: 700, whiteSpace: "nowrap" }}>
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      background: "#25D366",
+                      color: "#FFF",
+                      fontSize: "10px",
+                      padding: "3px 10px",
+                      borderRadius: "20px",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     RECOMENDADO
                   </span>
                 </motion.button>
@@ -589,7 +771,14 @@ const Checkout: React.FC = () => {
                 >
                   <FaEnvelope size={24} color={COLORS.primary} />
                   <div>
-                    <div style={{ color: "#FFF", fontWeight: 700, fontSize: "15px", marginBottom: "2px" }}>
+                    <div
+                      style={{
+                        color: "#FFF",
+                        fontWeight: 700,
+                        fontSize: "15px",
+                        marginBottom: "2px",
+                      }}
+                    >
                       Solicitar por E-mail
                     </div>
                     <div style={{ color: "#8899aa", fontSize: "12px" }}>
@@ -608,11 +797,28 @@ const Checkout: React.FC = () => {
                     marginBottom: "24px",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginBottom: "12px",
+                    }}
+                  >
                     <span style={{ fontSize: "24px" }}>🏦</span>
                     <div>
-                      <div style={{ color: "#FFF", fontWeight: 700, fontSize: "15px" }}>PIX Direto</div>
-                      <div style={{ color: "#8899aa", fontSize: "12px" }}>Chave PIX (e-mail)</div>
+                      <div
+                        style={{
+                          color: "#FFF",
+                          fontWeight: 700,
+                          fontSize: "15px",
+                        }}
+                      >
+                        PIX Direto
+                      </div>
+                      <div style={{ color: "#8899aa", fontSize: "12px" }}>
+                        Chave PIX (e-mail)
+                      </div>
                     </div>
                   </div>
                   <div
@@ -627,7 +833,13 @@ const Checkout: React.FC = () => {
                       gap: "12px",
                     }}
                   >
-                    <span style={{ color: COLORS.primary, fontSize: "13px", fontFamily: "monospace" }}>
+                    <span
+                      style={{
+                        color: COLORS.primary,
+                        fontSize: "13px",
+                        fontFamily: "monospace",
+                      }}
+                    >
                       {PIX_KEY}
                     </span>
                     <button
@@ -652,16 +864,34 @@ const Checkout: React.FC = () => {
                       {copied ? "Copiado!" : "Copiar"}
                     </button>
                   </div>
-                  <p style={{ color: COLORS.textTertiary, fontSize: "11px", margin: "10px 0 0" }}>
-                    Valor: R$ {finalPrice.toLocaleString()}/mês • Após pagamento, envie comprovante via WhatsApp para ativação imediata.
+                  <p
+                    style={{
+                      color: COLORS.textTertiary,
+                      fontSize: "11px",
+                      margin: "10px 0 0",
+                    }}
+                  >
+                    Valor: R$ {finalPrice.toLocaleString()}/mês • Após
+                    pagamento, envie comprovante via WhatsApp para ativação
+                    imediata.
                   </p>
                 </div>
 
                 {/* Trust */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
                   <FaShieldAlt size={12} color={COLORS.textTertiary} />
-                  <span style={{ color: COLORS.textTertiary, fontSize: "11px" }}>
-                    30 dias de garantia • CNPJ 00.000.000/0001-00 • NF-e disponível
+                  <span
+                    style={{ color: COLORS.textTertiary, fontSize: "11px" }}
+                  >
+                    30 dias de garantia • CNPJ 00.000.000/0001-00 • NF-e
+                    disponível
                   </span>
                 </div>
               </>
@@ -689,11 +919,27 @@ const Checkout: React.FC = () => {
                   <FaCheckCircle size={36} color={COLORS.success} />
                 </motion.div>
 
-                <h2 style={{ color: "#FFF", fontSize: "22px", fontWeight: 800, margin: "0 0 12px" }}>
+                <h2
+                  style={{
+                    color: "#FFF",
+                    fontSize: "22px",
+                    fontWeight: 800,
+                    margin: "0 0 12px",
+                  }}
+                >
                   Solicitação Enviada!
                 </h2>
-                <p style={{ color: COLORS.textSecondary, fontSize: "15px", lineHeight: "1.6", margin: "0 0 24px" }}>
-                  Nossa equipe entrará em contato em até <strong style={{ color: COLORS.primary }}>30 minutos</strong> para confirmar pagamento e enviar sua chave de ativação.
+                <p
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: "15px",
+                    lineHeight: "1.6",
+                    margin: "0 0 24px",
+                  }}
+                >
+                  Nossa equipe entrará em contato em até{" "}
+                  <strong style={{ color: COLORS.primary }}>30 minutos</strong>{" "}
+                  para confirmar pagamento e enviar sua chave de ativação.
                 </p>
 
                 <div
@@ -706,7 +952,15 @@ const Checkout: React.FC = () => {
                     textAlign: "left",
                   }}
                 >
-                  <p style={{ color: COLORS.textTertiary, fontSize: "12px", fontWeight: 600, letterSpacing: "0.05em", margin: "0 0 12px" }}>
+                  <p
+                    style={{
+                      color: COLORS.textTertiary,
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      letterSpacing: "0.05em",
+                      margin: "0 0 12px",
+                    }}
+                  >
                     PRÓXIMOS PASSOS:
                   </p>
                   {[
@@ -715,21 +969,59 @@ const Checkout: React.FC = () => {
                     `3. Receba sua chave de licença em até 30 minutos`,
                     "4. Ative no sistema: Painel → Configurações → Ativar Licença",
                   ].map((step, i) => (
-                    <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                      <span style={{ marginTop: "3px", flexShrink: 0, display: "flex" }}><FaCheck size={11} color={COLORS.success} /></span>
-                      <span style={{ color: COLORS.textSecondary, fontSize: "13px" }}>{step}</span>
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          marginTop: "3px",
+                          flexShrink: 0,
+                          display: "flex",
+                        }}
+                      >
+                        <FaCheck size={11} color={COLORS.success} />
+                      </span>
+                      <span
+                        style={{
+                          color: COLORS.textSecondary,
+                          fontSize: "13px",
+                        }}
+                      >
+                        {step}
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 {/* Stars */}
-                <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "8px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "4px",
+                    marginBottom: "8px",
+                  }}
+                >
                   {[...Array(5)].map((_, i) => (
-                    <span key={i}><FaStar size={14} color="#F59E0B" /></span>
+                    <span key={i}>
+                      <FaStar size={14} color="#F59E0B" />
+                    </span>
                   ))}
                 </div>
-                <p style={{ color: COLORS.textTertiary, fontSize: "12px", margin: "0 0 24px" }}>
-                  "Reduziu em 80% o tempo de geração de P&IDs" — Eng. Carlos M., Petrobras
+                <p
+                  style={{
+                    color: COLORS.textTertiary,
+                    fontSize: "12px",
+                    margin: "0 0 24px",
+                  }}
+                >
+                  "Reduziu em 80% o tempo de geração de P&IDs" — Eng. Carlos M.,
+                  Petrobras
                 </p>
 
                 <button
@@ -754,7 +1046,15 @@ const Checkout: React.FC = () => {
         </motion.div>
 
         {/* Security footer */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            marginTop: "20px",
+          }}
+        >
           <FaLock size={11} color={COLORS.textTertiary} />
           <span style={{ color: COLORS.textTertiary, fontSize: "11px" }}>
             Conexão 100% segura (AES-256) — seus dados estão protegidos

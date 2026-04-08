@@ -5,7 +5,6 @@
  */
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import {
   FaLock,
   FaRocket,
@@ -26,8 +25,8 @@ const PERSUASION_STATS = [
 ];
 
 const DemoUpgradeModal: React.FC = () => {
-  const { showUpgradeModal, upgradeReason, dismissUpgrade, license } = useLicense();
-  const navigate = useNavigate();
+  const { showUpgradeModal, upgradeReason, dismissUpgrade, license } =
+    useLicense();
 
   if (!showUpgradeModal) return null;
 
@@ -126,11 +125,14 @@ const DemoUpgradeModal: React.FC = () => {
             {/* CTAs */}
             <div style={ctaGroup}>
               <motion.button
-                whileHover={{ scale: 1.03, boxShadow: "0 8px 30px rgba(0,161,255,0.4)" }}
+                whileHover={{
+                  scale: 1.03,
+                  boxShadow: "0 8px 30px rgba(0,161,255,0.4)",
+                }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   dismissUpgrade();
-                  navigate("/pricing");
+                  window.location.href = "/pricing";
                 }}
                 style={primaryCta}
               >
@@ -145,7 +147,7 @@ const DemoUpgradeModal: React.FC = () => {
                   dismissUpgrade();
                   window.open(
                     "https://wa.me/5511999999999?text=Olá!%20Tenho%20interesse%20no%20plano%20Professional%20do%20Engenharia%20CAD.",
-                    "_blank"
+                    "_blank",
                   );
                 }}
                 style={whatsappCta}
@@ -158,7 +160,9 @@ const DemoUpgradeModal: React.FC = () => {
             {/* Trust signals */}
             <div style={trustRow}>
               <FaShieldAlt size={11} color="#556677" />
-              <span style={trustText}>30 dias de garantia • Cancelamento fácil • Sem fidelidade</span>
+              <span style={trustText}>
+                30 dias de garantia • Cancelamento fácil • Sem fidelidade
+              </span>
             </div>
 
             {/* Social proof count */}
@@ -210,7 +214,8 @@ const accentBar: React.CSSProperties = {
   left: 0,
   right: 0,
   height: "3px",
-  background: "linear-gradient(90deg, transparent, #00A1FF, #10B981, transparent)",
+  background:
+    "linear-gradient(90deg, transparent, #00A1FF, #10B981, transparent)",
 };
 
 const closeBtn: React.CSSProperties = {
