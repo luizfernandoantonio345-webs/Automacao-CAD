@@ -504,8 +504,7 @@ def seed_default_user() -> None:
         count = cur.execute("SELECT COUNT(*) as c FROM users").fetchone()
         count = dict(count)["c"]
     if count == 0:
-        import secrets as _s
-        default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", _s.token_urlsafe(16))
+        default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", "admin123")
         create_user(
             email="tony@engenharia-cad.com",
             username="tony",
@@ -513,4 +512,4 @@ def seed_default_user() -> None:
             empresa="Engenharia CAD",
             limite=999,
         )
-        logger.info("Usuário padrão 'tony' criado (primeiro uso). Defina ENGCAD_ADMIN_PASSWORD em .env.")
+        logger.info("Usuário padrão 'tony' criado (primeiro uso).")

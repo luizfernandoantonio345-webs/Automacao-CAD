@@ -460,8 +460,8 @@ export type Stress50DispatchResponse = {
 export const ApiService = {
   login: async (payload: LoginPayload) => {
     const data = await requestWithRetry<LoginResponse>(
-      { method: "POST", url: "/login", data: payload },
-      1,
+      { method: "POST", url: "/login", data: payload, timeout: 30_000 },
+      2,
     );
     safeStorage.setToken(data.access_token);
     return data;

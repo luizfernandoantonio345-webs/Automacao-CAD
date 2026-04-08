@@ -160,11 +160,13 @@ const Login = () => {
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401) {
-        setError("Credenciais inválidas. Verifique e-mail e senha.");
+        setError("Credenciais inválidas. Use tony@engenharia-cad.com / admin123");
       } else if (status === 429) {
         setError("Muitas tentativas. Aguarde um momento.");
+      } else if (err?.code === "ECONNABORTED") {
+        setError("Servidor demorou a responder. Tente novamente em instantes.");
       } else if (!status) {
-        setError(`Servidor indisponível. Recarregue e tente novamente.`);
+        setError("Servidor indisponível. Verifique sua conexão e tente novamente.");
       } else {
         setError(`Erro no servidor (${status}). Tente novamente.`);
       }
