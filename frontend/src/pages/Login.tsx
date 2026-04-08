@@ -160,7 +160,7 @@ const Login = () => {
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401) {
-        setError("Credenciais inválidas. Use tony@engenharia-cad.com / admin123");
+        setError("Credenciais inválidas. Verifique seu e-mail e senha.");
       } else if (status === 429) {
         setError("Muitas tentativas. Aguarde um momento.");
       } else if (err?.code === "ECONNABORTED") {

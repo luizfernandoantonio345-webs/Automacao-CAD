@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS users (
     username    TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     empresa     TEXT DEFAULT '',
+    tier        TEXT DEFAULT 'demo',
     limite      INTEGER DEFAULT 100,
     usado       INTEGER DEFAULT 0,
     created_at  REAL NOT NULL,
@@ -183,6 +184,7 @@ _PG_TABLES = [
         username    TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         empresa     TEXT DEFAULT '',
+        tier        TEXT DEFAULT 'demo',
         limite      INTEGER DEFAULT 100,
         usado       INTEGER DEFAULT 0,
         created_at  DOUBLE PRECISION NOT NULL,
@@ -265,15 +267,15 @@ def _verify_password(password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(h, expected)
 
 
-def create_user(email: str, username: str, password: str, empresa: str = "", limite: int = 100) -> dict:
+def create_user(email: str, username: str, password: str, empresa: str = "", limite: int = 100, tier: str = "demo") -> dict:
     pw_hash = _hash_password(password)
     now = time.time()
     with get_db() as conn:
         conn.execute(
-            _q("INSERT INTO users (email, username, password_hash, empresa, limite, created_at) VALUES (?, ?, ?, ?, ?, ?)"),
-            (email, username, pw_hash, empresa, limite, now),
+            _q("INSERT INTO users (email, username, password_hash, empresa, tier, limite, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"),
+            (email, username, pw_hash, empresa, tier, limite, now),
         )
-    return {"email": email, "username": username, "empresa": empresa, "limite": limite, "usado": 0}
+    return {"email": email, "username": username, "empresa": empresa, "tier": tier, "limite": limite, "usado": 0}
 
 
 def authenticate_user(identifier: str, password: str) -> dict | None:
@@ -294,6 +296,7 @@ def authenticate_user(identifier: str, password: str) -> dict | None:
     return {
         "email": row_d["email"],
         "empresa": row_d["empresa"],
+        "tier": row_d.get("tier", "demo"),
         "limite": row_d["limite"],
         "usado": row_d["usado"],
     }
@@ -306,7 +309,7 @@ def get_user_by_email(email: str) -> dict | None:
     if not row:
         return None
     row_d = dict(row)
-    return {"email": row_d["email"], "empresa": row_d["empresa"], "limite": row_d["limite"], "usado": row_d["usado"]}
+    return {"email": row_d["email"], "empresa": row_d["empresa"], "tier": row_d.get("tier", "demo"), "limite": row_d["limite"], "usado": row_d["usado"]}
 
 
 def email_exists(email: str) -> bool:
@@ -510,6 +513,17 @@ def seed_default_user() -> None:
             username="tony",
             password=default_pw,
             empresa="Engenharia CAD",
+            tier="enterprise",
             limite=999,
         )
-        logger.info("Usuário padrão 'tony' criado (primeiro uso).")
+        logger.info("Usuário padrão 'tony' criado (tier: enterprise).")
+    else:
+        # Garantir que o admin existente tenha tier enterprise
+        with get_db() as conn:
+            try:
+                conn.execute(
+                    _q("UPDATE users SET tier = ? WHERE email = ? AND (tier IS NULL OR tier = 'demo')"),
+                    ("enterprise", "tony@engenharia-cad.com"),
+                )
+            except Exception:
+                pass  # coluna tier pode não existir em DB legado

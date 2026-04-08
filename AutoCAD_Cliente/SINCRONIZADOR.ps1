@@ -129,6 +129,68 @@ function Detect-CAD {
     return $false
 }
 
+function Start-AutoCADIfNeeded {
+    # Se CAD já está rodando, não precisa abrir
+    $processes = Get-Process | Where-Object { $_.Name -match "acad|gcad|zwcad|bricscad" }
+    if ($processes) {
+        Write-Status "CAD já está em execução." "Info"
+        return $true
+    }
+    
+    # Verificar se existe licença válida no backend
+    try {
+        $licenseCheck = Invoke-RestMethod -Uri "$BackendUrl/api/license/status/$env:USERNAME" `
+            -Method GET -TimeoutSec 10 -ErrorAction Stop
+        
+        if ($licenseCheck.tier -and $licenseCheck.tier -ne "demo") {
+            Write-Status "Licença $($licenseCheck.tier) detectada. Iniciando CAD automaticamente..." "Success"
+        } else {
+            Write-Status "Licença demo — CAD não será aberto automaticamente." "Warning"
+            return $false
+        }
+    }
+    catch {
+        Write-Status "Não foi possível verificar licença. Tentando abrir CAD..." "Warning"
+    }
+    
+    # Procurar executável do CAD
+    $cadPaths = @(
+        "C:\Program Files\Autodesk\AutoCAD 2024\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD 2023\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD 2022\acad.exe",
+        "C:\Program Files\Gstarsoft\GstarCAD 2024\gcad.exe",
+        "C:\Program Files\Gstarsoft\GstarCAD 2023\gcad.exe"
+    )
+    
+    foreach ($cadPath in $cadPaths) {
+        if (Test-Path $cadPath) {
+            Write-Status "Abrindo CAD: $cadPath" "Success"
+            Start-Process -FilePath $cadPath -WindowStyle Normal
+            
+            # Aguardar o CAD iniciar (máximo 30 segundos)
+            $waited = 0
+            while ($waited -lt 30) {
+                Start-Sleep -Seconds 2
+                $waited += 2
+                $running = Get-Process | Where-Object { $_.Name -match "acad|gcad" }
+                if ($running) {
+                    Write-Status "CAD iniciado com sucesso!" "Success"
+                    [Console]::Beep(600, 200)
+                    [Console]::Beep(800, 200)
+                    [Console]::Beep(1000, 300)
+                    Detect-CAD | Out-Null
+                    return $true
+                }
+            }
+            Write-Status "CAD demorou para iniciar. Continuando..." "Warning"
+            return $false
+        }
+    }
+    
+    Write-Status "Nenhum CAD instalado encontrado." "Warning"
+    return $false
+}
+
 function Send-ConnectionStatus($connected) {
     $body = @{
         connected   = $connected
@@ -213,7 +275,12 @@ function Ensure-DropFolder {
 
 Write-Header
 Ensure-DropFolder
-Detect-CAD
+$cadDetected = Detect-CAD
+
+# Auto-abrir CAD se licença válida e CAD não está rodando
+if (-not $cadDetected) {
+    Start-AutoCADIfNeeded | Out-Null
+}
 
 Write-Status "Iniciando conexão com o backend..." "Info"
 Send-ConnectionStatus $true

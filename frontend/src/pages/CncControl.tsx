@@ -18,6 +18,7 @@ import React, {
   useMemo,
 } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { API_BASE_URL } from "../services/api";
 import { useLicense } from "../context/LicenseContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -557,7 +558,7 @@ const CncControl: React.FC = () => {
         setStep("parsing");
 
         // Chamar API para parse do arquivo
-        const response = await fetch("/api/cam/parse", {
+        const response = await fetch(`${API_BASE_URL}/api/cam/parse`, {
           method: "POST",
           body: formData,
         });
@@ -619,7 +620,7 @@ const CncControl: React.FC = () => {
     setStep("generating");
 
     try {
-      const response = await fetch("/api/cam/generate", {
+      const response = await fetch(`${API_BASE_URL}/api/cam/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ geometry, config }),

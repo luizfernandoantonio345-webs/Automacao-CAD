@@ -15,6 +15,7 @@ import {
   FaPaperPlane,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
+import { API_BASE_URL } from "../services/api";
 import createStyles, { spacing, radius } from "../styles/shared";
 
 // ── Tipos ──
@@ -552,10 +553,7 @@ const AIDashboard: React.FC = () => {
     let cancelled = false;
     const loadEngines = async () => {
       try {
-        const API_URL =
-          process.env.REACT_APP_API_URL ||
-          "https://automacao-cad-backend.vercel.app";
-        const res = await fetch(`${API_URL}/api/ai/engines`);
+        const res = await fetch(`${API_BASE_URL}/api/ai/engines`);
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) {
@@ -596,12 +594,12 @@ const AIDashboard: React.FC = () => {
     setLoading(true);
 
     try {
-      const API_URL =
-        process.env.REACT_APP_API_URL ||
-        "https://automacao-cad-backend.vercel.app";
-      const res = await fetch(`${API_URL}/api/ai/chat`, {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ message, context: {} }),
       });
       const data = await res.json();
@@ -645,14 +643,14 @@ const AIDashboard: React.FC = () => {
     setLoading(true);
 
     try {
-      const API_URL =
-        process.env.REACT_APP_API_URL ||
-        "https://automacao-cad-backend.vercel.app";
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(
-        `${API_URL}/api/ai/engine/${selectedEngine.name}/execute`,
+        `${API_BASE_URL}/api/ai/engine/${selectedEngine.name}/execute`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ capability: type, input: inputData }),
         },
       );

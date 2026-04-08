@@ -847,6 +847,7 @@ def login(data: LoginData):
         "token_type": "bearer",
         "email": user["email"],
         "empresa": user["empresa"],
+        "tier": user.get("tier", "demo"),
         "limite": user["limite"],
         "usado": user["usado"],
     }
@@ -864,6 +865,7 @@ def auth_register(data: RegisterData):
         password=data.senha,
         empresa=data.empresa or "Não informada",
         limite=100,
+        tier="starter",
     )
     token = _make_token(user["email"])
     return {
@@ -871,6 +873,7 @@ def auth_register(data: RegisterData):
         "token_type": "bearer",
         "email": user["email"],
         "empresa": user["empresa"],
+        "tier": user.get("tier", "starter"),
         "limite": user["limite"],
         "usado": user["usado"],
     }
@@ -882,6 +885,7 @@ def auth_demo():
     return {
         "access_token": token,
         "token_type": "bearer",
+        "tier": "demo",
         **_DEMO_USER,
     }
 

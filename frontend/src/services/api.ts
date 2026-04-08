@@ -312,6 +312,7 @@ export type LoginResponse = {
   token_type: string;
   email: string;
   empresa: string;
+  tier?: string;
   limite: number;
   usado: number;
 };
@@ -319,6 +320,7 @@ export type LoginResponse = {
 export type SessionUser = {
   email: string;
   empresa: string;
+  tier?: string;
   limite: number;
   usado: number;
 };
@@ -468,6 +470,10 @@ export const ApiService = {
       2,
     );
     safeStorage.setToken(data.access_token);
+    // Store tier in license so LicenseContext picks it up
+    if (data.tier) {
+      window.localStorage.setItem("license", JSON.stringify({ tier: data.tier, validated: true }));
+    }
     return data;
   },
   register: async (payload: RegisterPayload) => {
@@ -476,6 +482,9 @@ export const ApiService = {
       0,
     );
     safeStorage.setToken(data.access_token);
+    if (data.tier) {
+      window.localStorage.setItem("license", JSON.stringify({ tier: data.tier, validated: true }));
+    }
     return data;
   },
   demoLogin: async () => {
@@ -484,10 +493,12 @@ export const ApiService = {
       2,
     );
     safeStorage.setToken(data.access_token);
+    window.localStorage.setItem("license", JSON.stringify({ tier: "demo", validated: true }));
     return data;
   },
   logout: () => {
     safeStorage.clearToken();
+    window.localStorage.removeItem("license");
   },
   getCurrentUser: () =>
     requestWithRetry<SessionUser>({ method: "GET", url: "/auth/me" }, 1),

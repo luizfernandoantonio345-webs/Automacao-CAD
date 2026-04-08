@@ -134,14 +134,24 @@ function AppContent() {
           }
           return;
         }
-        const parsed = JSON.parse(raw) as Partial<LicenseCache>;
+        const parsed = JSON.parse(raw) as Record<string, any>;
+
+        // Caso 1: Login via backend (tier armazenado após /login)
+        if (parsed.tier && parsed.tier !== "demo" && parsed.validated) {
+          if (mounted) {
+            setLicensed(true);
+            setDemoMode(false);
+          }
+          return;
+        }
+
+        // Caso 2: Licença HWID (chave + machineId)
         const licenseKey = String(parsed.licenseKey || "").trim();
         const machineId = String(parsed.machineId || "").trim();
         if (!licenseKey || !machineId) {
-          window.localStorage.removeItem("license");
           if (mounted) {
             setLicensed(true);
-            setDemoMode(true);
+            setDemoMode(parsed.tier === "demo" || !parsed.tier);
           }
           return;
         }
@@ -155,10 +165,10 @@ function AppContent() {
             setDemoMode(false);
           }
         } catch {
-          // Servidor de licenças offline — continuar em modo demo
+          // Servidor de licenças offline — usar tier armazenado se pago
           if (mounted) {
             setLicensed(true);
-            setDemoMode(true);
+            setDemoMode(parsed.tier === "demo" || !parsed.tier);
           }
         }
       } catch {
@@ -185,6 +195,10 @@ function AppContent() {
         const currentUser = await ApiService.getCurrentUser();
         if (mounted) {
           setUser(currentUser);
+          // Usuário autenticado — verificar se tem tier pago
+          if (currentUser?.tier && currentUser.tier !== "demo") {
+            setDemoMode(false);
+          }
         }
       } catch {
         // Sessão expirada ou inexistente — manter não-autenticado

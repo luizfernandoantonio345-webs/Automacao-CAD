@@ -167,11 +167,29 @@ async def license_status(username: str, request: Request):
         licenses = _load_licenses()
         user_entry = licenses.get(username)
 
+    # Buscar tier do banco de dados
+    tier = "demo"
+    try:
+        from backend.database.db import get_user_by_email
+        user = get_user_by_email(username)
+        if user:
+            tier = user.get("tier", "demo")
+    except Exception:
+        pass
+
     if not user_entry:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado no registro de licenças")
+        return {
+            "username": username,
+            "tier": tier,
+            "hwid_prefix": None,
+            "registered_at": None,
+            "last_seen": None,
+            "access_count": 0,
+        }
 
     return {
         "username": username,
+        "tier": tier,
         "hwid_prefix": user_entry["hwid"][:8] + "...",
         "registered_at": user_entry.get("registered_at"),
         "last_seen": user_entry.get("last_seen"),

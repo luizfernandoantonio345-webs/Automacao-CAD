@@ -19,6 +19,7 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import { useLicense } from "../context/LicenseContext";
+import { API_BASE_URL } from "../services/api";
 import createStyles, { spacing, radius } from "../styles/shared";
 
 // ── Tipos ──
@@ -626,10 +627,10 @@ const AnalyticsDashboard: React.FC = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const API_URL =
-        process.env.REACT_APP_API_URL ||
-        "https://automacao-cad-backend.vercel.app";
-      const res = await fetch(`${API_URL}/api/analytics/dashboard`);
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, { headers });
       if (res.ok) {
         const dashboardData = await res.json();
         setData(dashboardData);
