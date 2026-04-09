@@ -282,6 +282,87 @@ const AutoCADControl: React.FC = () => {
   const handleDisconnect = () =>
     apiCall("post", "/api/autocad/disconnect", {}, "Desconectar");
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🚀 NOVO: Detectar e Conectar AutoCAD Automaticamente
+  // ═══════════════════════════════════════════════════════════════════════
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [cadInstallations, setCadInstallations] = useState<any[]>([]);
+  const [detectionStatus, setDetectionStatus] = useState<string>("");
+
+  const handleDetectAndLaunch = async () => {
+    setIsDetecting(true);
+    pushLog("CMD", "Detectando e conectando ao AutoCAD...");
+    addToast("info", "Detectando CAD", "Procurando instalações de AutoCAD...");
+
+    try {
+      const res = await axios.post(
+        `${API}/api/cad-detection/detect-and-launch`,
+        {
+          auto_connect: true,
+          auto_load_lsp: true,
+          wait_seconds: 60,
+        },
+      );
+
+      if (res.data.success) {
+        pushLog("OK", `CAD Detectado: ${res.data.message}`, res.data);
+        addToast("success", "CAD Conectado!", res.data.message);
+        setDetectionStatus(res.data.status);
+        setCadInstallations(res.data.installations || []);
+
+        // Atualizar status do driver
+        const statusRes = await axios.get(`${API}/api/autocad/status`);
+        setDriverStatus(statusRes.data);
+      } else {
+        pushLog("ERR", `Falha: ${res.data.message}`, res.data);
+        addToast("error", "Falha na Detecção", res.data.message);
+        setDetectionStatus(res.data.status);
+      }
+    } catch (err: any) {
+      handleApiError(err);
+      const detail =
+        err?.response?.data?.detail ?? err?.message ?? "Erro desconhecido";
+      pushLog("ERR", `Erro na detecção: ${detail}`, err);
+      addToast("error", "Erro", detail);
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
+  const handleQuickStatus = async () => {
+    pushLog("CMD", "Verificando status do CAD...");
+    try {
+      const res = await axios.get(`${API}/api/cad-detection/status`);
+      pushLog("OK", `Status: ${res.data.message}`, res.data);
+      setDetectionStatus(res.data.status);
+      setCadInstallations(res.data.installations || []);
+      addToast("info", "Status do CAD", res.data.message);
+    } catch (err: any) {
+      handleApiError(err);
+      pushLog("ERR", "Falha ao verificar status", err);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    pushLog("CMD", "Testando conexão com AutoCAD...");
+    try {
+      const res = await axios.post(`${API}/api/cad-detection/test-connection`);
+      if (res.data.success) {
+        pushLog("OK", "Teste OK - círculo desenhado!", res.data);
+        addToast(
+          "success",
+          "Teste OK!",
+          "Círculo de teste desenhado no AutoCAD",
+        );
+      } else {
+        pushLog("ERR", res.data.message, res.data);
+      }
+    } catch (err: any) {
+      handleApiError(err);
+      pushLog("ERR", "Teste falhou", err);
+    }
+  };
+
   const handleSetBridgePath = () => {
     if (!bridgePath.trim()) {
       pushLog("ERR", "Caminho não pode ser vazio");
@@ -652,6 +733,119 @@ const AutoCADControl: React.FC = () => {
               Último erro: {driverStatus.last_error}
             </div>
           )}
+
+          {/* ═══ NOVO: Botão Principal de Detecção ═══ */}
+          <div
+            style={{
+              marginTop: 16,
+              padding: "16px",
+              background: `linear-gradient(135deg, ${theme.accentPrimary}15, ${theme.accentSecondary}15)`,
+              border: `2px solid ${theme.accentPrimary}40`,
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 12,
+              }}
+            >
+              <span style={{ fontSize: "1.5rem" }}>🔍</span>
+              <div>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: theme.textPrimary,
+                    fontSize: "1rem",
+                  }}
+                >
+                  Detecção Automática de AutoCAD
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    color: theme.textSecondary,
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  Detecta, abre e conecta automaticamente ao AutoCAD instalado
+                </p>
+              </div>
+            </div>
+            <div style={st.btnRow}>
+              <button
+                onClick={handleDetectAndLaunch}
+                disabled={isDetecting}
+                style={{
+                  padding: "12px 24px",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  background: isDetecting
+                    ? theme.bgTertiary
+                    : `linear-gradient(135deg, ${theme.accentPrimary}, ${theme.accentSecondary})`,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  cursor: isDetecting ? "wait" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  transition: "all 0.2s",
+                }}
+              >
+                {isDetecting ? (
+                  <>
+                    <span style={{ animation: "spin 1s linear infinite" }}>
+                      ⏳
+                    </span>
+                    Detectando...
+                  </>
+                ) : (
+                  <>🚀 Detectar e Conectar AutoCAD</>
+                )}
+              </button>
+              <ActionBtn
+                onClick={handleQuickStatus}
+                label="📊 Status Rápido"
+                theme={theme}
+                variant="ghost"
+              />
+              <ActionBtn
+                onClick={handleTestConnection}
+                label="🧪 Testar Conexão"
+                theme={theme}
+                variant="ghost"
+              />
+            </div>
+            {detectionStatus && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "8px 12px",
+                  backgroundColor:
+                    detectionStatus === "connected"
+                      ? theme.accentPrimary + "20"
+                      : theme.bgTertiary,
+                  borderRadius: 6,
+                  fontSize: "0.8rem",
+                  color:
+                    detectionStatus === "connected"
+                      ? theme.accentPrimary
+                      : theme.textSecondary,
+                }}
+              >
+                Status: <strong>{detectionStatus}</strong>
+                {cadInstallations.length > 0 && (
+                  <span style={{ marginLeft: 12 }}>
+                    • {cadInstallations.length} instalação(ões) encontrada(s)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           <div style={st.btnRow}>
             <ActionBtn onClick={handleConnect} label="Conectar" theme={theme} />
             <ActionBtn
@@ -664,7 +858,12 @@ const AutoCADControl: React.FC = () => {
               onClick={handleSetModeBridge}
               label="Modo PONTE"
               theme={theme}
-              variant={driverStatus?.mode === "bridge" || driverStatus?.mode === "cloud" ? "active" : "ghost"}
+              variant={
+                driverStatus?.mode === "bridge" ||
+                driverStatus?.mode === "cloud"
+                  ? "active"
+                  : "ghost"
+              }
             />
             <ActionBtn
               onClick={handleSetModeCOM}

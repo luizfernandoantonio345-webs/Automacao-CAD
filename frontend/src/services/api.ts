@@ -472,7 +472,10 @@ export const ApiService = {
     safeStorage.setToken(data.access_token);
     // Store tier in license so LicenseContext picks it up
     if (data.tier) {
-      window.localStorage.setItem("license", JSON.stringify({ tier: data.tier, validated: true }));
+      window.localStorage.setItem(
+        "license",
+        JSON.stringify({ tier: data.tier, validated: true }),
+      );
     }
     return data;
   },
@@ -483,7 +486,10 @@ export const ApiService = {
     );
     safeStorage.setToken(data.access_token);
     if (data.tier) {
-      window.localStorage.setItem("license", JSON.stringify({ tier: data.tier, validated: true }));
+      window.localStorage.setItem(
+        "license",
+        JSON.stringify({ tier: data.tier, validated: true }),
+      );
     }
     return data;
   },
@@ -493,7 +499,10 @@ export const ApiService = {
       2,
     );
     safeStorage.setToken(data.access_token);
-    window.localStorage.setItem("license", JSON.stringify({ tier: "demo", validated: true }));
+    window.localStorage.setItem(
+      "license",
+      JSON.stringify({ tier: "demo", validated: true }),
+    );
     return data;
   },
   logout: () => {

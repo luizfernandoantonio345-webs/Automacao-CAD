@@ -17,6 +17,7 @@ import {
   FaCrown,
   FaBars,
   FaTimes,
+  FaPlug,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavEntry[] = [
     label: "Piping & Autopilot",
     icon: <FaDraftingCompass />,
   },
+  { path: "/auto-connect", label: "AutoConnect CAD", icon: <FaPlug /> },
   { path: "/quality", label: "Quality Gate", icon: <FaShieldAlt /> },
   { path: "/final-report", label: "Relatório Final", icon: <FaFileAlt /> },
   { path: "/cad-dashboard", label: "Painel CAD", icon: <FaDesktop /> },

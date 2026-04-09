@@ -34,6 +34,7 @@ const GlobalSetup = lazy(() => import("./pages/GlobalSetup"));
 const CadConsole = lazy(() => import("./pages/CadConsole"));
 const CadDashboard = lazy(() => import("./pages/CadDashboard"));
 const AutoCADControl = lazy(() => import("./pages/AutoCADControl"));
+const AutoConnectPage = lazy(() => import("./pages/AutoConnectPage"));
 const AIDashboard = lazy(() => import("./pages/AIDashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const CncControl = lazy(() => import("./pages/CncControl"));
@@ -286,6 +287,14 @@ function AppContent() {
                 element={
                   <SidebarLayout>
                     <AutoCADControl />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/auto-connect"
+                element={
+                  <SidebarLayout>
+                    <AutoConnectPage />
                   </SidebarLayout>
                 }
               />

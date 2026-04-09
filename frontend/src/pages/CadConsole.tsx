@@ -105,7 +105,7 @@ const CadConsole: React.FC = () => {
       .get(`${API_BASE}/api/autocad/health`)
       .then((res) => {
         setConnected(true);
-        const mode = res.data?.cloud_mode ? "Cloud" : (res.data?.mode || "Local");
+        const mode = res.data?.cloud_mode ? "Cloud" : res.data?.mode || "Local";
         pushLog(
           "INFO",
           `> Backend conectado — Modo ${mode} — Unidade: ${selectedRefinery ?? "REGAP"}_UNIT_01`,
@@ -124,7 +124,10 @@ const CadConsole: React.FC = () => {
           })
           .catch(() => {
             setConnected(true);
-            pushLog("INFO", "> Modo Cloud ativo — todas as operações disponíveis.");
+            pushLog(
+              "INFO",
+              "> Modo Cloud ativo — todas as operações disponíveis.",
+            );
           });
       });
 

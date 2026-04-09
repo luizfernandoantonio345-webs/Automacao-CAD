@@ -169,7 +169,9 @@ const Login = () => {
       } else if (err?.code === "ECONNABORTED") {
         setError("Servidor demorou a responder. Tente novamente em instantes.");
       } else if (!status) {
-        setError("Servidor indisponível. Verifique sua conexão e tente novamente.");
+        setError(
+          "Servidor indisponível. Verifique sua conexão e tente novamente.",
+        );
       } else {
         setError(`Erro no servidor (${status}). Tente novamente.`);
       }

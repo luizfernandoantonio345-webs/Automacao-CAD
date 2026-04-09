@@ -110,7 +110,7 @@ const CadDashboard: React.FC = () => {
     (
       operation: string,
       status: "success" | "error" | "pending" | "simulated",
-      message: string
+      message: string,
     ) => {
       const entry: CommandLog = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -120,14 +120,22 @@ const CadDashboard: React.FC = () => {
         message,
       };
       setLogs((prev) => [...prev.slice(-99), entry]);
-      
+
       if (status === "success" || status === "simulated") {
-        setStats(s => ({ ...s, operations: s.operations + 1, success: s.success + 1 }));
+        setStats((s) => ({
+          ...s,
+          operations: s.operations + 1,
+          success: s.success + 1,
+        }));
       } else if (status === "error") {
-        setStats(s => ({ ...s, operations: s.operations + 1, errors: s.errors + 1 }));
+        setStats((s) => ({
+          ...s,
+          operations: s.operations + 1,
+          errors: s.errors + 1,
+        }));
       }
     },
-    []
+    [],
   );
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -136,25 +144,35 @@ const CadDashboard: React.FC = () => {
 
   const doConnect = useCallback(async () => {
     if (isConnecting || isConnected) return;
-    
+
     setIsConnecting(true);
     addLog("Conexão", "pending", "Conectando ao sistema CAD...");
 
     try {
       // Tentar conectar via API primeiro
       const health = await ApiService.autocadHealth();
-      
-      if (health?.driver_status === "Connected" || health?.com_available || health?.cloud_mode || health?.healthy) {
+
+      if (
+        health?.driver_status === "Connected" ||
+        health?.com_available ||
+        health?.cloud_mode ||
+        health?.healthy
+      ) {
         // CAD real ou cloud mode detectado
         const isCloud = health?.cloud_mode || health?.mode === "cloud";
         setIsConnected(true);
         setCadInfo({
-          type: isCloud ? "AutoCAD 2024 Cloud" : (health.engine || "AutoCAD"),
+          type: isCloud ? "AutoCAD 2024 Cloud" : health.engine || "AutoCAD",
           version: "2024",
-          document: health.document?.name || (isCloud ? "Projeto Cloud" : undefined),
+          document:
+            health.document?.name || (isCloud ? "Projeto Cloud" : undefined),
         });
         setConnectionMode(isCloud ? "auto" : "local");
-        addLog("Conexão", "success", `✓ Conectado ao ${isCloud ? "AutoCAD 2024 Cloud" : (health.engine || "AutoCAD")}`);
+        addLog(
+          "Conexão",
+          "success",
+          `✓ Conectado ao ${isCloud ? "AutoCAD 2024 Cloud" : health.engine || "AutoCAD"}`,
+        );
       } else {
         // Sem CAD disponível - modo simulação automático
         setIsConnected(true);
@@ -164,7 +182,11 @@ const CadDashboard: React.FC = () => {
           document: "Documento Virtual",
         });
         setConnectionMode("simulation");
-        addLog("Conexão", "simulated", "✓ Conectado em modo Simulação (sem AutoCAD detectado)");
+        addLog(
+          "Conexão",
+          "simulated",
+          "✓ Conectado em modo Simulação (sem AutoCAD detectado)",
+        );
       }
     } catch (error) {
       // Fallback para modo simulação
@@ -175,7 +197,11 @@ const CadDashboard: React.FC = () => {
         document: "Documento Virtual",
       });
       setConnectionMode("simulation");
-      addLog("Conexão", "simulated", "✓ Modo Simulação ativo (backend offline)");
+      addLog(
+        "Conexão",
+        "simulated",
+        "✓ Modo Simulação ativo (backend offline)",
+      );
     } finally {
       setIsConnecting(false);
     }
@@ -208,7 +234,7 @@ const CadDashboard: React.FC = () => {
     async (
       name: string,
       apiCall: () => Promise<DriverResult>,
-      simulatedResult?: string
+      simulatedResult?: string,
     ) => {
       if (!isConnected) {
         addLog(name, "error", "Não conectado");
@@ -222,7 +248,11 @@ const CadDashboard: React.FC = () => {
         if (connectionMode === "simulation") {
           // Simular delay realista
           await new Promise((r) => setTimeout(r, 300 + Math.random() * 500));
-          addLog(name, "simulated", simulatedResult || "✓ Simulado com sucesso");
+          addLog(
+            name,
+            "simulated",
+            simulatedResult || "✓ Simulado com sucesso",
+          );
         } else {
           const result = await apiCall();
           if (result.success) {
@@ -237,11 +267,15 @@ const CadDashboard: React.FC = () => {
         setLoading(null);
       }
     },
-    [isConnected, connectionMode, addLog]
+    [isConnected, connectionMode, addLog],
   );
 
   const doCreateLayers = () =>
-    executeCommand("Criar Layers N-58", () => ApiService.autocadCreateLayers(), "12 layers Petrobras N-58 criados");
+    executeCommand(
+      "Criar Layers N-58",
+      () => ApiService.autocadCreateLayers(),
+      "12 layers Petrobras N-58 criados",
+    );
 
   const doDrawPipe = () =>
     executeCommand(
@@ -255,7 +289,7 @@ const CadDashboard: React.FC = () => {
           diameter: parseFloat(pipeDiameter),
           layer: pipeLayer,
         }),
-      `Tubo Ø${pipeDiameter}" desenhado (${pipeStartX},${pipeStartY}) → (${pipeEndX},${pipeEndY})`
+      `Tubo Ø${pipeDiameter}" desenhado (${pipeStartX},${pipeStartY}) → (${pipeEndX},${pipeEndY})`,
     );
 
   const doInsertComponent = () =>
@@ -269,7 +303,7 @@ const CadDashboard: React.FC = () => {
           scale: parseFloat(compScale),
           layer: "VALVE",
         }),
-      `${compType} inserido em (${compX}, ${compY})`
+      `${compType} inserido em (${compX}, ${compY})`,
     );
 
   const doAddText = () => {
@@ -283,7 +317,7 @@ const CadDashboard: React.FC = () => {
           height: parseFloat(textHeight),
           layer: "ANNOTATION",
         }),
-      `Texto "${textContent}" adicionado`
+      `Texto "${textContent}" adicionado`,
     );
   };
 
@@ -291,7 +325,11 @@ const CadDashboard: React.FC = () => {
     executeCommand("Salvar", () => ApiService.autocadSave(), "Documento salvo");
 
   const doFinalize = () =>
-    executeCommand("Finalizar Vista", () => ApiService.autocadFinalize(), "Vista zoom extents aplicada");
+    executeCommand(
+      "Finalizar Vista",
+      () => ApiService.autocadFinalize(),
+      "Vista zoom extents aplicada",
+    );
 
   // ═══════════════════════════════════════════════════════════════════════
   // STYLES
@@ -394,7 +432,7 @@ const CadDashboard: React.FC = () => {
 
   const quickActionBtn = (
     color: string,
-    active?: boolean
+    active?: boolean,
   ): React.CSSProperties => ({
     background: active
       ? `linear-gradient(135deg, ${color}30 0%, ${color}15 100%)`
@@ -414,7 +452,7 @@ const CadDashboard: React.FC = () => {
   });
 
   const statusBadge = (
-    status: "connected" | "simulated" | "disconnected"
+    status: "connected" | "simulated" | "disconnected",
   ): React.CSSProperties => {
     const statusColors = {
       connected: colors.success,
@@ -470,7 +508,14 @@ const CadDashboard: React.FC = () => {
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              marginBottom: "8px",
+            }}
+          >
             <div
               style={{
                 width: "48px",
@@ -529,8 +574,8 @@ const CadDashboard: React.FC = () => {
             {connectionStatus === "connected"
               ? "CAD Conectado"
               : connectionStatus === "simulated"
-              ? "Modo Simulação"
-              : "Desconectado"}
+                ? "Modo Simulação"
+                : "Desconectado"}
           </div>
 
           {isConnected ? (
@@ -573,11 +618,23 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-            <Server size={20} color={isConnected ? colors.success : colors.danger} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
+            <Server
+              size={20}
+              color={isConnected ? colors.success : colors.danger}
+            />
             <span style={{ ...labelStyle, marginBottom: 0 }}>STATUS</span>
           </div>
-          <div style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "4px" }}>
+          <div
+            style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "4px" }}
+          >
             {isConnected ? cadInfo?.type : "Offline"}
           </div>
           <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
@@ -592,11 +649,24 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
             <Activity size={20} color={colors.primary} />
             <span style={{ ...labelStyle, marginBottom: 0 }}>OPERAÇÕES</span>
           </div>
-          <div style={{ fontSize: "2.5rem", fontWeight: 800, color: colors.primary }}>
+          <div
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: 800,
+              color: colors.primary,
+            }}
+          >
             {stats.operations}
           </div>
           <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
@@ -611,11 +681,24 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
             <CheckCircle2 size={20} color={colors.success} />
             <span style={{ ...labelStyle, marginBottom: 0 }}>SUCESSO</span>
           </div>
-          <div style={{ fontSize: "2.5rem", fontWeight: 800, color: colors.success }}>
+          <div
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: 800,
+              color: colors.success,
+            }}
+          >
             {stats.success}
           </div>
           <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
@@ -630,12 +713,23 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "16px",
+            }}
+          >
             <Cpu size={20} color={colors.purple} />
             <span style={{ ...labelStyle, marginBottom: 0 }}>MODO</span>
           </div>
           <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>
-            {connectionMode === "simulation" ? "Simulação" : connectionMode === "local" ? "Local" : "Auto"}
+            {connectionMode === "simulation"
+              ? "Simulação"
+              : connectionMode === "local"
+                ? "Local"
+                : "Auto"}
           </div>
           <div style={{ fontSize: "0.8rem", color: theme.textSecondary }}>
             {connectionMode === "simulation" ? "Virtual" : "Direto"}
@@ -652,9 +746,18 @@ const CadDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "24px",
+          }}
+        >
           <CloudLightning size={22} color={colors.primary} />
-          <span style={{ fontSize: "1rem", fontWeight: 700 }}>AÇÕES RÁPIDAS</span>
+          <span style={{ fontSize: "1rem", fontWeight: 700 }}>
+            AÇÕES RÁPIDAS
+          </span>
           <span
             style={{
               marginLeft: "auto",
@@ -681,14 +784,23 @@ const CadDashboard: React.FC = () => {
           <button
             onClick={doCreateLayers}
             disabled={!isConnected || !!loading}
-            style={quickActionBtn(colors.primary, loading === "Criar Layers N-58")}
+            style={quickActionBtn(
+              colors.primary,
+              loading === "Criar Layers N-58",
+            )}
           >
             {loading === "Criar Layers N-58" ? (
-              <Loader2 size={28} className="animate-spin" color={colors.primary} />
+              <Loader2
+                size={28}
+                className="animate-spin"
+                color={colors.primary}
+              />
             ) : (
               <Layers size={28} color={colors.primary} />
             )}
-            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Layers N-58</span>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+              Layers N-58
+            </span>
           </button>
 
           <button
@@ -697,7 +809,11 @@ const CadDashboard: React.FC = () => {
             style={quickActionBtn(colors.success, loading === "Desenhar Tubo")}
           >
             {loading === "Desenhar Tubo" ? (
-              <Loader2 size={28} className="animate-spin" color={colors.success} />
+              <Loader2
+                size={28}
+                className="animate-spin"
+                color={colors.success}
+              />
             ) : (
               <Pipette size={28} color={colors.success} />
             )}
@@ -710,11 +826,17 @@ const CadDashboard: React.FC = () => {
             style={quickActionBtn(colors.warning, loading?.includes("Inserir"))}
           >
             {loading?.includes("Inserir") ? (
-              <Loader2 size={28} className="animate-spin" color={colors.warning} />
+              <Loader2
+                size={28}
+                className="animate-spin"
+                color={colors.warning}
+              />
             ) : (
               <Hexagon size={28} color={colors.warning} />
             )}
-            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Componente</span>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+              Componente
+            </span>
           </button>
 
           <button
@@ -723,7 +845,11 @@ const CadDashboard: React.FC = () => {
             style={quickActionBtn(colors.purple, loading === "Adicionar Texto")}
           >
             {loading === "Adicionar Texto" ? (
-              <Loader2 size={28} className="animate-spin" color={colors.purple} />
+              <Loader2
+                size={28}
+                className="animate-spin"
+                color={colors.purple}
+              />
             ) : (
               <Type size={28} color={colors.purple} />
             )}
@@ -740,7 +866,9 @@ const CadDashboard: React.FC = () => {
             ) : (
               <Maximize2 size={28} color="#06B6D4" />
             )}
-            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Finalizar</span>
+            <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+              Finalizar
+            </span>
           </button>
 
           <button
@@ -749,7 +877,11 @@ const CadDashboard: React.FC = () => {
             style={quickActionBtn(colors.danger, loading === "Salvar")}
           >
             {loading === "Salvar" ? (
-              <Loader2 size={28} className="animate-spin" color={colors.danger} />
+              <Loader2
+                size={28}
+                className="animate-spin"
+                color={colors.danger}
+              />
             ) : (
               <Save size={28} color={colors.danger} />
             )}
@@ -776,12 +908,27 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
             <Pipette size={20} color={colors.success} />
-            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Desenhar Tubo</span>
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>
+              Desenhar Tubo
+            </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
+          >
             <div>
               <label style={labelStyle}>Início X</label>
               <input
@@ -825,7 +972,21 @@ const CadDashboard: React.FC = () => {
                 onChange={(e) => setPipeDiameter(e.target.value)}
                 style={inputStyle}
               >
-                {["1", "2", "3", "4", "6", "8", "10", "12", "14", "16", "18", "20", "24"].map((d) => (
+                {[
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "6",
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "24",
+                ].map((d) => (
                   <option key={d} value={d}>
                     {d}"
                   </option>
@@ -839,11 +1000,13 @@ const CadDashboard: React.FC = () => {
                 onChange={(e) => setPipeLayer(e.target.value)}
                 style={inputStyle}
               >
-                {["PIPE-PROCESS", "PIPE-UTILITY", "PIPE-INSTRUMENT"].map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
+                {["PIPE-PROCESS", "PIPE-UTILITY", "PIPE-INSTRUMENT"].map(
+                  (l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ),
+                )}
               </select>
             </div>
           </div>
@@ -856,12 +1019,27 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
             <Hexagon size={20} color={colors.warning} />
-            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Inserir Componente</span>
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>
+              Inserir Componente
+            </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
+          >
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Tipo</label>
               <select
@@ -926,12 +1104,27 @@ const CadDashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
             <Type size={20} color={colors.purple} />
-            <span style={{ fontSize: "1rem", fontWeight: 700 }}>Adicionar Texto</span>
+            <span style={{ fontSize: "1rem", fontWeight: 700 }}>
+              Adicionar Texto
+            </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
+          >
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Conteúdo</label>
               <input
@@ -983,9 +1176,18 @@ const CadDashboard: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "20px",
+          }}
+        >
           <Terminal size={20} color={colors.primary} />
-          <span style={{ fontSize: "1rem", fontWeight: 700 }}>Console de Operações</span>
+          <span style={{ fontSize: "1rem", fontWeight: 700 }}>
+            Console de Operações
+          </span>
           <span
             style={{
               marginLeft: "auto",
@@ -1013,7 +1215,9 @@ const CadDashboard: React.FC = () => {
         >
           <AnimatePresence>
             {logs.length === 0 ? (
-              <div style={{ color: "#666", textAlign: "center", padding: "20px" }}>
+              <div
+                style={{ color: "#666", textAlign: "center", padding: "20px" }}
+              >
                 <Code size={32} style={{ marginBottom: "8px", opacity: 0.5 }} />
                 <div>Nenhuma operação executada ainda</div>
                 <div style={{ fontSize: "0.7rem", marginTop: "4px" }}>
@@ -1035,29 +1239,33 @@ const CadDashboard: React.FC = () => {
                     borderBottom: "1px solid #1a1a1a",
                   }}
                 >
-                  <span style={{ color: "#666", minWidth: "70px" }}>{log.timestamp}</span>
+                  <span style={{ color: "#666", minWidth: "70px" }}>
+                    {log.timestamp}
+                  </span>
                   <span
                     style={{
                       color:
                         log.status === "success"
                           ? colors.success
                           : log.status === "simulated"
-                          ? colors.warning
-                          : log.status === "error"
-                          ? colors.danger
-                          : colors.primary,
+                            ? colors.warning
+                            : log.status === "error"
+                              ? colors.danger
+                              : colors.primary,
                       minWidth: "20px",
                     }}
                   >
                     {log.status === "success"
                       ? "✓"
                       : log.status === "simulated"
-                      ? "◉"
-                      : log.status === "error"
-                      ? "✗"
-                      : "○"}
+                        ? "◉"
+                        : log.status === "error"
+                          ? "✗"
+                          : "○"}
                   </span>
-                  <span style={{ color: "#AAA", fontWeight: 600 }}>[{log.operation}]</span>
+                  <span style={{ color: "#AAA", fontWeight: 600 }}>
+                    [{log.operation}]
+                  </span>
                   <span style={{ color: "#DDD" }}>{log.message}</span>
                 </motion.div>
               ))

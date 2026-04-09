@@ -153,6 +153,12 @@ except ImportError as e:
     machine_router = None
 
 try:
+    from backend.routes_cad_detection import router as cad_detection_router
+except ImportError as e:
+    _log.warning(f"CAD Detection router not available: {e}")
+    cad_detection_router = None
+
+try:
     from backend.database.db import (
         init_db, seed_default_user, authenticate_user, create_user,
         email_exists, get_user_by_email, create_project as db_create_project,
@@ -439,6 +445,11 @@ if autocad_router:
     app.include_router(autocad_router)
 if autocad_debug_router:
     app.include_router(autocad_debug_router)
+
+# Include CAD Detection & Auto-Launch routes (Enterprise)
+if cad_detection_router:
+    app.include_router(cad_detection_router)
+    logger.info("CAD Detection & Auto-Launch routes carregados")
 
 # Include License / HWID routes
 if license_router:

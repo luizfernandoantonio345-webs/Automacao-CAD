@@ -595,7 +595,9 @@ const AIDashboard: React.FC = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: "POST",
@@ -644,7 +646,9 @@ const AIDashboard: React.FC = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
       if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(
         `${API_BASE_URL}/api/ai/engine/${selectedEngine.name}/execute`,

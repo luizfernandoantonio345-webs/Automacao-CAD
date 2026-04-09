@@ -630,7 +630,9 @@ const AnalyticsDashboard: React.FC = () => {
       const token = localStorage.getItem("token");
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, { headers });
+      const res = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, {
+        headers,
+      });
       if (res.ok) {
         const dashboardData = await res.json();
         setData(dashboardData);

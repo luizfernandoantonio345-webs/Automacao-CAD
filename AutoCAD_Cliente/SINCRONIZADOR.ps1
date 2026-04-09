@@ -144,7 +144,8 @@ function Start-AutoCADIfNeeded {
         
         if ($licenseCheck.tier -and $licenseCheck.tier -ne "demo") {
             Write-Status "Licença $($licenseCheck.tier) detectada. Iniciando CAD automaticamente..." "Success"
-        } else {
+        }
+        else {
             Write-Status "Licença demo — CAD não será aberto automaticamente." "Warning"
             return $false
         }
