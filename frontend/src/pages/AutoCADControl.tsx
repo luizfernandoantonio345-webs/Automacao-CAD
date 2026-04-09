@@ -783,7 +783,7 @@ const AutoCADControl: React.FC = () => {
                   fontSize: "0.95rem",
                   fontWeight: 600,
                   background: isDetecting
-                    ? theme.bgTertiary
+                    ? theme.surfaceAlt
                     : `linear-gradient(135deg, ${theme.accentPrimary}, ${theme.accentSecondary})`,
                   color: "#fff",
                   border: "none",
@@ -827,7 +827,7 @@ const AutoCADControl: React.FC = () => {
                   backgroundColor:
                     detectionStatus === "connected"
                       ? theme.accentPrimary + "20"
-                      : theme.bgTertiary,
+                      : theme.surfaceAlt,
                   borderRadius: 6,
                   fontSize: "0.8rem",
                   color:
