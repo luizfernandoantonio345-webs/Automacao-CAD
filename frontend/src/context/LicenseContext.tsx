@@ -35,6 +35,7 @@ interface LicenseContextType {
   triggerUpgrade: (reason: string) => void;
   dismissUpgrade: () => void;
   activateLicense: (key: string, machineId: string) => Promise<boolean>;
+  refreshTier: () => void;
 }
 
 export type FeatureKey =
@@ -236,6 +237,8 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({
     [],
   );
 
+  const refreshTier = useCallback(() => setTier(detectTier()), []);
+
   // Sync tier if localStorage changes (e.g., after checkout)
   useEffect(() => {
     const handler = () => setTier(detectTier());
@@ -254,6 +257,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({
         triggerUpgrade,
         dismissUpgrade,
         activateLicense,
+        refreshTier,
       }}
     >
       {children}

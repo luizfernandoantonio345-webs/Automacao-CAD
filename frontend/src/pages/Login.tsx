@@ -15,6 +15,7 @@ import {
   FaCrown,
 } from "react-icons/fa";
 import { API_BASE_URL, ApiService } from "../services/api";
+import { useLicense } from "../context/LicenseContext";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ANIMATED BACKGROUND
@@ -145,6 +146,7 @@ const Login = () => {
   const [demoLoading, setDemoLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { refreshTier } = useLicense();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +158,7 @@ const Login = () => {
     setLoading(true);
     try {
       await ApiService.login({ email, senha: password });
+      refreshTier();
       navigate("/dashboard");
     } catch (err: any) {
       const status = err?.response?.status;
@@ -179,6 +182,7 @@ const Login = () => {
     setDemoLoading(true);
     try {
       await ApiService.demoLogin();
+      refreshTier();
       navigate("/dashboard");
     } catch (err: any) {
       const status = err?.response?.status;
