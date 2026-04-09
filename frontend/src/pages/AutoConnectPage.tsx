@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../services/api';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AutoConnect Page - Conexão 1-Click com AutoCAD
@@ -20,10 +21,8 @@ const AutoConnectPage: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Usar URL dinâmica baseada no ambiente
-  const BACKEND_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8000' 
-    : `${window.location.protocol}//${window.location.hostname}:8000`;
+  // Usar URL centralizada do serviço API
+  const BACKEND_URL = API_BASE_URL;
 
   // Obter token de autenticação
   const getAuthToken = (): string | null => {

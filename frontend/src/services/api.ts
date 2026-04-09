@@ -4,32 +4,36 @@ import { orchestrator } from "../middleware/AIOrchestrator";
 const CLIENT_CACHE_VERSION_KEY = "engcad_client_cache_version";
 const CLIENT_CACHE_VERSION = "2026-04-07-api-unified";
 
-// Detectar ambiente de produção da Vercel
-const isVercelProduction =
-  typeof window !== "undefined" &&
-  window.location.hostname.includes("vercel.app");
+const normalizeBaseUrl = (value: string): string => value.replace(/\/$/, "");
 
-// URL de fallback para produção ou desenvolvimento
+// Resolução única de base URL por ambiente, sem host hardcoded.
 const getDefaultApiBase = (): string => {
   if (typeof window === "undefined") {
-    return "http://127.0.0.1:8000";
+    return "http://localhost:8000";
   }
-  // Em produção Vercel, usar URL relativa ou backend específico
-  if (isVercelProduction) {
+
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") {
+    return `${window.location.protocol}//${host}:8000`;
+  }
+
+  // Vercel: frontend e backend em domínios separados
+  if (host.includes("vercel.app") || host.includes("automacao-cad")) {
     return "https://automacao-cad-backend.vercel.app";
   }
-  // Em desenvolvimento local
-  return `${window.location.protocol}//${window.location.hostname}:8000`;
+
+  // Produção: usa origem atual por padrão (reverse proxy / edge rewrite).
+  return window.location.origin;
 };
 
 const configuredApiBase =
   (typeof window !== "undefined" && (window as any).__ENGCAD_API_URL__) ||
   process.env.REACT_APP_API_URL ||
   getDefaultApiBase();
-export const API_BASE_URL = configuredApiBase;
+export const API_BASE_URL = normalizeBaseUrl(configuredApiBase);
 
 // Runtime fallback base captured at initialization
-const runtimeDefaultApiBase = getDefaultApiBase();
+const runtimeDefaultApiBase = normalizeBaseUrl(getDefaultApiBase());
 
 export const SSE_BASE_URL =
   (typeof window !== "undefined" && (window as any).__ENGCAD_SSE_URL__) ||
@@ -85,14 +89,41 @@ if (typeof window !== "undefined") {
   (window as any).__ENGCAD_AXIOS__ = api;
 }
 
-const TOKEN_KEY = "auth_token";
+const TOKEN_KEY = "token";
+const LEGACY_TOKEN_KEYS = ["auth_token"];
 let memoryToken = "";
+
+const migrateLegacyToken = (): void => {
+  if (typeof window === "undefined") return;
+  try {
+    const current = window.localStorage.getItem(TOKEN_KEY);
+    if (current) {
+      for (const legacyKey of LEGACY_TOKEN_KEYS) {
+        window.sessionStorage.removeItem(legacyKey);
+      }
+      return;
+    }
+
+    for (const legacyKey of LEGACY_TOKEN_KEYS) {
+      const legacy = window.sessionStorage.getItem(legacyKey);
+      if (legacy) {
+        window.localStorage.setItem(TOKEN_KEY, legacy);
+        window.sessionStorage.removeItem(legacyKey);
+        break;
+      }
+    }
+  } catch {
+    // noop
+  }
+};
+
+migrateLegacyToken();
 
 const safeStorage = {
   getToken: (): string => {
     if (memoryToken) return memoryToken;
     try {
-      memoryToken = window.sessionStorage.getItem(TOKEN_KEY) || "";
+      memoryToken = window.localStorage.getItem(TOKEN_KEY) || "";
       return memoryToken;
     } catch {
       return "";
@@ -101,7 +132,10 @@ const safeStorage = {
   setToken: (token: string) => {
     memoryToken = token;
     try {
-      window.sessionStorage.setItem(TOKEN_KEY, token);
+      window.localStorage.setItem(TOKEN_KEY, token);
+      for (const legacyKey of LEGACY_TOKEN_KEYS) {
+        window.sessionStorage.removeItem(legacyKey);
+      }
     } catch {
       // noop
     }
@@ -109,7 +143,10 @@ const safeStorage = {
   clearToken: () => {
     memoryToken = "";
     try {
-      window.sessionStorage.removeItem(TOKEN_KEY);
+      window.localStorage.removeItem(TOKEN_KEY);
+      for (const legacyKey of LEGACY_TOKEN_KEYS) {
+        window.sessionStorage.removeItem(legacyKey);
+      }
     } catch {
       // noop
     }
