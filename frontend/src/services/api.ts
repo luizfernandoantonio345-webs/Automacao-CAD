@@ -6,7 +6,7 @@ const CLIENT_CACHE_VERSION = "2026-04-07-api-unified";
 
 const normalizeBaseUrl = (value: string): string => value.replace(/\/$/, "");
 
-// Resolução única de base URL por ambiente, sem host hardcoded.
+// Resolução única de base URL por ambiente.
 const getDefaultApiBase = (): string => {
   if (typeof window === "undefined") {
     return "http://localhost:8000";
@@ -17,12 +17,12 @@ const getDefaultApiBase = (): string => {
     return `${window.location.protocol}//${host}:8000`;
   }
 
-  // Vercel: frontend e backend em domínios separados
+  // Vercel: frontend e backend são domínios separados
   if (host.includes("vercel.app") || host.includes("automacao-cad")) {
     return "https://automacao-cad-backend.vercel.app";
   }
 
-  // Produção: usa origem atual por padrão (reverse proxy / edge rewrite).
+  // Produção genérica: usa origem atual (reverse proxy / edge rewrite).
   return window.location.origin;
 };
 
