@@ -347,7 +347,7 @@ const RolesManager: React.FC = () => {
               <CardContent>
                 <Stack spacing={2}>
                   {Object.entries(groupedPermissions).map(
-                    ([category, perms]) => (
+                    ([category, perms]: [string, Permission[]]) => (
                       <Box key={category}>
                         <Typography
                           variant="subtitle2"
