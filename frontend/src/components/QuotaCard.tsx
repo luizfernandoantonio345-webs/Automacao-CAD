@@ -13,7 +13,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { FiBarChart2, FiAlertCircle, FiUpgrade } from "react-icons/fi";
+import { FiBarChart2, FiAlertCircle, FiArrowUpCircle } from "react-icons/fi";
 import axios from "axios";
 
 interface QuotaData {
@@ -270,7 +270,7 @@ const QuotaCard: React.FC = () => {
               variant="contained"
               color="primary"
               fullWidth
-              startIcon={<FiUpgrade size={16} />}
+              startIcon={<FiArrowUpCircle size={16} />}
               href="/pricing"
             >
               Atualizar Plano
