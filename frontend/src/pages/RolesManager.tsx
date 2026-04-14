@@ -29,6 +29,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import axios from "axios";
+import { api } from "../services/api";
 import { FiPlus, FiEdit2, FiTrash2, FiSave } from "react-icons/fi";
 
 interface Role {
@@ -71,11 +72,7 @@ const RolesManager: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("/api/enterprise/roles", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-        },
-      });
+      const response = await api.get("/api/enterprise/roles");
       setRoles(response.data.roles || []);
     } catch (err: any) {
       setError(err.response?.data?.message || "Falha ao carregar funções");
@@ -87,11 +84,7 @@ const RolesManager: React.FC = () => {
   // Fetch permissions
   const fetchPermissions = async () => {
     try {
-      const response = await axios.get("/api/enterprise/permissions", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-        },
-      });
+      const response = await api.get("/api/enterprise/permissions");
       setPermissions(response.data.permissions || []);
     } catch (err) {
       console.error("Erro ao buscar permissões:", err);
@@ -114,19 +107,11 @@ const RolesManager: React.FC = () => {
     }
 
     try {
-      await axios.post(
-        "/api/enterprise/roles",
-        {
-          name: formData.name,
-          description: formData.description,
-          permissions: formData.permissions,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        },
-      );
+      await api.post("/api/enterprise/roles", {
+        name: formData.name,
+        description: formData.description,
+        permissions: formData.permissions,
+      });
       setCreateOpen(false);
       setFormData({ name: "", description: "", permissions: [] });
       fetchRoles();
@@ -143,19 +128,11 @@ const RolesManager: React.FC = () => {
     }
 
     try {
-      await axios.patch(
-        `/api/enterprise/roles/${selectedRole.id}`,
-        {
-          name: formData.name,
-          description: formData.description,
-          permissions: formData.permissions,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        },
-      );
+      await api.patch(`/api/enterprise/roles/${selectedRole.id}`, {
+        name: formData.name,
+        description: formData.description,
+        permissions: formData.permissions,
+      });
       setEditOpen(false);
       setSelectedRole(null);
       setFormData({ name: "", description: "", permissions: [] });
@@ -172,11 +149,7 @@ const RolesManager: React.FC = () => {
       )
     ) {
       try {
-        await axios.delete(`/api/enterprise/roles/${roleId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        });
+        await api.delete(`/api/enterprise/roles/${roleId}`);
         fetchRoles();
       } catch (err: any) {
         setError(err.response?.data?.message || "Erro ao deletar função");

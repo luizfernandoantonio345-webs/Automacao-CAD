@@ -591,6 +591,14 @@ if notifications_router:
 if audit_router:
     app.include_router(audit_router)
 
+# Include Enterprise routes (RBAC, Integrations, Workflows, etc.)
+try:
+    from backend.enterprise.routes import router as enterprise_router
+    app.include_router(enterprise_router)
+    logger.info("Enterprise routes carregadas com sucesso")
+except Exception as e:
+    logger.warning(f"Enterprise routes não disponíveis: {e}")
+
 # Include AI Engine routes (Sistema Enterprise de IAs)
 try:
     from ai_engines.routes import router as ai_router

@@ -592,6 +592,32 @@ def seed_default_user() -> None:
             except Exception:
                 pass  # coluna tier pode não existir em DB legado
 
+    # Garantir que exista um usuário enterprise de teste com credenciais conhecidas
+    _seed_enterprise_test_user()
+
+
+def _seed_enterprise_test_user() -> None:
+    """Cria ou atualiza usuário enterprise de teste com credenciais fixas."""
+    test_email = "enterprise@engenharia-cad.com"
+    test_pw = "Eng@Enterprise2026"
+    if not email_exists(test_email):
+        create_user(
+            email=test_email,
+            username="enterprise",
+            password=test_pw,
+            empresa="Engenharia CAD Enterprise",
+            tier="enterprise",
+            limite=999999,
+        )
+        logger.info("Usuário enterprise de teste criado.")
+    else:
+        # Garantir tier enterprise
+        with get_db() as conn:
+            conn.execute(
+                _q("UPDATE users SET tier = 'enterprise' WHERE email = ?"),
+                (test_email,),
+            )
+
 
 # ─── Funções de licença (HWID) ──────────────────────────────────────────────
 

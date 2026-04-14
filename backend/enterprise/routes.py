@@ -141,6 +141,7 @@ async def get_audit_statistics():
 # RBAC ENDPOINTS
 # ════════════════════════════════════════════════════════════════════════════
 
+@router.get("/roles")
 @router.get("/rbac/roles")
 async def get_roles():
     """Lista todos os roles."""
@@ -148,6 +149,7 @@ async def get_roles():
     return {"roles": [r.to_dict() for r in roles]}
 
 
+@router.post("/roles")
 @router.post("/rbac/roles")
 async def create_role(request: RoleCreateRequest):
     """Cria um novo role customizado."""
@@ -167,10 +169,35 @@ async def create_role(request: RoleCreateRequest):
     return {"role": role.to_dict()}
 
 
+@router.get("/permissions")
 @router.get("/rbac/permissions")
 async def get_permissions():
     """Lista todas as permissões disponíveis."""
     return rbac_manager.get_permissions_by_category()
+
+
+@router.patch("/roles/{role_id}")
+async def update_role(role_id: str, request: RoleCreateRequest):
+    """Atualiza um role existente."""
+    permissions = set()
+    for p in request.permissions:
+        try:
+            permissions.add(Permission(p))
+        except:
+            pass
+    role = rbac_manager.update_role(role_id, request.name, request.description, permissions)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return {"role": role.to_dict() if hasattr(role, 'to_dict') else role}
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(role_id: str):
+    """Remove um role."""
+    success = rbac_manager.delete_role(role_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Role not found")
+    return {"success": True}
 
 
 @router.post("/rbac/users/{user_id}/roles/{role_id}")
