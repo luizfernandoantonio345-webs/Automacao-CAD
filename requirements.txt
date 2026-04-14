@@ -26,7 +26,6 @@ python-dotenv==1.0.1
 
 # Session Management (Redis)
 redis[asyncio]>=5.0,<6.0
-starlette-sessions==0.0.1
 
 # Billing & Monetization
 stripe>=8.0,<10.0
