@@ -2121,11 +2121,19 @@ def get_job_status(job_id: str):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Fila de comandos pendentes (persistente em SQLite)
-_bridge_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "bridge_queue.db")
+# Em ambientes serverless (Vercel) o filesystem é read-only exceto /tmp
+_bridge_default_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    _bridge_default_dir = "/tmp"
+_bridge_db_path = os.path.join(_bridge_default_dir, "bridge_queue.db")
 _bridge_db_lock = Lock()
+_bridge_db_initialized = False
 
 
 def _bridge_init_db() -> None:
+    global _bridge_db_initialized
+    if _bridge_db_initialized:
+        return
     os.makedirs(os.path.dirname(_bridge_db_path), exist_ok=True)
     with sqlite3.connect(_bridge_db_path) as conn:
         conn.execute(
@@ -2139,9 +2147,11 @@ def _bridge_init_db() -> None:
             """
         )
         conn.commit()
+    _bridge_db_initialized = True
 
 
 def _bridge_enqueue(lisp_code: str, operation: str) -> int:
+    _bridge_init_db()
     with _bridge_db_lock:
         with sqlite3.connect(_bridge_db_path) as conn:
             cur = conn.execute(
@@ -2153,6 +2163,7 @@ def _bridge_enqueue(lisp_code: str, operation: str) -> int:
 
 
 def _bridge_list() -> list[dict]:
+    _bridge_init_db()
     with _bridge_db_lock:
         with sqlite3.connect(_bridge_db_path) as conn:
             rows = conn.execute(
@@ -2170,6 +2181,7 @@ def _bridge_list() -> list[dict]:
 
 
 def _bridge_ack(cmd_id: str) -> bool:
+    _bridge_init_db()
     with _bridge_db_lock:
         with sqlite3.connect(_bridge_db_path) as conn:
             cur = conn.execute("DELETE FROM bridge_commands WHERE id = ?", (cmd_id,))
@@ -2178,13 +2190,14 @@ def _bridge_ack(cmd_id: str) -> bool:
 
 
 def _bridge_pending_count() -> int:
+    _bridge_init_db()
     with _bridge_db_lock:
         with sqlite3.connect(_bridge_db_path) as conn:
             row = conn.execute("SELECT COUNT(*) FROM bridge_commands").fetchone()
     return int(row[0]) if row else 0
 
 
-_bridge_init_db()
+# Inicialização lazy — não chamar no top-level para evitar crash em serverless
 
 # Status de conexão do cliente
 _bridge_client_info = {
