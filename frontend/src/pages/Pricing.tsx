@@ -483,11 +483,9 @@ const Pricing: React.FC = () => {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <FaClock
-                size={18}
-                color="#10B981"
-                style={{ marginBottom: "8px" }}
-              />
+              <div style={{ marginBottom: "8px" }}>
+                <FaClock size={18} color="#10B981" />
+              </div>
               <div
                 style={{ fontSize: "28px", fontWeight: 800, color: "#10B981" }}
               >
@@ -506,11 +504,9 @@ const Pricing: React.FC = () => {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <FaMoneyBillWave
-                size={18}
-                color="#F59E0B"
-                style={{ marginBottom: "8px" }}
-              />
+              <div style={{ marginBottom: "8px" }}>
+                <FaMoneyBillWave size={18} color="#F59E0B" />
+              </div>
               <div
                 style={{ fontSize: "28px", fontWeight: 800, color: "#F59E0B" }}
               >
@@ -529,11 +525,9 @@ const Pricing: React.FC = () => {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <FaChartLine
-                size={18}
-                color={COLORS.primary}
-                style={{ marginBottom: "8px" }}
-              />
+              <div style={{ marginBottom: "8px" }}>
+                <FaChartLine size={18} color={COLORS.primary} />
+              </div>
               <div
                 style={{
                   fontSize: "28px",
@@ -558,11 +552,9 @@ const Pricing: React.FC = () => {
                 border: `1px solid ${COLORS.border}`,
               }}
             >
-              <FaRocket
-                size={18}
-                color="#8B5CF6"
-                style={{ marginBottom: "8px" }}
-              />
+              <div style={{ marginBottom: "8px" }}>
+                <FaRocket size={18} color="#8B5CF6" />
+              </div>
               <div
                 style={{ fontSize: "28px", fontWeight: 800, color: "#8B5CF6" }}
               >
@@ -798,11 +790,9 @@ const Pricing: React.FC = () => {
                   position: "relative",
                 }}
               >
-                <FaQuoteLeft
-                  size={16}
-                  color={`${COLORS.primary}40`}
-                  style={{ marginBottom: "12px" }}
-                />
+                <div style={{ marginBottom: "12px" }}>
+                  <FaQuoteLeft size={16} color={`${COLORS.primary}40`} />
+                </div>
                 <p
                   style={{
                     color: COLORS.textSecondary,

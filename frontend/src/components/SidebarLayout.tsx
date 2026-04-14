@@ -362,7 +362,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
               border: `1px solid ${tierColor}25`,
             }}
           >
-            <FaCrown size={12} style={{ color: tierColor }} />
+            <FaCrown size={12} color={tierColor} />
             <span
               style={{
                 fontSize: 11,
