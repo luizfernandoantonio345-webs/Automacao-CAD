@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -6,6 +6,11 @@ import {
   Chip,
   Paper,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
   alpha,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -18,6 +23,11 @@ import {
   WifiOff,
   Download,
   Monitor,
+  X,
+  Terminal,
+  FileCode,
+  Copy,
+  CheckCheck,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -49,6 +59,8 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
   const theme = useTheme();
   const { status, cadStatus, error, connect, disconnect, isLoading } =
     useAutoCADConnection();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const config = STATUS_CONFIG[status];
   const isConnected = status === "connected";
@@ -62,8 +74,25 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
     }
   };
 
-  const handleInstallAgent = () => {
-    window.open("/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1", "_blank");
+  const REPO_BASE =
+    "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente";
+
+  const handleDownloadPS1 = () => {
+    window.open(`${REPO_BASE}/SINCRONIZADOR_INTELIGENTE.ps1`, "_blank");
+  };
+
+  const handleDownloadBAT = () => {
+    window.open(`${REPO_BASE}/../AutoSetup_License_Connect.bat`, "_blank");
+  };
+
+  const psCommand =
+    'Set-ExecutionPolicy Bypass -Scope Process -Force; irm "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1" | iex';
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(psCommand).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const accentColor = isConnected
@@ -219,7 +248,7 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
             {error || "Agente local não detectado."}
           </Typography>
           <Button
-            onClick={handleInstallAgent}
+            onClick={() => setDialogOpen(true)}
             variant="outlined"
             size="small"
             fullWidth
@@ -262,6 +291,196 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
           </Typography>
         </Box>
       )}
+
+      {/* Dialog de instalação do agente */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3, overflow: "hidden" },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+            color: "#fff",
+            py: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Download size={22} />
+            <span>Instalar Agente AutoCAD</span>
+          </Box>
+          <IconButton
+            onClick={() => setDialogOpen(false)}
+            size="small"
+            sx={{
+              color: "rgba(255,255,255,0.7)",
+              "&:hover": { color: "#fff" },
+            }}
+          >
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 3, pb: 1 }}>
+          {/* Opção 1 — Comando rápido */}
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Terminal size={16} /> Opção 1 — Comando rápido (PowerShell)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Abra o <b>PowerShell como Administrador</b> e cole o comando abaixo:
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              p: 1.5,
+              borderRadius: 2,
+              background: alpha(theme.palette.common.black, 0.04),
+              border: `1px solid ${theme.palette.divider}`,
+              mb: 2.5,
+            }}
+          >
+            <Box
+              component="code"
+              sx={{
+                flex: 1,
+                fontSize: "0.72rem",
+                fontFamily: "monospace",
+                wordBreak: "break-all",
+                color: "text.primary",
+              }}
+            >
+              {psCommand}
+            </Box>
+            <IconButton
+              onClick={handleCopy}
+              size="small"
+              sx={{ flexShrink: 0 }}
+            >
+              {copied ? (
+                <CheckCheck size={16} color={theme.palette.success.main} />
+              ) : (
+                <Copy size={16} />
+              )}
+            </IconButton>
+          </Box>
+
+          {/* Opção 2 — Download manual */}
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <FileCode size={16} /> Opção 2 — Download manual
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Baixe o script, salve na sua máquina e execute:
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+            <Button
+              onClick={handleDownloadPS1}
+              variant="contained"
+              size="small"
+              startIcon={<Download size={14} />}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.78rem",
+              }}
+            >
+              SINCRONIZADOR.ps1
+            </Button>
+            <Button
+              onClick={handleDownloadBAT}
+              variant="outlined"
+              size="small"
+              startIcon={<Download size={14} />}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.78rem",
+              }}
+            >
+              AutoSetup.bat
+            </Button>
+          </Box>
+
+          {/* Passos */}
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              background: alpha(theme.palette.info.main, 0.04),
+              borderColor: alpha(theme.palette.info.main, 0.2),
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                display: "block",
+                mb: 1,
+                color: theme.palette.info.main,
+              }}
+            >
+              Após instalar:
+            </Typography>
+            <Box
+              component="ol"
+              sx={{
+                m: 0,
+                pl: 2.5,
+                "& li": {
+                  fontSize: "0.78rem",
+                  color: "text.secondary",
+                  mb: 0.5,
+                },
+              }}
+            >
+              <li>O agente detecta o AutoCAD automaticamente</li>
+              <li>
+                O ícone acima mudará para{" "}
+                <b style={{ color: theme.palette.success.main }}>Conectado</b>
+              </li>
+              <li>Você poderá enviar comandos diretamente pelo app</li>
+            </Box>
+          </Paper>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          >
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
