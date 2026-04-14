@@ -818,7 +818,7 @@ const Pricing: React.FC = () => {
                   style={{ display: "flex", gap: "4px", marginBottom: "8px" }}
                 >
                   {[...Array(t.stars)].map((_, j) => (
-                    <FaStar key={j} size={12} color="#F59E0B" />
+                    <span key={j}><FaStar size={12} color="#F59E0B" /></span>
                   ))}
                 </div>
                 <div>

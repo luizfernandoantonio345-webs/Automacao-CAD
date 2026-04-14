@@ -332,7 +332,7 @@ const OnboardingWalkthrough: React.FC<Props> = ({ onNavigate }) => {
             }}
           >
             {[...Array(5)].map((_, i) => (
-              <FaStar key={i} size={14} color="#F59E0B" />
+              <span key={i}><FaStar size={14} color="#F59E0B" /></span>
             ))}
           </div>
           <p
