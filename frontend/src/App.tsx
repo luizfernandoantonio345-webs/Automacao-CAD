@@ -17,6 +17,7 @@ import { GlobalProvider } from "./context/GlobalContext";
 import { ToastProvider } from "./context/ToastContext";
 import { LicenseProvider } from "./context/LicenseContext";
 import DemoUpgradeModal from "./components/DemoUpgradeModal";
+import { FeatureGate } from "./components/FeatureGate";
 import { UIGuard } from "./middleware/UIGuard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import {
@@ -34,13 +35,15 @@ const GlobalSetup = lazy(() => import("./pages/GlobalSetup"));
 const CadConsole = lazy(() => import("./pages/CadConsole"));
 const CadDashboard = lazy(() => import("./pages/CadDashboard"));
 const AutoCADControl = lazy(() => import("./pages/AutoCADControl"));
-const AutoConnectPage = lazy(() => import("./pages/AutoConnectPage"));
 const AIDashboard = lazy(() => import("./pages/AIDashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const CncControl = lazy(() => import("./pages/CncControl"));
 const ChatCAD = lazy(() => import("./pages/ChatCAD"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const RolesManager = lazy(() => import("./pages/RolesManager"));
+const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -290,14 +293,7 @@ function AppContent() {
                   </SidebarLayout>
                 }
               />
-              <Route
-                path="/auto-connect"
-                element={
-                  <SidebarLayout>
-                    <AutoConnectPage />
-                  </SidebarLayout>
-                }
-              />
+
               <Route
                 path="/quality"
                 element={
@@ -332,17 +328,15 @@ function AppContent() {
               />
               <Route
                 path="/cad-dashboard"
-                element={
-                  <SidebarLayout>
-                    <CadDashboard />
-                  </SidebarLayout>
-                }
+                element={<Navigate to="/autopilot" replace />}
               />
               <Route
                 path="/cnc-control"
                 element={
                   <SidebarLayout>
-                    <CncControl />
+                    <FeatureGate requiredTier="professional">
+                      <CncControl />
+                    </FeatureGate>
                   </SidebarLayout>
                 }
               />
@@ -358,7 +352,9 @@ function AppContent() {
                 path="/analytics"
                 element={
                   <SidebarLayout>
-                    <AnalyticsDashboard />
+                    <FeatureGate requiredTier="professional">
+                      <AnalyticsDashboard />
+                    </FeatureGate>
                   </SidebarLayout>
                 }
               />
@@ -367,6 +363,36 @@ function AppContent() {
                 element={
                   <SidebarLayout>
                     <ChatCAD />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/admin-panel"
+                element={
+                  <SidebarLayout>
+                    <FeatureGate requiredTier="enterprise">
+                      <AdminPanel />
+                    </FeatureGate>
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/roles-manager"
+                element={
+                  <SidebarLayout>
+                    <FeatureGate requiredTier="enterprise">
+                      <RolesManager />
+                    </FeatureGate>
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/system-monitor"
+                element={
+                  <SidebarLayout>
+                    <FeatureGate requiredTier="enterprise">
+                      <SystemMonitor />
+                    </FeatureGate>
                   </SidebarLayout>
                 }
               />

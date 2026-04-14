@@ -119,6 +119,30 @@ RECONNECT_DELAY_S = 2.0
 BRIDGE_WRITE_RETRIES = 3
 BRIDGE_WRITE_RETRY_DELAY_S = 1.0
 
+# ── Timeout para operações COM (evita deadlock se AutoCAD travar) ──
+COM_OPERATION_TIMEOUT_S = float(os.getenv("AUTOCAD_COM_TIMEOUT", "30"))
+
+
+def _run_with_timeout(func, timeout: float, *args, **kwargs):
+    """
+    Executa uma função COM com timeout.
+    Retorna (success, result_or_error).
+    
+    Usa concurrent.futures para timeout seguro em Windows.
+    """
+    import concurrent.futures
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(func, *args, **kwargs)
+        try:
+            result = future.result(timeout=timeout)
+            return (True, result)
+        except concurrent.futures.TimeoutError:
+            logger.error("Operação COM timeout após %.1fs", timeout)
+            return (False, f"Timeout: operação AutoCAD excedeu {timeout}s")
+        except Exception as exc:
+            return (False, str(exc))
+
 
 @dataclass
 class DriverResult:
@@ -700,7 +724,7 @@ class AutoCADDriver:
         return False
 
     def _execute(self, operation: str, fn, *args, **kwargs) -> DriverResult:
-        """Executa uma operação COM com tratamento de erro e reconexão."""
+        """Executa uma operação COM com tratamento de erro, reconexão e timeout."""
         with self._lock:
             self._stats["operations_total"] += 1
 
@@ -725,9 +749,26 @@ class AutoCADDriver:
 
             with self._com_context():
                 try:
-                    result = fn(*args, **kwargs)
+                    # Executar COM operation com timeout para evitar deadlock
+                    success, result_or_error = _run_with_timeout(
+                        fn, COM_OPERATION_TIMEOUT_S, *args, **kwargs
+                    )
+                    
+                    if not success:
+                        self._stats["operations_failed"] += 1
+                        self._stats["last_error"] = result_or_error
+                        logger.error("Timeout/erro em %s: %s", operation, result_or_error)
+                        self._status = DriverStatus.ERROR
+                        return DriverResult(
+                            success=False,
+                            operation=operation,
+                            status=DriverStatus.ERROR.value,
+                            message=f"Falha em {operation}: {result_or_error}",
+                            details={"timeout_seconds": COM_OPERATION_TIMEOUT_S},
+                        )
+                    
                     self._stats["operations_success"] += 1
-                    return result
+                    return result_or_error
                 except Exception as exc:
                     self._stats["operations_failed"] += 1
                     self._stats["last_error"] = str(exc)
@@ -1105,6 +1146,120 @@ class AutoCADDriver:
             )
 
         return self._execute("save_document", _do_save)
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # FALLBACK EXECUTION — Queue-based retry with exponential backoff
+    # ═══════════════════════════════════════════════════════════════════════
+
+    def execute_command_with_fallback(self, operation: str, **kwargs) -> DriverResult:
+        """
+        Executa operação COM com fallback para fila Celery (retry).
+        
+        Se a operação COM falhar:
+        1. Retorna erro imediato COM falhou
+        2. Agenda tarefa Celery com retry exponencial (tentativas: 1, 2, 4 segundos)
+        3. Cliente pode usar webhook/SSE para rastrear retry
+        
+        Args:
+            operation: Nome da operação (draw_pipe, draw_line, etc)
+            **kwargs: Parâmetros específicos da operação
+        
+        Returns:
+            DriverResult com status de execução (sucesso COM ou fallback agendado)
+        """
+        try:
+            # Tentar executar imediatamente via COM/Bridge
+            if operation == "draw_pipe":
+                result = self.draw_pipe(
+                    points=kwargs.get("points", []),
+                    diameter=kwargs.get("diameter", 6.0),
+                    layer=kwargs.get("layer", "PIPE-PROCESS"),
+                )
+            elif operation == "draw_line":
+                result = self.draw_line(
+                    start=kwargs.get("start", [0, 0, 0]),
+                    end=kwargs.get("end", [1, 1, 0]),
+                    layer=kwargs.get("layer", "PIPE-PROCESS"),
+                )
+            elif operation == "insert_component":
+                result = self.insert_component(
+                    block_name=kwargs.get("block_name", ""),
+                    coordinate=kwargs.get("coordinate", [0, 0, 0]),
+                    rotation=kwargs.get("rotation", 0.0),
+                    scale=kwargs.get("scale", 1.0),
+                    layer=kwargs.get("layer", "VALVE"),
+                )
+            elif operation == "send_command":
+                result = self.send_command(command=kwargs.get("command", ""))
+            else:
+                return DriverResult(
+                    success=False,
+                    operation=operation,
+                    status=self.status,
+                    message=f"Operação desconhecida: {operation}",
+                )
+            
+            # Se sucesso, retornar imediatamente
+            if result.success:
+                return result
+            
+            # Se falhou COM, agendar fallback Celery
+            logger.warning(
+                "COM falhou para %s, agendando fallback Celery: %s",
+                operation, result.message
+            )
+            
+            # Schedule Celery task for retry
+            try:
+                from celery_tasks import execute_autocad_command_retry
+                
+                # Importar também para verificar se Celery está disponível
+                task_result = execute_autocad_command_retry.apply_async(
+                    args=[operation, kwargs],
+                    retry=True,
+                    retry_policy={
+                        "max_retries": 3,
+                        "interval_start": 1,
+                        "interval_step": 1,
+                        "interval_max": 4,
+                    }
+                )
+                
+                logger.info(
+                    "Celery fallback agendado: task_id=%s, operation=%s",
+                    task_result.id, operation
+                )
+                
+                return DriverResult(
+                    success=True,  # Retry agendado = sucesso (será executado)
+                    operation=operation,
+                    status="queued",
+                    message=f"Operação {operation} falhou em COM, retry agendado via Celery",
+                    details={
+                        "task_id": task_result.id,
+                        "fallback": "celery_queue",
+                        "max_retries": 3,
+                        "retry_delays": [1, 2, 4],
+                    }
+                )
+            except ImportError:
+                logger.error("Celery não disponível para fallback")
+                return DriverResult(
+                    success=False,
+                    operation=operation,
+                    status=self.status,
+                    message=f"Operação falhou em COM e Celery não disponível: {result.message}",
+                    details={"original_error": result.message},
+                )
+        
+        except Exception as exc:
+            logger.error("Erro em execute_command_with_fallback: %s", exc, exc_info=True)
+            return DriverResult(
+                success=False,
+                operation=operation,
+                status="error",
+                message=f"Erro inesperado: {exc}",
+            )
 
     def get_const(self, name: str) -> Any:
         """Retorna o valor normalizado de uma constante CAD para o engine ativo."""

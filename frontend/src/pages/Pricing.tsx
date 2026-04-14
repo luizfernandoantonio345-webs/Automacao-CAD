@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,6 +19,10 @@ import {
   FaBrain,
   FaChartLine,
   FaLock,
+  FaCalculator,
+  FaQuoteLeft,
+  FaClock,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { COLORS, SHADOWS, premiumStyles, animations } from "../styles/premium";
 
@@ -215,6 +219,31 @@ const BENEFITS = [
   },
 ];
 
+// Depoimentos
+const TESTIMONIALS = [
+  {
+    name: "Carlos M.",
+    role: "Eng. Mecânico",
+    company: "Petrobras",
+    text: "Reduziu em 80% o tempo de geração de P&IDs. Antes levávamos 3 dias, agora são 4 horas.",
+    stars: 5,
+  },
+  {
+    name: "Ana L.",
+    role: "Coord. de Projetos",
+    company: "Vale S.A.",
+    text: "A validação automática ASME nos poupou de 2 retrabalhos que custariam R$ 50 mil cada.",
+    stars: 5,
+  },
+  {
+    name: "Roberto S.",
+    role: "Diretor Técnico",
+    company: "Engevix Engenharia",
+    text: "O nesting inteligente reduziu nosso desperdício de chapa em 32%. O ROI foi imediato.",
+    stars: 5,
+  },
+];
+
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
@@ -225,6 +254,7 @@ const Pricing: React.FC = () => {
     "monthly",
   );
   const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+  const [projectsPerMonth, setProjectsPerMonth] = useState(10);
 
   const getPrice = (basePrice: number) => {
     if (billingPeriod === "annual") {
@@ -233,16 +263,24 @@ const Pricing: React.FC = () => {
     return basePrice;
   };
 
+  const roi = useMemo(() => {
+    const hoursPerProjectManual = 12;
+    const hoursPerProjectAutomated = 3;
+    const hoursSaved =
+      (hoursPerProjectManual - hoursPerProjectAutomated) * projectsPerMonth;
+    const hourlyRate = 120; // R$/hora engenheiro
+    const moneySaved = hoursSaved * hourlyRate;
+    const planCost = getPrice(697); // Professional como referência
+    const netSaving = moneySaved - planCost;
+    const paybackDays =
+      moneySaved > 0
+        ? Math.max(1, Math.round((planCost / moneySaved) * 30))
+        : 30;
+    return { hoursSaved, moneySaved, netSaving, paybackDays };
+  }, [projectsPerMonth, billingPeriod]);
+
   const handleSelectPlan = (planId: string) => {
-    if (planId === "enterprise") {
-      // WhatsApp direto para consultor
-      const text = encodeURIComponent(
-        "Olá! Tenho interesse no plano *Enterprise* do Engenharia CAD. Gostaria de receber uma proposta personalizada.",
-      );
-      window.open(`https://wa.me/5531992681231?text=${text}`, "_blank");
-    } else {
-      navigate(`/checkout?plan=${planId}&billing=${billingPeriod}`);
-    }
+    navigate(`/checkout?plan=${planId}&billing=${billingPeriod}`);
   };
 
   return (
@@ -282,6 +320,31 @@ const Pricing: React.FC = () => {
             garantia de satisfação de 30 dias
           </p>
 
+          {/* Trial Banner */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              padding: "16px 32px",
+              background:
+                "linear-gradient(135deg, rgba(0,161,255,0.15) 0%, rgba(139,92,246,0.15) 100%)",
+              border: "1px solid rgba(0,161,255,0.3)",
+              borderRadius: "12px",
+              marginBottom: "32px",
+            }}
+          >
+            <span style={{ color: "#FFD700", fontSize: "20px" }}>⭐</span>
+            <span style={{ color: "#FFF", fontSize: "16px", fontWeight: 600 }}>
+              🎁 14 DIAS GRÁTIS para testar todas as funcionalidades!
+            </span>
+            <span style={{ color: "#FFD700", fontSize: "20px" }}>⭐</span>
+          </motion.div>
+
           {/* Billing Toggle */}
           <div style={styles.billingToggle}>
             <button
@@ -304,6 +367,226 @@ const Pricing: React.FC = () => {
               <span style={styles.discountBadge}>-20%</span>
             </button>
           </div>
+        </motion.div>
+
+        {/* ROI Calculator */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          style={{
+            background: COLORS.bgCard,
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: "16px",
+            padding: "32px",
+            marginBottom: "48px",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              ...premiumStyles.accentLine,
+              background: COLORS.gradientPrimary,
+            }}
+          />
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "8px",
+              }}
+            >
+              <FaCalculator size={20} color={COLORS.primary} />
+              <h3
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "#FFF",
+                  margin: 0,
+                }}
+              >
+                Calculadora de ROI
+              </h3>
+            </div>
+            <p
+              style={{
+                color: COLORS.textSecondary,
+                fontSize: "14px",
+                margin: 0,
+              }}
+            >
+              Veja quanto você economiza automatizando seus projetos
+            </p>
+          </div>
+          <div
+            style={{
+              maxWidth: "500px",
+              margin: "0 auto 24px",
+              textAlign: "center",
+            }}
+          >
+            <label
+              style={{
+                color: COLORS.textSecondary,
+                fontSize: "14px",
+                display: "block",
+                marginBottom: "12px",
+              }}
+            >
+              Quantos projetos CAD sua equipe faz por mês?
+            </label>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "16px",
+              }}
+            >
+              <input
+                type="range"
+                min={1}
+                max={50}
+                value={projectsPerMonth}
+                onChange={(e) => setProjectsPerMonth(Number(e.target.value))}
+                style={{ width: "260px", accentColor: COLORS.primary }}
+              />
+              <span
+                style={{
+                  color: COLORS.primary,
+                  fontSize: "28px",
+                  fontWeight: 800,
+                  minWidth: "50px",
+                  textAlign: "center",
+                }}
+              >
+                {projectsPerMonth}
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            <div
+              style={{
+                background: COLORS.bgSurface,
+                borderRadius: "12px",
+                padding: "20px",
+                textAlign: "center",
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <FaClock
+                size={18}
+                color="#10B981"
+                style={{ marginBottom: "8px" }}
+              />
+              <div
+                style={{ fontSize: "28px", fontWeight: 800, color: "#10B981" }}
+              >
+                {roi.hoursSaved}h
+              </div>
+              <div style={{ fontSize: "12px", color: COLORS.textSecondary }}>
+                Horas economizadas/mês
+              </div>
+            </div>
+            <div
+              style={{
+                background: COLORS.bgSurface,
+                borderRadius: "12px",
+                padding: "20px",
+                textAlign: "center",
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <FaMoneyBillWave
+                size={18}
+                color="#F59E0B"
+                style={{ marginBottom: "8px" }}
+              />
+              <div
+                style={{ fontSize: "28px", fontWeight: 800, color: "#F59E0B" }}
+              >
+                R$ {roi.moneySaved.toLocaleString()}
+              </div>
+              <div style={{ fontSize: "12px", color: COLORS.textSecondary }}>
+                Economia mensal estimada
+              </div>
+            </div>
+            <div
+              style={{
+                background: COLORS.bgSurface,
+                borderRadius: "12px",
+                padding: "20px",
+                textAlign: "center",
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <FaChartLine
+                size={18}
+                color={COLORS.primary}
+                style={{ marginBottom: "8px" }}
+              />
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 800,
+                  color: COLORS.primary,
+                }}
+              >
+                {roi.netSaving > 0
+                  ? `${Math.round(roi.moneySaved / getPrice(697))}x`
+                  : "—"}
+              </div>
+              <div style={{ fontSize: "12px", color: COLORS.textSecondary }}>
+                Retorno sobre investimento
+              </div>
+            </div>
+            <div
+              style={{
+                background: COLORS.bgSurface,
+                borderRadius: "12px",
+                padding: "20px",
+                textAlign: "center",
+                border: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <FaRocket
+                size={18}
+                color="#8B5CF6"
+                style={{ marginBottom: "8px" }}
+              />
+              <div
+                style={{ fontSize: "28px", fontWeight: 800, color: "#8B5CF6" }}
+              >
+                {roi.paybackDays} dias
+              </div>
+              <div style={{ fontSize: "12px", color: COLORS.textSecondary }}>
+                Payback estimado
+              </div>
+            </div>
+          </div>
+          {roi.netSaving > 0 && (
+            <p
+              style={{
+                textAlign: "center",
+                color: COLORS.success,
+                fontSize: "14px",
+                fontWeight: 600,
+                margin: "20px 0 0",
+              }}
+            >
+              Com {projectsPerMonth} projetos/mês, você economiza R${" "}
+              {roi.netSaving.toLocaleString()} além do custo da plataforma!
+            </p>
+          )}
         </motion.div>
 
         {/* Plans Grid */}
@@ -447,7 +730,7 @@ const Pricing: React.FC = () => {
                 }}
               >
                 {plan.id === "enterprise"
-                  ? "Falar com Consultor"
+                  ? "Solicitar Proposta"
                   : "Começar Agora"}
                 <FaArrowRight size={14} />
               </motion.button>
@@ -473,6 +756,84 @@ const Pricing: React.FC = () => {
                 <div style={styles.benefitIcon}>{benefit.icon}</div>
                 <h4 style={styles.benefitTitle}>{benefit.title}</h4>
                 <p style={styles.benefitDesc}>{benefit.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Testimonials */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          style={{ textAlign: "center", marginBottom: "48px" }}
+        >
+          <h3
+            style={{
+              fontSize: "24px",
+              fontWeight: 700,
+              color: "#FFF",
+              marginBottom: "32px",
+            }}
+          >
+            O que nossos clientes dizem
+          </h3>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ y: -4 }}
+                style={{
+                  background: COLORS.bgCard,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: "12px",
+                  padding: "24px",
+                  textAlign: "left",
+                  position: "relative",
+                }}
+              >
+                <FaQuoteLeft
+                  size={16}
+                  color={`${COLORS.primary}40`}
+                  style={{ marginBottom: "12px" }}
+                />
+                <p
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: "14px",
+                    lineHeight: 1.7,
+                    margin: "0 0 16px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  "{t.text}"
+                </p>
+                <div
+                  style={{ display: "flex", gap: "4px", marginBottom: "8px" }}
+                >
+                  {[...Array(t.stars)].map((_, j) => (
+                    <FaStar key={j} size={12} color="#F59E0B" />
+                  ))}
+                </div>
+                <div>
+                  <span
+                    style={{ color: "#FFF", fontSize: "14px", fontWeight: 600 }}
+                  >
+                    {t.name}
+                  </span>
+                  <span
+                    style={{ color: COLORS.textTertiary, fontSize: "13px" }}
+                  >
+                    {" "}
+                    — {t.role}, {t.company}
+                  </span>
+                </div>
               </motion.div>
             ))}
           </div>

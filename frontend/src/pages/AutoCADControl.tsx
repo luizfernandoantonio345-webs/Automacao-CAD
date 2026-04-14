@@ -110,6 +110,7 @@ const now = (): string =>
   new Date().toLocaleTimeString("pt-BR", { hour12: false });
 
 const AutoCADControl: React.FC = () => {
+  const { theme } = useTheme();
   const { addToast, handleApiError } = useToast();
 
   // ── Status do Driver ──
@@ -558,29 +559,29 @@ const AutoCADControl: React.FC = () => {
   const statusColor = (s: string | undefined) => {
     switch (s) {
       case "Bridge":
-        return "#00BFFF";
+        return theme.accentInfo || theme.accentPrimary;
       case "Connected":
       case "Cloud":
-        return "#00FF87";
+        return theme.accentSecondary;
       case "Simulation":
-        return "#FFD700";
+        return theme.accentWarning;
       case "Recovering":
-        return "#FFA500";
+        return theme.warning;
       default:
-        return "#FF4444";
+        return theme.accentDanger;
     }
   };
 
   const logColor = (level: LogEntry["level"]) => {
     switch (level) {
       case "OK":
-        return "#00FF87";
+        return theme.accentSecondary;
       case "ERR":
-        return "#FF4444";
+        return theme.accentDanger;
       case "CMD":
-        return "#00BFFF";
+        return theme.accentInfo || theme.accentPrimary;
       default:
-        return "#888";
+        return theme.textSecondary;
     }
   };
 
@@ -588,7 +589,6 @@ const AutoCADControl: React.FC = () => {
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════
 
-  const { theme } = useTheme();
   const st = buildUIStyles(theme);
 
   return (

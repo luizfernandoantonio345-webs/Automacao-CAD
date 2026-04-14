@@ -162,18 +162,17 @@ agent_app.include_router(autocad_debug_router)
 @agent_app.get("/health")
 def agent_health():
     """Health check do agente — público, sem autenticação."""
+    from agent.cad_manager import build_default_manager
+    manager = build_default_manager()
+    status = manager.status()
     driver_info = acad_driver.health_check()
     return {
         "agent": "ForgeLink",
         "version": "1.0.0",
         "status": "online",
         "port": AGENT_PORT,
-        "central_server": CENTRAL_SERVER_URL,
-        "autocad_driver": {
-            "status": driver_info.get("driver_status"),
-            "com_available": driver_info.get("com_available"),
-            "document": driver_info.get("document"),
-        },
+        "cad_manager": status,
+        "autocad_driver": driver_info,
         "hwid_prefix": MACHINE_HWID[:8] + "...",
         "system": {
             "cpu": psutil.cpu_percent(),

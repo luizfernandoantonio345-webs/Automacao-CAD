@@ -27,7 +27,15 @@ _DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 _USE_PG = _DATABASE_URL.startswith("postgresql://") or _DATABASE_URL.startswith("postgres://")
 _IS_VERCEL = bool(os.getenv("VERCEL"))
 _IS_PRODUCTION = os.getenv("VERCEL_ENV") == "production" or os.getenv("APP_ENV") == "production"
+_ALLOW_EPHEMERAL = os.getenv("ALLOW_EPHEMERAL_DB", "").strip().lower() in ("true", "1", "yes")
 _EPHEMERAL_MODE = False
+
+if _IS_PRODUCTION and not _USE_PG and not _ALLOW_EPHEMERAL:
+    raise RuntimeError(
+        "DATABASE_URL é obrigatório em produção e deve apontar para PostgreSQL. "
+        "SQLite local/efêmero não é permitido nesse ambiente. "
+        "Para demo/MVP, defina ALLOW_EPHEMERAL_DB=true (dados serão perdidos entre deploys)."
+    )
 
 if _USE_PG:
     import psycopg2
@@ -37,7 +45,8 @@ else:
     _DB_PATH = Path(os.getenv("ENGCAD_DB_PATH", ""))
     if not _DB_PATH.name:
         if _IS_VERCEL:
-            _DB_PATH = Path("/tmp/engcad.db")
+            # Vercel serverless requer /tmp para SQLite
+            _DB_PATH = Path("/tmp/engcad.db")  # nosec B108
             _EPHEMERAL_MODE = True
             if _IS_PRODUCTION:
                 logger.warning(
@@ -51,6 +60,13 @@ else:
 
 _LOCAL = threading.local()
 
+# ── Pool de conexões integrado ───────────────────────────────────────────────
+try:
+    from backend.database.connection_pool import get_pool, SQLitePool
+    _POOL_AVAILABLE = True
+except ImportError:
+    _POOL_AVAILABLE = False
+
 
 def is_ephemeral() -> bool:
     """Retorna True se o banco é temporário (perderá dados entre deploys)."""
@@ -58,11 +74,15 @@ def is_ephemeral() -> bool:
 
 
 def _get_conn():
-    """Uma conexão por thread (SQLite thread-safety / PG pool)."""
+    """Uma conexão por thread (SQLite thread-safety / PG pool).
+    
+    Usa connection pool quando disponível para melhor suporte multi-usuário.
+    Falls back para thread-local quando o pool não está disponível.
+    """
+    # Fallback: usa thread-local (compatibilidade)
     conn = getattr(_LOCAL, "conn", None)
     if conn is not None:
         if _USE_PG:
-            # Verificar se a conexão PG ainda está viva
             try:
                 conn.cursor().execute("SELECT 1")
             except Exception:
@@ -92,7 +112,17 @@ def _q(sql: str) -> str:
 
 @contextmanager
 def get_db():
-    """Context manager para transações."""
+    """Context manager para transações.
+    
+    Usa pool de conexões quando disponível (multi-user safe),
+    fallback para thread-local quando não.
+    """
+    if _POOL_AVAILABLE and not _USE_PG:
+        pool = get_pool()
+        if isinstance(pool, SQLitePool):
+            with pool.acquire() as conn:
+                yield conn
+            return
     conn = _get_conn()
     try:
         yield conn
@@ -175,6 +205,15 @@ CREATE TABLE IF NOT EXISTS uploads (
     status      TEXT DEFAULT 'uploaded',
     created_at  REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS licenses (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    username    TEXT UNIQUE NOT NULL,
+    hwid        TEXT NOT NULL,
+    registered_at REAL NOT NULL,
+    last_seen   REAL,
+    access_count INTEGER DEFAULT 1
+);
 """
 
 _PG_TABLES = [
@@ -230,6 +269,14 @@ _PG_TABLES = [
         projects_generated INTEGER DEFAULT 0,
         status      TEXT DEFAULT 'uploaded',
         created_at  DOUBLE PRECISION NOT NULL
+    )""",
+    """CREATE TABLE IF NOT EXISTS licenses (
+        id          SERIAL PRIMARY KEY,
+        username    TEXT UNIQUE NOT NULL,
+        hwid        TEXT NOT NULL,
+        registered_at DOUBLE PRECISION NOT NULL,
+        last_seen   DOUBLE PRECISION,
+        access_count INTEGER DEFAULT 1
     )""",
 ]
 
@@ -370,16 +417,18 @@ def create_project(user_email: str, data: dict) -> int:
 
 
 def update_project(project_id: int, **kwargs: Any) -> None:
+    # Lista fixa de colunas permitidas (whitelist) - seguro contra SQL injection
     allowed = {"status", "lsp_path", "dxf_path", "csv_path", "clash_count",
                "norms_checked", "norms_passed", "piping_spec", "completed_at"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
         return
-    cols = ", ".join(f"{k} = ?" for k in updates)
+    # Colunas são de whitelist fixa, valores são parametrizados
+    cols = ", ".join(f"{k} = ?" for k in updates)  # nosec B608 - whitelist
     vals = list(updates.values())
     vals.append(project_id)
     with get_db() as conn:
-        conn.execute(_q(f"UPDATE projects SET {cols} WHERE id = ?"), vals)
+        conn.execute(_q(f"UPDATE projects SET {cols} WHERE id = ?"), vals)  # nosec B608
 
 
 def get_project(project_id: int) -> dict | None:
@@ -474,15 +523,17 @@ def create_upload(user_email: str, filename: str, file_path: str) -> int:
 
 
 def update_upload(upload_id: int, **kwargs: Any) -> None:
+    # Lista fixa de colunas permitidas (whitelist) - seguro contra SQL injection
     allowed = {"row_count", "projects_generated", "status"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
         return
-    cols = ", ".join(f"{k} = ?" for k in updates)
+    # Colunas são de whitelist fixa, valores são parametrizados
+    cols = ", ".join(f"{k} = ?" for k in updates)  # nosec B608 - whitelist
     vals = list(updates.values())
     vals.append(upload_id)
     with get_db() as conn:
-        conn.execute(_q(f"UPDATE uploads SET {cols} WHERE id = ?"), vals)
+        conn.execute(_q(f"UPDATE uploads SET {cols} WHERE id = ?"), vals)  # nosec B608
 
 
 def get_uploads(user_email: str | None = None, limit: int = 20) -> list[dict]:
@@ -507,7 +558,20 @@ def seed_default_user() -> None:
         count = cur.execute("SELECT COUNT(*) as c FROM users").fetchone()
         count = dict(count)["c"]
     if count == 0:
-        default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", "admin123")
+        default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", "").strip()
+        if not default_pw:
+            if _IS_PRODUCTION:
+                raise RuntimeError(
+                    "ENGCAD_ADMIN_PASSWORD é obrigatório em produção para criação do usuário admin inicial."
+                )
+            import secrets
+
+            default_pw = secrets.token_urlsafe(24)
+            logger.warning(
+                "ENGCAD_ADMIN_PASSWORD não definido; senha admin efêmera gerada para ambiente não-produtivo."
+            )
+        if _IS_PRODUCTION and len(default_pw) < 12:
+            raise RuntimeError("ENGCAD_ADMIN_PASSWORD deve ter ao menos 12 caracteres em produção.")
         create_user(
             email="tony@engenharia-cad.com",
             username="tony",
@@ -527,3 +591,54 @@ def seed_default_user() -> None:
                 )
             except Exception:
                 pass  # coluna tier pode não existir em DB legado
+
+
+# ─── Funções de licença (HWID) ──────────────────────────────────────────────
+
+def get_license(username: str) -> dict | None:
+    """Busca licença pelo username."""
+    with get_db() as conn:
+        cur = conn.cursor() if _USE_PG else conn
+        row = cur.execute(
+            _q("SELECT * FROM licenses WHERE username = ?"), (username,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def create_license(username: str, hwid: str) -> dict:
+    """Cria nova licença vinculando username ao HWID."""
+    now = time.time()
+    with get_db() as conn:
+        conn.execute(
+            _q("INSERT INTO licenses (username, hwid, registered_at, last_seen, access_count) VALUES (?, ?, ?, ?, 1)"),
+            (username, hwid, now, now),
+        )
+    return {"username": username, "hwid": hwid, "registered_at": now, "last_seen": now, "access_count": 1}
+
+
+def update_license_access(username: str) -> None:
+    """Atualiza last_seen e incrementa access_count."""
+    with get_db() as conn:
+        conn.execute(
+            _q("UPDATE licenses SET last_seen = ?, access_count = access_count + 1 WHERE username = ?"),
+            (time.time(), username),
+        )
+
+
+def delete_license(username: str) -> bool:
+    """Remove licença de um usuário (para transferência de máquina)."""
+    with get_db() as conn:
+        cur = conn.cursor() if _USE_PG else conn
+        cur.execute(_q("DELETE FROM licenses WHERE username = ?"), (username,))
+        # Verificar se alguma linha foi afetada
+        return cur.rowcount > 0 if hasattr(cur, 'rowcount') else True
+
+
+def list_all_licenses(limit: int = 100) -> list[dict]:
+    """Lista todas as licenças registradas."""
+    with get_db() as conn:
+        cur = conn.cursor() if _USE_PG else conn
+        rows = cur.execute(
+            _q("SELECT * FROM licenses ORDER BY last_seen DESC LIMIT ?"), (limit,)
+        ).fetchall()
+    return [dict(r) for r in rows]

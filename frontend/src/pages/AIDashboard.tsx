@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   FaBrain,
   FaRobot,
@@ -13,10 +13,16 @@ import {
   FaSync,
   FaCog,
   FaPaperPlane,
+  FaDownload,
+  FaPlay,
+  FaWrench,
+  FaCalendarCheck,
+  FaClipboardList,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 import { API_BASE_URL } from "../services/api";
 import createStyles, { spacing, radius } from "../styles/shared";
+import QuotaCard from "../components/QuotaCard";
 
 // ── Tipos ──
 interface AIEngine {
@@ -44,50 +50,63 @@ interface AnalysisResult {
   timestamp: Date;
 }
 
-// ── Configuração das IAs ──
+// ── Configuração das IAs (Nomes em Português) ──
 const AI_ENGINES_CONFIG: Record<
   string,
-  { icon: React.ReactNode; color: string; description: string }
+  {
+    icon: React.ReactNode;
+    color: string;
+    description: string;
+    displayName: string;
+  }
 > = {
   DrawingAnalyzerAI: {
     icon: <FaRoute />,
     color: "#00D4FF",
+    displayName: "Analisador de Desenhos",
     description:
       "Analisa desenhos CAD, extrai componentes, valida normas técnicas",
   },
   PipeOptimizerAI: {
     icon: <FaRoute />,
     color: "#00FF94",
+    displayName: "Otimizador de Rotas",
     description: "Otimiza rotas de tubulação, calcula materiais e custos",
   },
   ConflictDetectorAI: {
     icon: <FaExclamationTriangle />,
     color: "#FF6B6B",
+    displayName: "Detector de Conflitos",
     description: "Detecta colisões e interferências entre componentes",
   },
   CostEstimatorAI: {
     icon: <FaDollarSign />,
     color: "#FFD93D",
+    displayName: "Estimador de Custos",
     description: "Estima custos, gera MTO e relatórios financeiros",
   },
   QualityInspectorAI: {
     icon: <FaCheckCircle />,
     color: "#6BCB77",
+    displayName: "Inspetor de Qualidade",
     description: "Inspeção automática de qualidade e conformidade",
   },
   DocumentGeneratorAI: {
     icon: <FaFileAlt />,
     color: "#9B59B6",
+    displayName: "Gerador de Documentos",
     description: "Gera documentação técnica automaticamente",
   },
   MaintenancePredictorAI: {
     icon: <FaTools />,
     color: "#FF8C00",
+    displayName: "Preditor de Manutenção",
     description: "Predição de manutenção baseada em padrões",
   },
   AssistantChatbotAI: {
     icon: <FaComments />,
     color: "#00B4D8",
+    displayName: "Assistente Técnico",
     description: "Assistente técnico com conhecimento CAD/Industrial",
   },
 };
@@ -103,6 +122,7 @@ const AICard: React.FC<{
     icon: <FaBrain />,
     color: theme.accentPrimary,
     description: engine.description,
+    displayName: engine.name.replace("AI", ""),
   };
 
   return (
@@ -112,7 +132,7 @@ const AICard: React.FC<{
         background: isSelected
           ? `linear-gradient(135deg, ${config.color}20 0%, ${theme.bgSecondary} 100%)`
           : theme.bgSecondary,
-        border: `2px solid ${isSelected ? config.color : theme.borderColor}`,
+        border: `2px solid ${isSelected ? config.color : theme.border}`,
         borderRadius: radius.lg,
         padding: spacing.md,
         cursor: "pointer",
@@ -152,7 +172,7 @@ const AICard: React.FC<{
               margin: 0,
             }}
           >
-            {engine.name.replace("AI", "")}
+            {config.displayName}
           </h3>
           <span
             style={{
@@ -237,7 +257,7 @@ const ChatInterface: React.FC<{
       style={{
         background: theme.bgSecondary,
         borderRadius: radius.lg,
-        border: `1px solid ${theme.borderColor}`,
+        border: `1px solid ${theme.border}`,
         display: "flex",
         flexDirection: "column",
         height: 400,
@@ -342,7 +362,7 @@ const ChatInterface: React.FC<{
             flex: 1,
             padding: spacing.sm,
             borderRadius: radius.md,
-            border: `1px solid ${theme.borderColor}`,
+            border: `1px solid ${theme.border}`,
             background: theme.bgPrimary,
             color: theme.textPrimary,
             outline: "none",
@@ -381,7 +401,7 @@ const AnalysisPanel: React.FC<{
         style={{
           background: theme.bgSecondary,
           borderRadius: radius.lg,
-          border: `1px solid ${theme.borderColor}`,
+          border: `1px solid ${theme.border}`,
           padding: spacing.xl,
           textAlign: "center",
           color: theme.textSecondary,
@@ -408,7 +428,7 @@ const AnalysisPanel: React.FC<{
       style={{
         background: theme.bgSecondary,
         borderRadius: radius.lg,
-        border: `1px solid ${theme.borderColor}`,
+        border: `1px solid ${theme.border}`,
         padding: spacing.md,
       }}
     >
@@ -435,7 +455,7 @@ const AnalysisPanel: React.FC<{
           {config?.icon}
         </div>
         <span style={{ color: theme.textPrimary, fontWeight: 600 }}>
-          {selectedEngine.name.replace("AI", "")}
+          {config?.displayName || selectedEngine.name.replace("AI", "")}
         </span>
       </div>
 
@@ -458,7 +478,7 @@ const AnalysisPanel: React.FC<{
               style={{
                 padding: `${spacing.xs} ${spacing.sm}`,
                 borderRadius: radius.md,
-                border: `1px solid ${theme.borderColor}`,
+                border: `1px solid ${theme.border}`,
                 background: theme.bgPrimary,
                 color: theme.textPrimary,
                 cursor: loading ? "not-allowed" : "pointer",
@@ -534,6 +554,770 @@ const AnalysisPanel: React.FC<{
   );
 };
 
+// ── Panel de Estimativa de Custos ──
+const CostEstimatorPanel: React.FC<{
+  theme: ReturnType<typeof useTheme>["theme"];
+  onSubmit: (data: any) => Promise<any>;
+}> = ({ theme, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    project_name: "",
+    materials: "Aço Carbono ASTM A106",
+    labor_hours: 100,
+    complexity: "medium",
+  });
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const res = await onSubmit(formData);
+      setResult(res);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: theme.bgSecondary,
+        borderRadius: radius.lg,
+        border: `1px solid ${theme.border}`,
+        padding: spacing.md,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: radius.md,
+            background: "#FFD93D20",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#FFD93D",
+          }}
+        >
+          <FaDollarSign />
+        </div>
+        <div>
+          <h3
+            style={{
+              color: theme.textPrimary,
+              fontWeight: 600,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            Estimativa de Custos
+          </h3>
+          <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+            CostEstimator AI
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}
+      >
+        <input
+          placeholder="Nome do Projeto"
+          value={formData.project_name}
+          onChange={(e) =>
+            setFormData({ ...formData, project_name: e.target.value })
+          }
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: `1px solid ${theme.border}`,
+            background: theme.bgPrimary,
+            color: theme.textPrimary,
+            outline: "none",
+          }}
+        />
+        <select
+          value={formData.materials}
+          onChange={(e) =>
+            setFormData({ ...formData, materials: e.target.value })
+          }
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: `1px solid ${theme.border}`,
+            background: theme.bgPrimary,
+            color: theme.textPrimary,
+            outline: "none",
+          }}
+        >
+          <option value="Aço Carbono ASTM A106">Aço Carbono ASTM A106</option>
+          <option value="Aço Inox 316L">Aço Inox 316L</option>
+          <option value="Inconel 625">Inconel 625</option>
+          <option value="Hastelloy C-276">Hastelloy C-276</option>
+        </select>
+        <div style={{ display: "flex", gap: spacing.sm }}>
+          <input
+            type="number"
+            placeholder="Horas de trabalho"
+            value={formData.labor_hours}
+            onChange={(e) =>
+              setFormData({ ...formData, labor_hours: Number(e.target.value) })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          />
+          <select
+            value={formData.complexity}
+            onChange={(e) =>
+              setFormData({ ...formData, complexity: e.target.value })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          >
+            <option value="low">Baixa complexidade</option>
+            <option value="medium">Média complexidade</option>
+            <option value="high">Alta complexidade</option>
+          </select>
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !formData.project_name}
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: "none",
+            background: loading ? theme.textSecondary : "#FFD93D",
+            color: "#000",
+            cursor: loading ? "not-allowed" : "pointer",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: spacing.xs,
+          }}
+        >
+          {loading ? (
+            <span style={{ animation: "spin 1s linear infinite" }}>
+              <FaSync />
+            </span>
+          ) : (
+            <FaPlay />
+          )}{" "}
+          {loading ? "Calculando..." : "Estimar Custo"}
+        </button>
+      </div>
+
+      {result && (
+        <div
+          style={{
+            marginTop: spacing.md,
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            background: theme.bgPrimary,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: spacing.xs,
+            }}
+          >
+            <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+              RESULTADO
+            </span>
+            <span style={{ color: "#00FF94", fontSize: 11 }}>✓ Estimado</span>
+          </div>
+          <div
+            style={{ color: theme.textPrimary, fontSize: 20, fontWeight: 700 }}
+          >
+            R${" "}
+            {result?.data?.total_cost?.toLocaleString("pt-BR") ||
+              result?.total_cost?.toLocaleString("pt-BR") ||
+              "---"}
+          </div>
+          <div
+            style={{
+              color: theme.textSecondary,
+              fontSize: 11,
+              marginTop: spacing.xs,
+            }}
+          >
+            Materiais: R${" "}
+            {result?.data?.material_cost?.toLocaleString("pt-BR") || "---"} |
+            Mão de obra: R${" "}
+            {result?.data?.labor_cost?.toLocaleString("pt-BR") || "---"}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Panel de Predição de Manutenção ──
+const MaintenancePredictorPanel: React.FC<{
+  theme: ReturnType<typeof useTheme>["theme"];
+  onSubmit: (data: any) => Promise<any>;
+}> = ({ theme, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    equipment_type: "pipe_segment",
+    operating_hours: 8760,
+    last_maintenance: "2024-01-15",
+    pressure_bar: 10,
+    temperature_c: 150,
+  });
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const res = await onSubmit(formData);
+      setResult(res);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: theme.bgSecondary,
+        borderRadius: radius.lg,
+        border: `1px solid ${theme.border}`,
+        padding: spacing.md,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: radius.md,
+            background: "#FF8C0020",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#FF8C00",
+          }}
+        >
+          <FaWrench />
+        </div>
+        <div>
+          <h3
+            style={{
+              color: theme.textPrimary,
+              fontWeight: 600,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            Predição de Manutenção
+          </h3>
+          <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+            MaintenancePredictor AI
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}
+      >
+        <select
+          value={formData.equipment_type}
+          onChange={(e) =>
+            setFormData({ ...formData, equipment_type: e.target.value })
+          }
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: `1px solid ${theme.border}`,
+            background: theme.bgPrimary,
+            color: theme.textPrimary,
+            outline: "none",
+          }}
+        >
+          <option value="pipe_segment">Segmento de Tubulação</option>
+          <option value="valve">Válvula</option>
+          <option value="pump">Bomba</option>
+          <option value="heat_exchanger">Trocador de Calor</option>
+          <option value="vessel">Vaso de Pressão</option>
+        </select>
+        <div style={{ display: "flex", gap: spacing.sm }}>
+          <input
+            type="number"
+            placeholder="Horas de operação"
+            value={formData.operating_hours}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                operating_hours: Number(e.target.value),
+              })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          />
+          <input
+            type="date"
+            value={formData.last_maintenance}
+            onChange={(e) =>
+              setFormData({ ...formData, last_maintenance: e.target.value })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", gap: spacing.sm }}>
+          <input
+            type="number"
+            placeholder="Pressão (bar)"
+            value={formData.pressure_bar}
+            onChange={(e) =>
+              setFormData({ ...formData, pressure_bar: Number(e.target.value) })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          />
+          <input
+            type="number"
+            placeholder="Temperatura (°C)"
+            value={formData.temperature_c}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                temperature_c: Number(e.target.value),
+              })
+            }
+            style={{
+              flex: 1,
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              border: `1px solid ${theme.border}`,
+              background: theme.bgPrimary,
+              color: theme.textPrimary,
+              outline: "none",
+            }}
+          />
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: "none",
+            background: loading ? theme.textSecondary : "#FF8C00",
+            color: "#fff",
+            cursor: loading ? "not-allowed" : "pointer",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: spacing.xs,
+          }}
+        >
+          {loading ? (
+            <span style={{ animation: "spin 1s linear infinite" }}>
+              <FaSync />
+            </span>
+          ) : (
+            <FaCalendarCheck />
+          )}{" "}
+          {loading ? "Analisando..." : "Prever Manutenção"}
+        </button>
+      </div>
+
+      {result && (
+        <div
+          style={{
+            marginTop: spacing.md,
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            background: theme.bgPrimary,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: spacing.xs,
+            }}
+          >
+            <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+              PREDIÇÃO
+            </span>
+            <span
+              style={{
+                color:
+                  (result?.data?.risk_level || result?.risk_level) === "high"
+                    ? "#FF6B6B"
+                    : (result?.data?.risk_level || result?.risk_level) ===
+                        "medium"
+                      ? "#FFD93D"
+                      : "#00FF94",
+                fontSize: 11,
+              }}
+            >
+              Risco:{" "}
+              {(
+                result?.data?.risk_level ||
+                result?.risk_level ||
+                "baixo"
+              ).toUpperCase()}
+            </span>
+          </div>
+          <div
+            style={{ color: theme.textPrimary, fontSize: 14, fontWeight: 600 }}
+          >
+            Próxima manutenção:{" "}
+            {result?.data?.next_maintenance ||
+              result?.next_maintenance ||
+              "---"}
+          </div>
+          <div
+            style={{
+              color: theme.textSecondary,
+              fontSize: 11,
+              marginTop: spacing.xs,
+            }}
+          >
+            Vida útil restante:{" "}
+            {result?.data?.remaining_life_percent ||
+              result?.remaining_life_percent ||
+              "---"}
+            % | Confiança:{" "}
+            {result?.data?.confidence || result?.confidence || "---"}%
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Panel de Geração de Documentos ──
+const DocumentGeneratorPanel: React.FC<{
+  theme: ReturnType<typeof useTheme>["theme"];
+  onSubmit: (data: any) => Promise<any>;
+}> = ({ theme, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    document_type: "technical_report",
+    project_name: "",
+    include_sections: ["summary", "specifications", "materials", "costs"],
+    language: "pt-BR",
+  });
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const res = await onSubmit(formData);
+      setResult(res);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadDocument = () => {
+    const content =
+      result?.data?.content || result?.content || "Documento gerado";
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${formData.project_name || "documento"}_${formData.document_type}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div
+      style={{
+        background: theme.bgSecondary,
+        borderRadius: radius.lg,
+        border: `1px solid ${theme.border}`,
+        padding: spacing.md,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: spacing.sm,
+          marginBottom: spacing.md,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: radius.md,
+            background: "#9B59B620",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#9B59B6",
+          }}
+        >
+          <FaFileAlt />
+        </div>
+        <div>
+          <h3
+            style={{
+              color: theme.textPrimary,
+              fontWeight: 600,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            Geração de Documentos
+          </h3>
+          <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+            DocumentGenerator AI
+          </span>
+        </div>
+      </div>
+
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}
+      >
+        <input
+          placeholder="Nome do Projeto"
+          value={formData.project_name}
+          onChange={(e) =>
+            setFormData({ ...formData, project_name: e.target.value })
+          }
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: `1px solid ${theme.border}`,
+            background: theme.bgPrimary,
+            color: theme.textPrimary,
+            outline: "none",
+          }}
+        />
+        <select
+          value={formData.document_type}
+          onChange={(e) =>
+            setFormData({ ...formData, document_type: e.target.value })
+          }
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: `1px solid ${theme.border}`,
+            background: theme.bgPrimary,
+            color: theme.textPrimary,
+            outline: "none",
+          }}
+        >
+          <option value="technical_report">Relatório Técnico</option>
+          <option value="material_list">Lista de Materiais (BOM)</option>
+          <option value="specification">Especificação Técnica</option>
+          <option value="maintenance_manual">Manual de Manutenção</option>
+          <option value="quality_report">Relatório de Qualidade</option>
+        </select>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.xs }}>
+          {[
+            "summary",
+            "specifications",
+            "materials",
+            "costs",
+            "drawings",
+            "appendix",
+          ].map((section) => (
+            <label
+              key={section}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 8px",
+                borderRadius: radius.sm,
+                background: theme.bgPrimary,
+                cursor: "pointer",
+                fontSize: 11,
+                color: theme.textSecondary,
+                border: formData.include_sections.includes(section)
+                  ? `1px solid #9B59B6`
+                  : `1px solid ${theme.border}`,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={formData.include_sections.includes(section)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setFormData({
+                      ...formData,
+                      include_sections: [...formData.include_sections, section],
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      include_sections: formData.include_sections.filter(
+                        (s) => s !== section,
+                      ),
+                    });
+                  }
+                }}
+                style={{ display: "none" }}
+              />
+              <span
+                style={{
+                  color: formData.include_sections.includes(section)
+                    ? "#9B59B6"
+                    : theme.textSecondary,
+                }}
+              >
+                {section === "summary"
+                  ? "Resumo"
+                  : section === "specifications"
+                    ? "Especificações"
+                    : section === "materials"
+                      ? "Materiais"
+                      : section === "costs"
+                        ? "Custos"
+                        : section === "drawings"
+                          ? "Desenhos"
+                          : "Anexos"}
+              </span>
+            </label>
+          ))}
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !formData.project_name}
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            border: "none",
+            background: loading ? theme.textSecondary : "#9B59B6",
+            color: "#fff",
+            cursor: loading ? "not-allowed" : "pointer",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: spacing.xs,
+          }}
+        >
+          {loading ? (
+            <span style={{ animation: "spin 1s linear infinite" }}>
+              <FaSync />
+            </span>
+          ) : (
+            <FaClipboardList />
+          )}{" "}
+          {loading ? "Gerando..." : "Gerar Documento"}
+        </button>
+      </div>
+
+      {result && (
+        <div
+          style={{
+            marginTop: spacing.md,
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            background: theme.bgPrimary,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: spacing.xs,
+            }}
+          >
+            <span style={{ color: theme.textSecondary, fontSize: 11 }}>
+              DOCUMENTO GERADO
+            </span>
+            <button
+              onClick={downloadDocument}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#00D4FF",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 11,
+              }}
+            >
+              <FaDownload size={10} /> Baixar
+            </button>
+          </div>
+          <div
+            style={{
+              color: theme.textPrimary,
+              fontSize: 12,
+              maxHeight: 100,
+              overflow: "auto",
+            }}
+          >
+            {(
+              result?.data?.content ||
+              result?.content ||
+              "Documento processado com sucesso"
+            ).slice(0, 300)}
+            ...
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Página Principal ──
 const AIDashboard: React.FC = () => {
   const { theme } = useTheme();
@@ -543,6 +1327,7 @@ const AIDashboard: React.FC = () => {
   const [selectedEngine, setSelectedEngine] = useState<AIEngine | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [activeTab, setActiveTab] = useState<"engines" | "tools">("tools");
   const [loading, setLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<
     "online" | "offline" | "loading"
@@ -678,6 +1463,51 @@ const AIDashboard: React.FC = () => {
     }
   };
 
+  // Handler para estimativa de custos
+  const handleCostEstimate = useCallback(async (data: any) => {
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE_URL}/api/ai/estimate/costs`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ data, options: {} }),
+    });
+    return res.json();
+  }, []);
+
+  // Handler para predição de manutenção
+  const handleMaintenancePredict = useCallback(async (data: any) => {
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE_URL}/api/ai/estimate/maintenance`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ data, options: {} }),
+    });
+    return res.json();
+  }, []);
+
+  // Handler para geração de documentos
+  const handleDocumentGenerate = useCallback(async (data: any) => {
+    const token = localStorage.getItem("token");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE_URL}/api/ai/generate/document`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ data, options: {} }),
+    });
+    return res.json();
+  }, []);
+
   // Engines with status "idle", "processing", or "completed" are considered online/available
   const onlineCount = engines.filter((e) =>
     ["idle", "processing", "completed", "online"].includes(
@@ -785,125 +1615,229 @@ const AIDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Grid Principal */}
+        {/* Quota Usage Card */}
+        <div style={{ marginBottom: spacing.lg }}>
+          <QuotaCard />
+        </div>
+
+        {/* Tabs de navegação */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: spacing.lg,
+            display: "flex",
+            gap: spacing.sm,
+            marginBottom: spacing.lg,
+            borderBottom: `1px solid ${theme.border}`,
+            paddingBottom: spacing.sm,
           }}
         >
-          {/* Coluna Esquerda: IAs + Análise */}
-          <div>
-            <h2
-              style={{
-                color: theme.textPrimary,
-                fontSize: 16,
-                fontWeight: 600,
-                marginBottom: spacing.md,
-                display: "flex",
-                alignItems: "center",
-                gap: spacing.sm,
-              }}
-            >
-              <span style={{ color: "#00D4FF" }}>
-                <FaRobot />
-              </span>
-              Engines de IA
-            </h2>
+          <button
+            onClick={() => setActiveTab("tools")}
+            style={{
+              padding: `${spacing.sm} ${spacing.md}`,
+              borderRadius: `${radius.md} ${radius.md} 0 0`,
+              border: "none",
+              background: activeTab === "tools" ? "#00D4FF20" : "transparent",
+              color: activeTab === "tools" ? "#00D4FF" : theme.textSecondary,
+              cursor: "pointer",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: spacing.xs,
+              borderBottom:
+                activeTab === "tools"
+                  ? "2px solid #00D4FF"
+                  : "2px solid transparent",
+            }}
+          >
+            <FaTools /> Ferramentas IA
+          </button>
+          <button
+            onClick={() => setActiveTab("engines")}
+            style={{
+              padding: `${spacing.sm} ${spacing.md}`,
+              borderRadius: `${radius.md} ${radius.md} 0 0`,
+              border: "none",
+              background: activeTab === "engines" ? "#00D4FF20" : "transparent",
+              color: activeTab === "engines" ? "#00D4FF" : theme.textSecondary,
+              cursor: "pointer",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: spacing.xs,
+              borderBottom:
+                activeTab === "engines"
+                  ? "2px solid #00D4FF"
+                  : "2px solid transparent",
+            }}
+          >
+            <FaRobot /> Engines ({engines.length})
+          </button>
+        </div>
+
+        {/* Tab: Ferramentas IA (Painéis diretos) */}
+        {activeTab === "tools" && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: spacing.lg,
+            }}
+          >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: spacing.sm,
-                marginBottom: spacing.lg,
-              }}
-            >
-              {engines.map((engine) => (
-                <AICard
-                  key={engine.name}
-                  engine={engine}
-                  theme={theme}
-                  onSelect={() => setSelectedEngine(engine)}
-                  isSelected={selectedEngine?.name === engine.name}
-                />
-              ))}
-            </div>
-
-            <AnalysisPanel
-              selectedEngine={selectedEngine}
-              onAnalyze={handleAnalyze}
-              results={analysisResults}
-              loading={loading}
-              theme={theme}
-            />
-          </div>
-
-          {/* Coluna Direita: Chat */}
-          <div>
-            <h2
-              style={{
-                color: theme.textPrimary,
-                fontSize: 16,
-                fontWeight: 600,
-                marginBottom: spacing.md,
                 display: "flex",
-                alignItems: "center",
-                gap: spacing.sm,
+                flexDirection: "column",
+                gap: spacing.lg,
               }}
             >
-              <span style={{ color: "#00B4D8" }}>
-                <FaComments />
-              </span>
-              Assistente Técnico
-            </h2>
-            <ChatInterface
-              messages={chatMessages}
-              onSend={handleSendChat}
-              loading={loading}
-              theme={theme}
-            />
+              <CostEstimatorPanel theme={theme} onSubmit={handleCostEstimate} />
+              <MaintenancePredictorPanel
+                theme={theme}
+                onSubmit={handleMaintenancePredict}
+              />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: spacing.lg,
+              }}
+            >
+              <DocumentGeneratorPanel
+                theme={theme}
+                onSubmit={handleDocumentGenerate}
+              />
+              <ChatInterface
+                messages={chatMessages}
+                onSend={handleSendChat}
+                loading={loading}
+                theme={theme}
+              />
+            </div>
+          </div>
+        )}
 
-            {/* Quick Actions */}
-            <div style={{ marginTop: spacing.lg }}>
-              <h3
+        {/* Tab: Engines Grid */}
+        {activeTab === "engines" && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: spacing.lg,
+            }}
+          >
+            {/* Coluna Esquerda: IAs + Análise */}
+            <div>
+              <h2
                 style={{
-                  color: theme.textSecondary,
-                  fontSize: 12,
-                  marginBottom: spacing.sm,
+                  color: theme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: spacing.md,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: spacing.sm,
                 }}
               >
-                AÇÕES RÁPIDAS
-              </h3>
+                <span style={{ color: "#00D4FF" }}>
+                  <FaRobot />
+                </span>
+                Engines de IA
+              </h2>
               <div
-                style={{ display: "flex", flexWrap: "wrap", gap: spacing.xs }}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: spacing.sm,
+                  marginBottom: spacing.lg,
+                }}
               >
-                {[
-                  "Calcular perda de carga",
-                  "Norma ASME B31.3",
-                  "Materiais para vapor",
-                  "Comandos AutoCAD",
-                ].map((action, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendChat(action)}
-                    style={{
-                      padding: `${spacing.xs} ${spacing.sm}`,
-                      borderRadius: radius.md,
-                      border: `1px solid ${theme.border}`,
-                      background: theme.panel,
-                      color: theme.textPrimary,
-                      cursor: "pointer",
-                      fontSize: 11,
-                    }}
-                  >
-                    {action}
-                  </button>
+                {engines.map((engine) => (
+                  <AICard
+                    key={engine.name}
+                    engine={engine}
+                    theme={theme}
+                    onSelect={() => setSelectedEngine(engine)}
+                    isSelected={selectedEngine?.name === engine.name}
+                  />
                 ))}
+              </div>
+
+              <AnalysisPanel
+                selectedEngine={selectedEngine}
+                onAnalyze={handleAnalyze}
+                results={analysisResults}
+                loading={loading}
+                theme={theme}
+              />
+            </div>
+
+            {/* Coluna Direita: Chat */}
+            <div>
+              <h2
+                style={{
+                  color: theme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: spacing.md,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: spacing.sm,
+                }}
+              >
+                <span style={{ color: "#00B4D8" }}>
+                  <FaComments />
+                </span>
+                Assistente Técnico
+              </h2>
+              <ChatInterface
+                messages={chatMessages}
+                onSend={handleSendChat}
+                loading={loading}
+                theme={theme}
+              />
+
+              {/* Quick Actions */}
+              <div style={{ marginTop: spacing.lg }}>
+                <h3
+                  style={{
+                    color: theme.textSecondary,
+                    fontSize: 12,
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  AÇÕES RÁPIDAS
+                </h3>
+                <div
+                  style={{ display: "flex", flexWrap: "wrap", gap: spacing.xs }}
+                >
+                  {[
+                    "Calcular perda de carga",
+                    "Norma ASME B31.3",
+                    "Materiais para vapor",
+                    "Comandos AutoCAD",
+                  ].map((action, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSendChat(action)}
+                      style={{
+                        padding: `${spacing.xs} ${spacing.sm}`,
+                        borderRadius: radius.md,
+                        border: `1px solid ${theme.border}`,
+                        background: theme.panel,
+                        color: theme.textPrimary,
+                        cursor: "pointer",
+                        fontSize: 11,
+                      }}
+                    >
+                      {action}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
@@ -923,7 +1857,7 @@ const MetricCard: React.FC<{
     style={{
       background: theme.bgSecondary,
       borderRadius: radius.lg,
-      border: `1px solid ${theme.borderColor}`,
+      border: `1px solid ${theme.border}`,
       padding: spacing.md,
       display: "flex",
       alignItems: "center",

@@ -52,6 +52,7 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_MODEL = os.getenv("LLM_DEFAULT_MODEL", "gpt-4o")
 MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "4096"))
 DEFAULT_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+LLM_ENABLE_FALLBACK = os.getenv("LLM_ENABLE_PROVIDER_FALLBACK", "true").lower() in {"1", "true", "yes", "on"}
 
 # Rate limits por tier
 RATE_LIMITS = {
@@ -125,6 +126,43 @@ async def get_httpx_client():
         import httpx
         _httpx_client = httpx.AsyncClient(timeout=120.0)
     return _httpx_client
+
+
+async def _is_ollama_reachable(timeout: float = 2.5) -> bool:
+    """Valida conectividade real com Ollama local."""
+    try:
+        client = await get_httpx_client()
+        response = await client.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=timeout)
+        return response.status_code == 200
+    except Exception:
+        return False
+
+
+async def get_provider_runtime_status() -> Dict[str, Dict[str, Any]]:
+    """Retorna estado real de disponibilidade por provedor."""
+    openai_client = get_openai_client()
+    anthropic_client = get_anthropic_client()
+    ollama_up = await _is_ollama_reachable()
+
+    status: Dict[str, Dict[str, Any]] = {
+        "openai": {
+            "configured": bool(OPENAI_API_KEY),
+            "available": bool(OPENAI_API_KEY and openai_client),
+            "mode": "api_key",
+        },
+        "anthropic": {
+            "configured": bool(ANTHROPIC_API_KEY),
+            "available": bool(ANTHROPIC_API_KEY and anthropic_client),
+            "mode": "api_key",
+        },
+        "ollama": {
+            "configured": True,
+            "available": ollama_up,
+            "mode": "local_http",
+            "base_url": OLLAMA_BASE_URL,
+        },
+    }
+    return status
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -460,6 +498,16 @@ async def call_llm(
     last_error = None
     for try_provider in providers_to_try:
         try:
+            if try_provider == "openai" and not OPENAI_API_KEY:
+                logger.warning("Fallback skip: OpenAI não configurado")
+                continue
+            if try_provider == "anthropic" and not ANTHROPIC_API_KEY:
+                logger.warning("Fallback skip: Anthropic não configurado")
+                continue
+            if try_provider == "ollama" and not await _is_ollama_reachable():
+                logger.warning("Fallback skip: Ollama indisponível em %s", OLLAMA_BASE_URL)
+                continue
+
             # Selecionar modelo compatível do provider
             if try_provider == provider:
                 use_model = model
@@ -472,7 +520,12 @@ async def call_llm(
                 else:
                     use_model = "llama3.2"
             
-            logger.info(f"Chamando {try_provider} com modelo {use_model}")
+            logger.info(
+                "Chamando provider=%s model=%s fallback=%s",
+                try_provider,
+                use_model,
+                try_provider != provider,
+            )
             
             if try_provider == "openai":
                 async for chunk in call_openai(use_model, messages, temperature, max_tokens, stream):
@@ -488,7 +541,7 @@ async def call_llm(
                 return
                 
         except Exception as e:
-            logger.warning(f"Falha em {try_provider}: {e}")
+            logger.warning("Falha em provider=%s model=%s: %s", try_provider, model, e)
             last_error = e
             continue
     
@@ -505,15 +558,10 @@ async def call_llm(
 @router.get("/models")
 async def list_models():
     """Lista modelos disponíveis."""
+    providers_status = await get_provider_runtime_status()
     models = []
     for model_name, info in AVAILABLE_MODELS.items():
-        available = False
-        if info["provider"] == "openai" and OPENAI_API_KEY:
-            available = True
-        elif info["provider"] == "anthropic" and ANTHROPIC_API_KEY:
-            available = True
-        elif info["provider"] == "ollama":
-            available = True  # Assume Ollama local disponível
+        available = providers_status.get(info["provider"], {}).get("available", False)
         
         models.append({
             "id": model_name,
@@ -524,7 +572,12 @@ async def list_models():
             "available": available,
         })
     
-    return {"models": models, "default": DEFAULT_MODEL}
+    return {
+        "models": models,
+        "default": DEFAULT_MODEL,
+        "providers": providers_status,
+        "fallback_enabled": LLM_ENABLE_FALLBACK,
+    }
 
 
 from ai_engines.ai_guardrails import apply_guardrails, inject_system_prompt
@@ -589,7 +642,12 @@ async def create_completion(
         async def stream_generator():
             full_response = ""
             async for chunk in call_llm(
-                req.model, messages, req.temperature, req.max_tokens, stream=True
+                req.model,
+                messages,
+                req.temperature,
+                req.max_tokens,
+                stream=True,
+                fallback=LLM_ENABLE_FALLBACK,
             ):
                 full_response += chunk
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
@@ -604,7 +662,12 @@ async def create_completion(
     # Non-streaming response - collect all chunks
     content_chunks = []
     async for chunk in call_llm(
-        req.model, messages, req.temperature, req.max_tokens, stream=False
+        req.model,
+        messages,
+        req.temperature,
+        req.max_tokens,
+        stream=False,
+        fallback=LLM_ENABLE_FALLBACK,
     ):
         content_chunks.append(chunk)
     content = "".join(content_chunks)
@@ -661,32 +724,14 @@ async def get_llm_usage(email: str):
 @router.get("/health")
 async def llm_health():
     """Health check do LLM Gateway."""
-    providers = {}
-    
-    if OPENAI_API_KEY:
-        providers["openai"] = "configured"
-    else:
-        providers["openai"] = "not_configured"
-    
-    if ANTHROPIC_API_KEY:
-        providers["anthropic"] = "configured"
-    else:
-        providers["anthropic"] = "not_configured"
-    
-    # Verificar Ollama
-    try:
-        client = await get_httpx_client()
-        response = await client.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5.0)
-        if response.status_code == 200:
-            providers["ollama"] = "available"
-        else:
-            providers["ollama"] = "unavailable"
-    except:
-        providers["ollama"] = "unavailable"
-    
+    providers = await get_provider_runtime_status()
+    available_count = sum(1 for p in providers.values() if p.get("available"))
+
     return {
-        "status": "healthy" if any(v in ["configured", "available"] for v in providers.values()) else "degraded",
+        "status": "healthy" if available_count > 0 else "degraded",
         "providers": providers,
+        "available_providers": available_count,
         "default_model": DEFAULT_MODEL,
         "cache_enabled": True,
+        "fallback_enabled": LLM_ENABLE_FALLBACK,
     }

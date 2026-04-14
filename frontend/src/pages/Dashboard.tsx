@@ -37,6 +37,8 @@ import {
   MiniBarChart,
   ProjectCard,
 } from "../components/DashboardWidgets";
+import { AutoCADConnectButton } from "../components/AutoCADConnectButton";
+import OnboardingWalkthrough from "../components/OnboardingWalkthrough";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -205,7 +207,14 @@ const Dashboard = () => {
   const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   return (
-    <div style={{ ...styles.pageContainer, padding: 0, overflow: "hidden" }}>
+    <div
+      style={{
+        ...styles.pageContainer,
+        padding: 0,
+        overflow: "hidden",
+        background: theme.gradientPage || theme.background,
+      }}
+    >
       <main
         style={{
           flex: 1,
@@ -216,17 +225,172 @@ const Dashboard = () => {
           boxSizing: "border-box",
         }}
       >
-        {/* Demo Upgrade Banner */}
-        {isDemo && (
+        {/* Header com AutoCAD Status */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: 24,
+          }}
+        >
+          <AutoCADConnectButton />
+        </div>
+        {/* Welcome Hero */}
+        <WelcomeHero userName="Operador" theme={widgetTheme} />
+
+        {/* Guided Walkthrough — first 7 days */}
+        <OnboardingWalkthrough onNavigate={(path) => navigate(path)} />
+
+        {/* Onboarding CTA — shown when no projects or demo mode */}
+        {!loading && (total === 0 || isDemo) && (
           <motion.div
-            initial={{ opacity: 0, y: -12 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
             style={{
-              background: `linear-gradient(90deg, ${theme.warning}18, ${theme.accentPrimary}18)`,
-              border: `1px solid ${theme.warning}50`,
-              borderRadius: 10,
+              marginBottom: 24,
+              padding: 28,
+              borderRadius: 16,
+              background: `linear-gradient(135deg, ${theme.accentPrimary}12, ${theme.accentPrimary}04)`,
+              border: `1px solid ${theme.accentPrimary}30`,
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Target size={24} color={theme.accentPrimary} />
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: theme.textPrimary,
+                }}
+              >
+                {isDemo ? "Bem-vindo à demonstração!" : "Primeiros Passos"}
+              </h3>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                color: theme.textSecondary,
+                lineHeight: 1.7,
+              }}
+            >
+              {isDemo
+                ? "Explore a plataforma livremente. Para liberar todas as funcionalidades, crie sua conta gratuita com 14 dias de teste."
+                : "Crie seu primeiro projeto para ver a plataforma em ação. Configure um projeto de piping, valide normas e gere desenhos automaticamente."}
+            </p>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {isDemo && (
+                <button
+                  onClick={() => navigate("/pricing")}
+                  style={{
+                    padding: "12px 24px",
+                    background:
+                      "linear-gradient(135deg, #00A1FF 0%, #0077CC 100%)",
+                    border: "none",
+                    borderRadius: 10,
+                    color: "#FFF",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    boxShadow: "0 4px 20px rgba(0,161,255,0.3)",
+                  }}
+                >
+                  <Zap size={16} />
+                  Criar Conta Grátis (14 dias)
+                </button>
+              )}
+              <button
+                onClick={() => navigate("/global-setup")}
+                style={{
+                  padding: "12px 24px",
+                  background: isDemo
+                    ? "transparent"
+                    : "linear-gradient(135deg, #00A1FF 0%, #0077CC 100%)",
+                  border: isDemo ? `1px solid ${theme.border}` : "none",
+                  borderRadius: 10,
+                  color: isDemo ? theme.textSecondary : "#FFF",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: isDemo ? "none" : "0 4px 20px rgba(0,161,255,0.3)",
+                }}
+              >
+                <FaPlus size={14} />
+                {total === 0 ? "Criar Primeiro Projeto" : "Novo Projeto"}
+              </button>
+            </div>
+
+            {/* Quick value metrics */}
+            {isDemo && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 24,
+                  marginTop: 8,
+                  paddingTop: 16,
+                  borderTop: `1px solid ${theme.border}`,
+                }}
+              >
+                {[
+                  { label: "Tempo médio economizado", value: "4h/projeto" },
+                  { label: "Redução de retrabalho", value: "70%" },
+                  { label: "Normas validadas", value: "50+" },
+                ].map((stat, i) => (
+                  <div key={i} style={{ textAlign: "center", flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: theme.accentPrimary,
+                      }}
+                    >
+                      {stat.value}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: theme.textTertiary,
+                        marginTop: 4,
+                      }}
+                    >
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+        {/* System Status Bar */}
+        <div style={{ marginBottom: 24 }}>
+          <SystemHealthBar systems={systemStatus} theme={widgetTheme} />
+        </div>
+
+        {/* Quota warning banner */}
+        {queriesLimit > 0 && queriesUsed >= queriesLimit * 0.8 && (
+          <div
+            style={{
+              marginBottom: 24,
               padding: "14px 20px",
-              marginBottom: 20,
+              borderRadius: 12,
+              background:
+                queriesUsed >= queriesLimit
+                  ? `${theme.danger}15`
+                  : `${theme.warning}15`,
+              border: `1px solid ${
+                queriesUsed >= queriesLimit ? theme.danger : theme.warning
+              }40`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -234,59 +398,35 @@ const Dashboard = () => {
               gap: 12,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 20 }}>⚡</span>
-              <div>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: theme.textPrimary,
-                  }}
-                >
-                  Você está no Modo Demo — {queriesUsed}/{queriesLimit}{" "}
-                  consultas de IA usadas
-                </p>
-                <p
-                  style={{
-                    margin: "2px 0 0",
-                    fontSize: 12,
-                    color: theme.textSecondary,
-                  }}
-                >
-                  Desbloqueie projetos ilimitados, CNC plasma, exportação DXF e
-                  muito mais.
-                </p>
-              </div>
-            </div>
+            <span
+              style={{
+                fontSize: 13,
+                color:
+                  queriesUsed >= queriesLimit ? theme.danger : theme.warning,
+                fontWeight: 600,
+              }}
+            >
+              {queriesUsed >= queriesLimit
+                ? `⛔ Limite de consultas IA atingido (${queriesUsed}/${queriesLimit})`
+                : `⚠️ ${queriesLimit - queriesUsed} consultas IA restantes (${queriesUsed}/${queriesLimit})`}
+            </span>
             <button
               onClick={() => navigate("/pricing")}
               style={{
-                background: theme.accentPrimary,
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
                 padding: "8px 18px",
-                fontSize: 13,
-                fontWeight: 600,
+                background: "linear-gradient(135deg, #00A1FF, #0077CC)",
+                border: "none",
+                borderRadius: 8,
+                color: "#FFF",
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: "pointer",
-                whiteSpace: "nowrap",
               }}
             >
-              Ver Planos &amp; Preços
+              Fazer Upgrade
             </button>
-          </motion.div>
+          </div>
         )}
-
-        {/* Welcome Hero */}
-        <WelcomeHero userName="Operador" theme={widgetTheme} />
-
-        {/* System Status Bar */}
-        <div style={{ marginBottom: 24 }}>
-          <SystemHealthBar systems={systemStatus} theme={widgetTheme} />
-        </div>
-
         {/* Quick Actions */}
         <div style={{ marginBottom: 24 }}>
           <h2
@@ -320,7 +460,6 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-
         {/* Metrics Row */}
         <div
           style={{
@@ -359,11 +498,10 @@ const Dashboard = () => {
             icon={<FaShieldAlt size={20} />}
             label="Normas Ativas"
             value={3}
-            color="#AA66FF"
+            color={theme.accentInfo || theme.accentPrimary}
             theme={widgetTheme}
           />
         </div>
-
         {/* Main Grid */}
         <div
           style={{
@@ -376,8 +514,8 @@ const Dashboard = () => {
           {/* Recent Projects */}
           <div
             style={{
-              backgroundColor: theme.surface,
-              border: `1px solid ${theme.border}`,
+              background: theme.gradientPanel || theme.surface,
+              border: `1px solid ${theme.borderStrong || theme.border}`,
               borderRadius: 16,
               padding: 20,
               minWidth: 0,
@@ -505,14 +643,13 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-
           {/* Progress & Charts Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Completion Rate */}
             <div
               style={{
-                backgroundColor: theme.surface,
-                border: `1px solid ${theme.border}`,
+                background: theme.gradientPanel || theme.surface,
+                border: `1px solid ${theme.borderStrong || theme.border}`,
                 borderRadius: 16,
                 padding: 20,
                 display: "flex",
@@ -541,12 +678,11 @@ const Dashboard = () => {
                 theme={widgetTheme}
               />
             </div>
-
             {/* Weekly Activity */}
             <div
               style={{
-                backgroundColor: theme.surface,
-                border: `1px solid ${theme.border}`,
+                background: theme.gradientPanel || theme.surface,
+                border: `1px solid ${theme.borderStrong || theme.border}`,
                 borderRadius: 16,
                 padding: 20,
               }}
@@ -570,7 +706,6 @@ const Dashboard = () => {
               />
             </div>
           </div>
-
           {/* Activity Timeline */}
           <ActivityTimeline
             activities={activities}
@@ -578,7 +713,6 @@ const Dashboard = () => {
             theme={widgetTheme}
           />
         </div>
-
         {/* Rankings Row */}
         <div
           style={{
@@ -592,8 +726,8 @@ const Dashboard = () => {
           {/* Top Companies */}
           <div
             style={{
-              backgroundColor: theme.surface,
-              border: `1px solid ${theme.border}`,
+              background: theme.gradientPanel || theme.surface,
+              border: `1px solid ${theme.borderStrong || theme.border}`,
               borderRadius: 16,
               padding: 20,
               minWidth: 0,
@@ -672,12 +806,11 @@ const Dashboard = () => {
               </p>
             )}
           </div>
-
           {/* Top Parts */}
           <div
             style={{
-              backgroundColor: theme.surface,
-              border: `1px solid ${theme.border}`,
+              background: theme.gradientPanel || theme.surface,
+              border: `1px solid ${theme.borderStrong || theme.border}`,
               borderRadius: 16,
               padding: 20,
             }}

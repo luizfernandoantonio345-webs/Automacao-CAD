@@ -164,14 +164,15 @@ class TestGCodeValidation:
         max_coord = 10000  # mm
         
         invalid_coords = [
-            {"x": 15000, "y": 0},  # X fora do limite
-            {"x": 0, "y": -5000},  # Y negativo excessivo
+            {"x": 15000, "y": 0},     # X fora do limite
+            {"x": 0, "y": -15000},    # Y negativo excessivo (> max_coord)
         ]
         
         for coord in invalid_coords:
             x_valid = abs(coord["x"]) <= max_coord
             y_valid = abs(coord["y"]) <= max_coord
             
+            # Both coords must be invalid (at least one is out of bounds)
             assert not (x_valid and y_valid)
     
     def test_feed_rate_limits(self):

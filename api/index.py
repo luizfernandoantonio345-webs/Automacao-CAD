@@ -33,6 +33,9 @@ try:
 except Exception as e:
     # If the full server fails, create a minimal diagnostic API (secure)
     _import_error = str(e)
+    _import_traceback = ""
+    import traceback
+    _import_traceback = traceback.format_exc()
     logger.error("Falha ao importar server: %s", _import_error)
     
     app = FastAPI(title="Engenharia CAD - Maintenance Mode")
@@ -50,6 +53,17 @@ except Exception as e:
         return {
             "status": "maintenance",
             "message": "Sistema em manutenção. Tente novamente em alguns minutos."
+        }
+    
+    @app.get("/_debug/error")
+    async def debug_error():
+        """DEBUG: Show import error (only in dev/staging)"""
+        debug_on = os.getenv("DEBUG_ENABLED", "").strip().lower() in ("true", "1", "yes")
+        if os.getenv("VERCEL_ENV") == "production" and not debug_on:
+            return {"error": "Debug disabled in production"}
+        return {
+            "error": _import_error,
+            "traceback": _import_traceback.split("\n") if _import_traceback else []
         }
     
     @app.get("/health")

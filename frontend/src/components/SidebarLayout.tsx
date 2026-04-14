@@ -7,20 +7,19 @@ import {
   FaShieldAlt,
   FaCogs,
   FaFileAlt,
-  FaDesktop,
-  FaTerminal,
   FaSignOutAlt,
   FaBrain,
-  FaTachometerAlt,
   FaFire,
   FaRobot,
   FaCrown,
   FaBars,
   FaTimes,
-  FaPlug,
+  FaUserTie,
+  FaClipboardList,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { useLicense } from "../context/LicenseContext";
 
 interface NavEntry {
   path: string;
@@ -30,23 +29,22 @@ interface NavEntry {
 
 const NAV_ITEMS: NavEntry[] = [
   { path: "/dashboard", label: "Dashboard", icon: <FaChartLine /> },
+  { path: "/pricing", label: "Planos & Preços", icon: <FaCrown /> },
   { path: "/global-setup", label: "Configuração Global", icon: <FaCogs /> },
   { path: "/ingestion", label: "Ingestão de Dados", icon: <FaBox /> },
-  {
-    path: "/autopilot",
-    label: "Piping & Autopilot",
-    icon: <FaDraftingCompass />,
-  },
-  { path: "/auto-connect", label: "AutoConnect CAD", icon: <FaPlug /> },
+  { path: "/autopilot", label: "Controle CAD", icon: <FaDraftingCompass /> },
   { path: "/quality", label: "Quality Gate", icon: <FaShieldAlt /> },
   { path: "/final-report", label: "Relatório Final", icon: <FaFileAlt /> },
-  { path: "/cad-dashboard", label: "Painel CAD", icon: <FaDesktop /> },
-  { path: "/cnc-control", label: "Controle CNC Plasma", icon: <FaFire /> },
+  { path: "/cnc-control", label: "Controle CNC/Plasma", icon: <FaFire /> },
   { path: "/chatcad", label: "ChatCAD (IA)", icon: <FaRobot /> },
   { path: "/ai-dashboard", label: "Central de IAs", icon: <FaBrain /> },
-  { path: "/analytics", label: "Analytics", icon: <FaTachometerAlt /> },
-  { path: "/cad-console", label: "Console CAD", icon: <FaTerminal /> },
-  { path: "/pricing", label: "Planos & Preços", icon: <FaCrown /> },
+  { path: "/admin-panel", label: "Auditoria", icon: <FaClipboardList /> },
+  { path: "/roles-manager", label: "Gerenciar Funções", icon: <FaUserTie /> },
+  {
+    path: "/system-monitor",
+    label: "Monitor do Sistema",
+    icon: <FaChartLine />,
+  },
 ];
 
 /** Detecta modo demo via token JWT (email demo@engenharia-cad.com) */
@@ -67,8 +65,21 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
+  const { license } = useLicense();
   const demo = isDemoMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const tierLabel = demo
+    ? "Demo"
+    : (license.tier ?? "demo").charAt(0).toUpperCase() +
+      (license.tier ?? "demo").slice(1);
+  const tierColor = demo
+    ? theme.warning
+    : license.tier === "enterprise"
+      ? "#10B981"
+      : license.tier === "professional"
+        ? "#8B5CF6"
+        : theme.accentPrimary;
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -77,14 +88,14 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
     container: {
       display: "flex",
       height: "100vh",
-      backgroundColor: theme.background,
+      background: theme.gradientPage || theme.background,
       color: theme.textPrimary,
     },
     sidebar: {
       width: "260px",
-      background: theme.surface,
-      borderRight: `1px solid ${theme.border}`,
-      boxShadow: "4px 0 20px rgba(0,0,0,0.2)",
+      background: theme.gradientPanel || theme.surface,
+      borderRight: `1px solid ${theme.borderStrong || theme.border}`,
+      boxShadow: `4px 0 24px ${theme.shadowMedium}`,
       padding: "32px 16px 16px",
       flexShrink: 0,
       display: "flex",
@@ -149,7 +160,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
     },
     navActive: {
       padding: "12px 14px",
-      backgroundColor: `${theme.accentPrimary}15`,
+      backgroundColor: theme.accentSoft || `${theme.accentPrimary}15`,
       color: theme.accentPrimary,
       borderRadius: "8px",
       borderLeft: `3px solid ${theme.accentPrimary}`,
@@ -179,7 +190,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
     main: {
       flex: 1,
       overflowY: "auto",
-      backgroundColor: theme.background,
+      background: theme.gradientPage || theme.background,
     },
     hamburger: {
       display: "none",
@@ -294,7 +305,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
               style={{
                 width: "100%",
                 padding: "10px 0",
-                background: "linear-gradient(135deg, #00A1FF, #7C3AED)",
+                background: theme.gradientAccent || theme.accentPrimary,
                 border: "none",
                 borderRadius: "8px",
                 color: "#fff",
@@ -320,7 +331,8 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
               }}
               onMouseEnter={(e) => {
                 if (location.pathname !== item.path) {
-                  e.currentTarget.style.backgroundColor = `${theme.accentPrimary}08`;
+                  e.currentTarget.style.backgroundColor =
+                    theme.accentSoft || `${theme.accentPrimary}08`;
                   e.currentTarget.style.color = theme.textPrimary;
                 }
               }}
@@ -337,6 +349,45 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
         </nav>
 
         <div style={sidebarStyles.sidebarFooter}>
+          {/* Tier badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 14px",
+              marginBottom: 8,
+              borderRadius: 8,
+              background: `${tierColor}10`,
+              border: `1px solid ${tierColor}25`,
+            }}
+          >
+            <FaCrown size={12} style={{ color: tierColor }} />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: tierColor,
+                letterSpacing: "0.5px",
+              }}
+            >
+              Plano {tierLabel}
+            </span>
+            {!demo && license.tier !== "enterprise" && (
+              <span
+                onClick={() => navigate("/pricing")}
+                style={{
+                  marginLeft: "auto",
+                  fontSize: 10,
+                  color: theme.accentPrimary,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Upgrade
+              </span>
+            )}
+          </div>
           <div
             style={sidebarStyles.logoutBtn}
             onClick={handleLogout}

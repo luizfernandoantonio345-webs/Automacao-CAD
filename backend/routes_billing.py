@@ -27,6 +27,8 @@ from datetime import datetime, timedelta, UTC
 from pathlib import Path
 from threading import Lock
 from typing import Optional, Dict, Any, List
+from collections import OrderedDict
+from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 from fastapi import APIRouter, HTTPException, Request, Header, Depends
 from pydantic import BaseModel, Field
@@ -34,6 +36,11 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("engcad.billing")
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
+
+# Webhook idempotency: track last N processed event IDs
+_WEBHOOK_PROCESSED: OrderedDict[str, float] = OrderedDict()
+_WEBHOOK_MAX_EVENTS = 500
+_WEBHOOK_LOCK = Lock()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURAÇÃO STRIPE
@@ -50,7 +57,11 @@ PRICING_TIERS = {
         "price_monthly": 297,
         "price_yearly": 2970,
         "currency": "BRL",
-        "stripe_price_id": os.getenv("STRIPE_PRICE_STARTER", "price_starter_mock"),
+        "stripe_price_id_monthly": os.getenv("STRIPE_PRICE_STARTER", "price_starter_mock"),
+        "stripe_price_id_yearly": os.getenv(
+            "STRIPE_PRICE_STARTER_YEARLY",
+            os.getenv("STRIPE_PRICE_STARTER", "price_starter_mock"),
+        ),
         "features": {
             "cam_jobs_per_month": 500,
             "max_users": 1,
@@ -67,7 +78,11 @@ PRICING_TIERS = {
         "price_monthly": 697,
         "price_yearly": 6970,
         "currency": "BRL",
-        "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", "price_pro_mock"),
+        "stripe_price_id_monthly": os.getenv("STRIPE_PRICE_PRO", "price_pro_mock"),
+        "stripe_price_id_yearly": os.getenv(
+            "STRIPE_PRICE_PRO_YEARLY",
+            os.getenv("STRIPE_PRICE_PRO", "price_pro_mock"),
+        ),
         "features": {
             "cam_jobs_per_month": 2500,
             "max_users": 5,
@@ -84,7 +99,11 @@ PRICING_TIERS = {
         "price_monthly": 1497,
         "price_yearly": 14970,
         "currency": "BRL",
-        "stripe_price_id": os.getenv("STRIPE_PRICE_ENTERPRISE", "price_enterprise_mock"),
+        "stripe_price_id_monthly": os.getenv("STRIPE_PRICE_ENTERPRISE", "price_enterprise_mock"),
+        "stripe_price_id_yearly": os.getenv(
+            "STRIPE_PRICE_ENTERPRISE_YEARLY",
+            os.getenv("STRIPE_PRICE_ENTERPRISE", "price_enterprise_mock"),
+        ),
         "features": {
             "cam_jobs_per_month": -1,  # Unlimited
             "max_users": 25,
@@ -124,8 +143,8 @@ def get_stripe():
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA STORE (JSON File - Produção usaria PostgreSQL)
 # ═══════════════════════════════════════════════════════════════════════════════
-
-_BILLING_BASE = Path("/tmp") if os.getenv("VERCEL") else Path(__file__).parent.parent / "data"
+# Vercel serverless requer /tmp para arquivos temporários
+_BILLING_BASE = Path("/tmp") if os.getenv("VERCEL") else Path(__file__).parent.parent / "data"  # nosec B108
 _BILLING_FILE = _BILLING_BASE / "billing.json"
 _BILLING_LOCK = Lock()
 
@@ -185,6 +204,34 @@ class SubscriptionResponse(BaseModel):
     usage: Dict[str, Any]
 
 
+def _normalize_billing_cycle(value: str) -> str:
+    cycle = (value or "monthly").strip().lower()
+    aliases = {
+        "month": "monthly",
+        "monthly": "monthly",
+        "mensal": "monthly",
+        "year": "yearly",
+        "yearly": "yearly",
+        "annual": "yearly",
+        "annually": "yearly",
+        "anual": "yearly",
+    }
+    normalized = aliases.get(cycle)
+    if not normalized:
+        raise HTTPException(status_code=400, detail="billing_cycle inválido. Use monthly ou yearly.")
+    return normalized
+
+
+def _append_query_params(url: str, **params: str) -> str:
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    for key, value in params.items():
+        query[key] = value
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
+    )
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # PRICING ENDPOINT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -194,7 +241,7 @@ async def get_pricing():
     """Retorna tabela de preços."""
     return {
         "tiers": PRICING_TIERS,
-        "currency": "USD",
+        "currency": "BRL",
         "trial_days": 14,
         "stripe_publishable_key": STRIPE_PUBLISHABLE_KEY,
     }
@@ -209,31 +256,40 @@ async def create_checkout_session(req: CreateCheckoutRequest):
     """Cria sessão de checkout Stripe."""
     if req.tier not in PRICING_TIERS:
         raise HTTPException(status_code=400, detail=f"Tier inválido: {req.tier}")
-    
+
+    billing_cycle = _normalize_billing_cycle(req.billing_cycle)
     tier_config = PRICING_TIERS[req.tier]
+    price_id_key = (
+        "stripe_price_id_yearly" if billing_cycle == "yearly" else "stripe_price_id_monthly"
+    )
+    price_id = tier_config[price_id_key]
     stripe = get_stripe()
-    
+
     if stripe and STRIPE_SECRET_KEY:
         # Modo produção com Stripe real
         try:
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 line_items=[{
-                    "price": tier_config["stripe_price_id"],
+                    "price": price_id,
                     "quantity": 1,
                 }],
                 mode="subscription",
-                success_url=req.success_url + "?session_id={CHECKOUT_SESSION_ID}",
+                success_url=_append_query_params(
+                    req.success_url, session_id="{CHECKOUT_SESSION_ID}"
+                ),
                 cancel_url=req.cancel_url,
                 customer_email=req.email,
                 metadata={
                     "tier": req.tier,
                     "email": req.email,
+                    "billing_cycle": billing_cycle,
                 },
                 subscription_data={
                     "trial_period_days": 14,
                     "metadata": {
                         "tier": req.tier,
+                        "billing_cycle": billing_cycle,
                     }
                 }
             )
@@ -241,11 +297,20 @@ async def create_checkout_session(req: CreateCheckoutRequest):
                 "checkout_url": session.url,
                 "session_id": session.id,
                 "mode": "live",
+                "billing_cycle": billing_cycle,
             }
         except Exception as e:
             logger.error(f"Erro ao criar checkout Stripe: {e}")
             raise HTTPException(status_code=500, detail="Erro ao processar pagamento")
     else:
+        # Modo mock — bloquear em produção
+        app_env = os.getenv("APP_ENV", "development")
+        if app_env == "production":
+            logger.error("Checkout mock bloqueado em produção — configure STRIPE_SECRET_KEY")
+            raise HTTPException(
+                status_code=503,
+                detail="Sistema de pagamento temporariamente indisponível. Tente novamente em breve."
+            )
         # Modo mock para desenvolvimento
         mock_session_id = f"cs_mock_{secrets.token_hex(16)}"
         with _BILLING_LOCK:
@@ -253,6 +318,7 @@ async def create_checkout_session(req: CreateCheckoutRequest):
             data["subscriptions"][req.email] = {
                 "session_id": mock_session_id,
                 "tier": req.tier,
+                "billing_cycle": billing_cycle,
                 "status": "trialing",
                 "created_at": datetime.now(UTC).isoformat(),
                 "trial_end": (datetime.now(UTC) + timedelta(days=14)).isoformat(),
@@ -260,11 +326,12 @@ async def create_checkout_session(req: CreateCheckoutRequest):
                 "cancel_at_period_end": False,
             }
             _save_billing_data(data)
-        
+
         return {
-            "checkout_url": f"{req.success_url}?session_id={mock_session_id}",
+            "checkout_url": _append_query_params(req.success_url, session_id=mock_session_id),
             "session_id": mock_session_id,
             "mode": "mock",
+            "billing_cycle": billing_cycle,
             "message": "Modo desenvolvimento - Stripe não configurado",
         }
 
@@ -305,6 +372,18 @@ async def stripe_webhook(request: Request, stripe_signature: str = Header(None))
     
     event_type = event.get("type", "")
     event_data = event.get("data", {}).get("object", {})
+    event_id = event.get("id", "")
+    
+    # Idempotency check — skip already-processed events
+    if event_id:
+        with _WEBHOOK_LOCK:
+            if event_id in _WEBHOOK_PROCESSED:
+                logger.info(f"Stripe webhook duplicate skipped: {event_id}")
+                return {"received": True, "duplicate": True}
+            _WEBHOOK_PROCESSED[event_id] = time.time()
+            # Evict oldest if over limit
+            while len(_WEBHOOK_PROCESSED) > _WEBHOOK_MAX_EVENTS:
+                _WEBHOOK_PROCESSED.popitem(last=False)
     
     logger.info(f"Stripe webhook: {event_type}")
     

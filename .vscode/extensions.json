@@ -6,5 +6,12 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode"
   ],
-  "unwantedRecommendations": []
+  "unwantedRecommendations": [
+    "blackboxapp.blackbox",
+    "blackboxapp.blackboxagent",
+    "codeium.codeium",
+    "be5invis.vscode-custom-css",
+    "brandonkirbyson.vscode-animations",
+    "openai.chatgpt"
+  ]
 }

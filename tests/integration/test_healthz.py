@@ -7,13 +7,14 @@ Testes de integração para endpoints de saúde do sistema.
 """
 import os
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from server import app
 
 @pytest.mark.asyncio
 async def test_healthz_smoke():
     """Smoke test: verifica que o sistema responde (pode estar degradado)."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/healthz")
         assert response.status_code == 200
         data = response.json()
@@ -29,7 +30,8 @@ async def test_healthz_strict():
     if not os.getenv("STRICT_HEALTH_CHECK"):
         pytest.skip("STRICT_HEALTH_CHECK não definido - pulando teste estrito")
     
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/healthz")
         assert response.status_code == 200
         data = response.json()
@@ -38,7 +40,8 @@ async def test_healthz_strict():
 @pytest.mark.asyncio
 async def test_health_endpoint():
     """Verifica endpoint /health com informações detalhadas."""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/health")
         assert response.status_code == 200
         data = response.json()

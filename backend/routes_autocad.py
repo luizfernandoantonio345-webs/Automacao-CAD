@@ -16,6 +16,21 @@ from pydantic import BaseModel, Field
 
 from backend.autocad_driver import acad_driver
 
+# === SECURITY: Validador de comandos com whitelist ===
+try:
+    from backend.cad_command_validator import validate_command, is_command_allowed
+    _CAD_VALIDATOR_AVAILABLE = True
+except ImportError:
+    _CAD_VALIDATOR_AVAILABLE = False
+    def validate_command(cmd):
+        class _R:
+            valid = True
+            error = None
+            sanitized_command = cmd
+        return _R()
+    def is_command_allowed(cmd):
+        return True
+
 logger = logging.getLogger("engcad.routes_autocad")
 
 router = APIRouter(prefix="/api/autocad", tags=["autocad-driver"])
@@ -164,7 +179,16 @@ async def api_add_text(req: AddTextRequest):
 
 @router.post("/send-command")
 async def api_send_command(req: SendCommandRequest):
-    r = acad_driver.send_command(req.command)
+    # === SECURITY: Validar comando contra whitelist ===
+    validation = validate_command(req.command)
+    if not validation.valid:
+        logger.warning(f"Comando bloqueado: {req.command[:50]} - {validation.error}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Comando não permitido: {validation.error}"
+        )
+    
+    r = acad_driver.send_command(validation.sanitized_command)
     if r.success:
         if acad_driver.use_bridge:
             acad_driver.commit()

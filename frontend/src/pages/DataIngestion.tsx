@@ -8,11 +8,13 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 type UploadStatus = "idle" | "uploading" | "processing" | "done" | "error";
 
 const DataIngestion = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>("idle");
@@ -82,11 +84,11 @@ const DataIngestion = () => {
   };
 
   const statusColor: Record<UploadStatus, string> = {
-    idle: "#555",
-    uploading: "#00A1FF",
-    processing: "#FF8800",
-    done: "#00FF88",
-    error: "#FF4B4B",
+    idle: theme.textSecondary,
+    uploading: theme.accentPrimary,
+    processing: theme.accentWarning,
+    done: theme.accentSecondary,
+    error: theme.accentDanger,
   };
 
   const statusText: Record<UploadStatus, string> = {
@@ -98,12 +100,26 @@ const DataIngestion = () => {
   };
 
   return (
-    <div style={ig.container}>
+    <div
+      style={{
+        ...ig.container,
+        background: theme.gradientPage || theme.background,
+        color: theme.textPrimary,
+      }}
+    >
       <div style={ig.grid}>
         {/* Upload & Console */}
-        <div style={ig.consoleCard}>
+        <div
+          style={{
+            ...ig.consoleCard,
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
           <div style={ig.cardHeader}>
-            <h3 style={ig.title}>INGESTÃO DE DADOS — EXCEL</h3>
+            <h3 style={{ ...ig.title, color: theme.textSecondary }}>
+              INGESTÃO DE DADOS — EXCEL
+            </h3>
             <span
               style={{
                 fontSize: 10,
@@ -137,15 +153,15 @@ const DataIngestion = () => {
               onChange={handleFileSelect}
             />
             <div style={{ marginBottom: 10 }}>
-              <FaUpload size={32} color="#00A1FF" />
+              <FaUpload size={32} color={theme.accentPrimary} />
             </div>
-            <p style={{ color: "#888", fontSize: 13 }}>
+            <p style={{ color: theme.textSecondary, fontSize: 13 }}>
               {selectedFile
                 ? selectedFile.name
                 : "Clique ou arraste um arquivo Excel aqui"}
             </p>
             {selectedFile && (
-              <p style={{ color: "#555", fontSize: 11 }}>
+              <p style={{ color: theme.textSecondary, fontSize: 11 }}>
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
             )}
@@ -158,14 +174,14 @@ const DataIngestion = () => {
                 key={i}
                 style={{
                   color: line.includes("[SUCCESS]")
-                    ? "#00FF88"
+                    ? theme.accentSecondary
                     : line.includes("[ERRO]")
-                      ? "#FF4B4B"
+                      ? theme.accentDanger
                       : line.includes("[MOTOR]")
-                        ? "#FF8800"
+                        ? theme.accentWarning
                         : line.includes("[UPLOAD]")
-                          ? "#00A1FF"
-                          : "#AAA",
+                          ? theme.accentPrimary
+                          : theme.textSecondary,
                   margin: "2px 0",
                 }}
               >
@@ -183,8 +199,8 @@ const DataIngestion = () => {
                   selectedFile &&
                   status !== "uploading" &&
                   status !== "processing"
-                    ? "#00A1FF"
-                    : "#333",
+                    ? theme.accentPrimary
+                    : theme.border,
                 cursor:
                   selectedFile &&
                   status !== "uploading" &&
@@ -203,7 +219,11 @@ const DataIngestion = () => {
             </button>
             {result && result.project_ids && result.project_ids.length > 0 && (
               <button
-                style={{ ...ig.btn, backgroundColor: "#00FF88", color: "#000" }}
+                style={{
+                  ...ig.btn,
+                  backgroundColor: theme.accentSecondary,
+                  color: theme.background,
+                }}
                 onClick={() =>
                   navigate(`/quality-gate?project=${result.project_ids![0]}`)
                 }
@@ -214,21 +234,37 @@ const DataIngestion = () => {
           </div>
 
           {error && (
-            <p style={{ color: "#FF4B4B", fontSize: 12, marginTop: 10 }}>
+            <p
+              style={{ color: theme.accentDanger, fontSize: 12, marginTop: 10 }}
+            >
               {error}
             </p>
           )}
         </div>
 
         {/* Resultado */}
-        <div style={ig.resultCard}>
-          <h3 style={ig.title}>RESULTADO DO PROCESSAMENTO</h3>
+        <div
+          style={{
+            ...ig.resultCard,
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          <h3 style={{ ...ig.title, color: theme.textSecondary }}>
+            RESULTADO DO PROCESSAMENTO
+          </h3>
           {!result ? (
             <div style={{ textAlign: "center", padding: 60 }}>
-              <p style={{ color: "#555", fontSize: 14 }}>
+              <p style={{ color: theme.textSecondary, fontSize: 14 }}>
                 Envie um arquivo Excel para ver os resultados aqui.
               </p>
-              <p style={{ color: "#333", fontSize: 12, marginTop: 10 }}>
+              <p
+                style={{
+                  color: theme.textTertiary,
+                  fontSize: 12,
+                  marginTop: 10,
+                }}
+              >
                 Colunas aceitas: diâmetro, comprimento, empresa, código, fluido,
                 temperatura, pressão
               </p>
@@ -237,23 +273,33 @@ const DataIngestion = () => {
             <div>
               <div style={ig.resultMetric}>
                 <span
-                  style={{ fontSize: 48, color: "#00FF88", fontWeight: "bold" }}
+                  style={{
+                    fontSize: 48,
+                    color: theme.accentSecondary,
+                    fontWeight: "bold",
+                  }}
                 >
                   {result.count}
                 </span>
-                <span style={{ color: "#888", fontSize: 13 }}>
+                <span style={{ color: theme.textSecondary, fontSize: 13 }}>
                   projetos gerados
                 </span>
               </div>
               <div style={{ marginTop: 20 }}>
-                <p style={{ color: "#555", fontSize: 11, marginBottom: 8 }}>
+                <p
+                  style={{
+                    color: theme.textSecondary,
+                    fontSize: 11,
+                    marginBottom: 8,
+                  }}
+                >
                   ARQUIVOS GERADOS:
                 </p>
                 {result.files.map((f, i) => {
                   const name = f.split(/[/\\]/).pop() || f;
                   return (
                     <div key={i} style={ig.fileRow}>
-                      <FaCheckCircle color="#00FF88" />
+                      <FaCheckCircle color={theme.accentSecondary} />
                       <span>{name}</span>
                     </div>
                   );
@@ -261,7 +307,13 @@ const DataIngestion = () => {
               </div>
               {result.project_ids && (
                 <div style={{ marginTop: 20 }}>
-                  <p style={{ color: "#555", fontSize: 11, marginBottom: 8 }}>
+                  <p
+                    style={{
+                      color: theme.textSecondary,
+                      fontSize: 11,
+                      marginBottom: 8,
+                    }}
+                  >
                     IDs DOS PROJETOS:
                   </p>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

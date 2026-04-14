@@ -8,9 +8,10 @@ import json
 import logging
 import time
 import sys
+import random
 import tracemalloc
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple, Type
 
 # Adicionar paths
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -57,20 +58,78 @@ except ImportError:
 
 
 class LogErrorsTask(Task):
-    """Base task com logging de erros."""
+    """Base task com logging de erros e integração DLQ."""
+    
+    # Erros que devem ser retried (recuperáveis)
+    RECOVERABLE_ERRORS: Tuple[Type[Exception], ...] = (
+        ConnectionError,
+        TimeoutError,
+        OSError,
+        IOError,
+    )
+    
+    # Erros que NUNCA devem ser retried (bugs de programação)
+    PERMANENT_ERRORS: Tuple[Type[Exception], ...] = (
+        TypeError,
+        ValueError,
+        AttributeError,
+        KeyError,
+        ImportError,
+        SyntaxError,
+    )
     
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         logger.error(f"Task {self.name}({task_id}) falhou: {exc}")
         if TASKS_TOTAL:
             TASKS_TOTAL.labels(task_name=self.name, status='failed').inc()
+        
+        # Enviar para DLQ se for erro permanente
+        try:
+            dlq = get_dlq()
+            dlq.add_failed_job(
+                job_type=self.name,
+                payload=kwargs if kwargs else (args[0] if args else {}),
+                error=str(exc),
+                task_id=task_id,
+                retry_count=self.request.retries if hasattr(self, 'request') else 0
+            )
+        except Exception as dlq_err:
+            logger.warning(f"Falha ao enviar para DLQ: {dlq_err}")
     
     def on_retry(self, exc, task_id, args, kwargs, einfo):
-        logger.warning(f"Task {self.name}({task_id}) retentando: {exc}")
+        retry_num = self.request.retries if hasattr(self, 'request') else 0
+        logger.warning(f"Task {self.name}({task_id}) retentando ({retry_num}): {exc}")
     
     def on_success(self, result, task_id, args, kwargs):
         logger.info(f"Task {self.name}({task_id}) sucesso")
         if TASKS_TOTAL:
             TASKS_TOTAL.labels(task_name=self.name, status='success').inc()
+    
+    def calculate_backoff(self, retries: int, base: float = 2.0, max_delay: float = 600.0) -> float:
+        """Calcula delay exponencial com jitter.
+        
+        Args:
+            retries: Número de retries já feitos
+            base: Base do exponencial (default 2.0)
+            max_delay: Delay máximo em segundos (default 600s = 10min)
+            
+        Returns:
+            Delay em segundos com jitter aleatório (0-10%)
+        """
+        delay = min(base ** retries, max_delay)
+        jitter = random.uniform(0, 0.1) * delay
+        return delay + jitter
+    
+    def should_retry(self, exc: Exception) -> bool:
+        """Verifica se o erro é recuperável e deve fazer retry."""
+        # Nunca retry para erros permanentes
+        if isinstance(exc, self.PERMANENT_ERRORS):
+            return False
+        # Sempre retry para erros recuperáveis
+        if isinstance(exc, self.RECOVERABLE_ERRORS):
+            return True
+        # Para outros erros, retry apenas se não for bug óbvio
+        return True
 
 
 # ====================================================================
@@ -83,9 +142,16 @@ class LogErrorsTask(Task):
     name='celery_tasks.generate_project_task',
     queue='cad_jobs',
     priority=5,
-    autoretry_for=(Exception,),
+    # === SECURITY: Retry apenas para erros recuperáveis ===
+    autoretry_for=(ConnectionError, TimeoutError, OSError),
     max_retries=3,
-    default_retry_delay=60,
+    # Exponential backoff: 2^retry segundos (2s, 4s, 8s)
+    retry_backoff=True,
+    retry_backoff_max=600,  # Max 10 minutos
+    retry_jitter=True,  # Adiciona variação aleatória
+    # Time limits para evitar tasks penduradas
+    time_limit=600,  # Hard limit: 10 minutos
+    soft_time_limit=540,  # Soft limit: 9 minutos (permite cleanup)
 )
 def generate_project_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -140,7 +206,13 @@ def generate_project_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         raise
     except Exception as exc:
         logger.exception(f"Erro em generate_project: {exc}")
-        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+        # === SECURITY: Exponential backoff com jitter ===
+        backoff = self.calculate_backoff(self.request.retries)
+        # Só retry se for erro recuperável
+        if self.should_retry(exc):
+            raise self.retry(exc=exc, countdown=backoff)
+        # Erro permanente - não retry, vai para DLQ via on_failure
+        raise
 
 
 # ====================================================================
@@ -153,6 +225,14 @@ def generate_project_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     name='celery_tasks.rebuild_stats_task',
     queue='cad_jobs',
     priority=5,
+    # === SECURITY: Retry com backoff ===
+    autoretry_for=(ConnectionError, TimeoutError, OSError),
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    time_limit=300,
+    soft_time_limit=270,
 )
 def rebuild_stats_task(self) -> Dict[str, Any]:
     """
@@ -181,7 +261,11 @@ def rebuild_stats_task(self) -> Dict[str, Any]:
         
     except Exception as exc:
         logger.exception(f"Erro em rebuild_stats: {exc}")
-        raise self.retry(exc=exc, countdown=300)
+        # Exponential backoff
+        backoff = self.calculate_backoff(self.request.retries)
+        if self.should_retry(exc):
+            raise self.retry(exc=exc, countdown=backoff)
+        raise
 
 
 # ====================================================================
@@ -194,8 +278,14 @@ def rebuild_stats_task(self) -> Dict[str, Any]:
     name='celery_tasks.excel_batch_task',
     queue='bulk_jobs',
     priority=3,
-    autoretry_for=(Exception,),
+    # === SECURITY: Retry apenas para erros recuperáveis ===
+    autoretry_for=(ConnectionError, TimeoutError, OSError),
     max_retries=2,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    time_limit=900,
+    soft_time_limit=840,
 )
 def excel_batch_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -233,7 +323,10 @@ def excel_batch_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         
     except Exception as exc:
         logger.exception(f"Erro em excel_batch: {exc}")
-        raise self.retry(exc=exc, countdown=300)
+        backoff = self.calculate_backoff(self.request.retries)
+        if self.should_retry(exc):
+            raise self.retry(exc=exc, countdown=backoff)
+        raise
 
 
 # ====================================================================
@@ -246,10 +339,14 @@ def excel_batch_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     name='celery_tasks.ai_cad_task',
     queue='ai_cad',
     priority=10,  # Máxima prioridade
-    time_limit=3600,  # 1h ao máximo
-    soft_time_limit=3300,  # 55 min soft limit
-    autoretry_for=(Exception,),
+    # === SECURITY: Time limits e retry seletivo ===
+    time_limit=1800,  # 30 min máximo (reduzido de 1h)
+    soft_time_limit=1700,  # 28 min soft limit
+    autoretry_for=(ConnectionError, TimeoutError, OSError),
     max_retries=2,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
 )
 @circuit_breaker("ai_cad", failure_threshold=3, recovery_timeout=300)
 @gpu_task(device_id=0)
@@ -567,3 +664,157 @@ def cad_plugin_dispatch_task(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             pass
         logger.exception('Erro em cad_plugin_dispatch_task: %s', exc)
         raise self.retry(exc=exc, countdown=15 * (self.request.retries + 1))
+
+
+# ====================================================================
+# Task: AutoCAD Command Retry with Exponential Backoff
+# ====================================================================
+
+@app.task(
+    bind=True,
+    base=LogErrorsTask,
+    name='celery_tasks.execute_autocad_command_retry',
+    queue='autocad_fallback',
+    priority=7,
+    # Exponential backoff: 2^retry segundos (1, 2, 4)
+    autoretry_for=(ConnectionError, TimeoutError, OSError),
+    max_retries=3,
+    retry_backoff=True,
+    retry_backoff_max=10,  # Max 10 segundos entre tentativas
+    retry_jitter=True,
+    time_limit=120,  # Hard limit: 2 minutos
+    soft_time_limit=90,  # Soft limit: 1:30 para cleanup
+)
+def execute_autocad_command_retry(self, operation: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Fallback Celery task: Executa comando AutoCAD com retry exponencial.
+    
+    Chamado quando COM falha — tenta novamente com delays crescentes:
+    - Tentativa 1: imediatamente
+    - Tentativa 2: após 1 segundo
+    - Tentativa 3: após 2 segundos  
+    - Tentativa 4: após 4 segundos
+    
+    Args:
+        operation: Nome da operação (draw_pipe, draw_line, insert_component)
+        kwargs: Parâmetros da operação como dict
+        
+    Returns:
+        Dict com resultado da execução (sucesso ou falha)
+    """
+    task_id = self.request.id
+    retry_count = self.request.retries if hasattr(self, 'request') else 0
+    start_time = time.time()
+    
+    try:
+        logger.info(
+            f"AutoCAD fallback retry {operation} - task_id={task_id}, attempt={retry_count + 1}",
+            extra={
+                'task_id': task_id,
+                'operation': operation,
+                'attempt': retry_count + 1,
+                'status': 'retry'
+            }
+        )
+        
+        # Importar driver
+        from backend.autocad_driver import acad_driver
+        
+        # Executar operação através do driver
+        if operation == "draw_pipe":
+            result = acad_driver.draw_pipe(
+                points=kwargs.get("points", []),
+                diameter=kwargs.get("diameter", 6.0),
+                layer=kwargs.get("layer", "PIPE-PROCESS"),
+            )
+        elif operation == "draw_line":
+            result = acad_driver.draw_line(
+                start=kwargs.get("start", [0, 0, 0]),
+                end=kwargs.get("end", [1, 1, 0]),
+                layer=kwargs.get("layer", "PIPE-PROCESS"),
+            )
+        elif operation == "insert_component":
+            result = acad_driver.insert_component(
+                block_name=kwargs.get("block_name", ""),
+                coordinate=kwargs.get("coordinate", [0, 0, 0]),
+                rotation=kwargs.get("rotation", 0.0),
+                scale=kwargs.get("scale", 1.0),
+                layer=kwargs.get("layer", "VALVE"),
+            )
+        elif operation == "send_command":
+            result = acad_driver.send_command(command=kwargs.get("command", ""))
+        else:
+            raise ValueError(f"Operação desconhecida: {operation}")
+        
+        # Se sucesso, retornar resultado
+        if result.success:
+            duration = time.time() - start_time
+            logger.info(
+                f"AutoCAD fallback succeeded - operation={operation}, retry={retry_count}, duration={duration:.2f}s",
+                extra={
+                    'task_id': task_id,
+                    'operation': operation,
+                    'attempt': retry_count + 1,
+                    'status': 'success',
+                    'duration_seconds': duration,
+                }
+            )
+            if TASKS_DURATION:
+                TASKS_DURATION.labels(task_name='execute_autocad_command_retry').observe(duration)
+            
+            return {
+                'status': 'success',
+                'task_id': task_id,
+                'operation': operation,
+                'attempt': retry_count + 1,
+                'duration_seconds': duration,
+                'result': result.to_dict(),
+            }
+        
+        # Se falhou, retry
+        logger.warning(
+            f"AutoCAD fallback failed, will retry - operation={operation}, error={result.message}",
+            extra={
+                'task_id': task_id,
+                'operation': operation,
+                'attempt': retry_count + 1,
+                'status': 'failed',
+                'error': result.message,
+            }
+        )
+        
+        # Calcular delay exponencial para próxima tentativa
+        backoff_delay = self.calculate_backoff(retry_count, base=2.0, max_delay=10.0)
+        
+        # Tentar novamente com retry
+        raise Exception(f"AutoCAD operation falhou: {result.message}")
+    
+    except Exception as exc:
+        logger.error(
+            f"AutoCAD fallback error - operation={operation}, error={exc}",
+            extra={
+                'task_id': task_id,
+                'operation': operation,
+                'attempt': retry_count + 1,
+                'status': 'error',
+                'error': str(exc),
+            }
+        )
+        
+        # Se ainda temos retries disponíveis, fazer retry
+        if retry_count < 3:
+            backoff_delay = 2 ** retry_count  # 1, 2, 4 segundos
+            logger.info(f"Agendando retry em {backoff_delay}s a tentar desenlução fallback")
+            raise self.retry(exc=exc, countdown=backoff_delay)
+        
+        # Se esgotamos retries, retornar falha
+        duration = time.time() - start_time
+        return {
+            'status': 'failed_after_retries',
+            'task_id': task_id,
+            'operation': operation,
+            'attempts': retry_count + 1,
+            'max_retries': 3,
+            'final_error': str(exc),
+            'duration_seconds': duration,
+        }

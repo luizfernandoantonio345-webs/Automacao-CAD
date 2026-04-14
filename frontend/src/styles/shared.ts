@@ -11,8 +11,7 @@ import type { Theme } from "./theme";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const typography = {
-  fontFamily:
-    "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontFamily: "'Sora', 'IBM Plex Sans', 'Segoe UI', sans-serif",
 
   // Tamanhos de título padronizados
   h1: {
@@ -106,7 +105,7 @@ export const createStyles = (theme: Theme) => ({
   // Container de página
   pageContainer: {
     minHeight: "100vh",
-    backgroundColor: theme.background,
+    background: theme.gradientPage || theme.background,
     color: theme.textPrimary,
     fontFamily: typography.fontFamily,
     padding: spacing.lg,

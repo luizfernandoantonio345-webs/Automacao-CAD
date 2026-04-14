@@ -433,7 +433,9 @@ def make_cache_key(func: Callable, args: tuple, kwargs: dict) -> str:
     # Hash para evitar chaves muito longas
     key_str = ":".join(key_parts)
     if len(key_str) > 200:
-        key_hash = hashlib.md5(key_str.encode()).hexdigest()[:16]
+        # Usando SHA256 ao invés de MD5 para evitar warning de segurança
+        # Nota: aqui é usado apenas para geração de chave de cache, não para segurança
+        key_hash = hashlib.sha256(key_str.encode()).hexdigest()[:16]
         key_str = f"{func_name}:{key_hash}"
     
     return key_str

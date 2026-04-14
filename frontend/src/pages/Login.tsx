@@ -139,8 +139,10 @@ const STATS = [
 // ═══════════════════════════════════════════════════════════════════════════
 
 const Login = () => {
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [empresa, setEmpresa] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
@@ -172,6 +174,41 @@ const Login = () => {
         setError(
           "Servidor indisponível. Verifique sua conexão e tente novamente.",
         );
+      } else {
+        setError(`Erro no servidor (${status}). Tente novamente.`);
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Preencha e-mail e senha para criar sua conta.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      await ApiService.register({
+        email,
+        senha: password,
+        empresa: empresa || undefined,
+      });
+      refreshTier();
+      navigate("/dashboard");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 400) {
+        setError("Este e-mail já está cadastrado. Faça login.");
+      } else if (status === 429) {
+        setError("Muitas tentativas. Aguarde um momento.");
+      } else if (!status) {
+        setError("Servidor indisponível. Verifique sua conexão.");
       } else {
         setError(`Erro no servidor (${status}). Tente novamente.`);
       }
@@ -317,12 +354,51 @@ const Login = () => {
               >
                 <FaShieldAlt size={24} />
               </motion.div>
-              <h2 style={s.formTitle}>Acesso ao Sistema</h2>
-              <p style={s.formSubtitle}>Faça login para acessar sua conta</p>
+              <h2 style={s.formTitle}>
+                {mode === "login" ? "Acesso ao Sistema" : "Criar Conta Grátis"}
+              </h2>
+              <p style={s.formSubtitle}>
+                {mode === "login"
+                  ? "Faça login para acessar sua conta"
+                  : "14 dias grátis — comece agora"}
+              </p>
+            </div>
+
+            {/* Login/Signup Toggle */}
+            <div style={s.modeToggle}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                }}
+                style={{
+                  ...s.modeBtn,
+                  ...(mode === "login" ? s.modeBtnActive : {}),
+                }}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signup");
+                  setError("");
+                }}
+                style={{
+                  ...s.modeBtn,
+                  ...(mode === "signup" ? s.modeBtnActive : {}),
+                }}
+              >
+                Criar Conta
+              </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleLogin} style={s.form}>
+            <form
+              onSubmit={mode === "login" ? handleLogin : handleSignup}
+              style={s.form}
+            >
               <div style={s.inputGroup}>
                 <label style={s.label}>E-MAIL</label>
                 <motion.input
@@ -367,6 +443,35 @@ const Login = () => {
                 />
               </div>
 
+              {mode === "signup" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={s.inputGroup}
+                >
+                  <label style={s.label}>EMPRESA (OPCIONAL)</label>
+                  <motion.input
+                    type="text"
+                    placeholder="Nome da empresa"
+                    value={empresa}
+                    onChange={(e) => setEmpresa(e.target.value)}
+                    onFocus={() => setFocusedInput("empresa")}
+                    onBlur={() => setFocusedInput(null)}
+                    style={{
+                      ...s.input,
+                      borderColor:
+                        focusedInput === "empresa" ? "#00A1FF" : "#1a2030",
+                      boxShadow:
+                        focusedInput === "empresa"
+                          ? "0 0 20px rgba(0,161,255,0.2)"
+                          : "none",
+                    }}
+                    whileFocus={{ scale: 1.01 }}
+                  />
+                </motion.div>
+              )}
+
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -403,7 +508,9 @@ const Login = () => {
                   </motion.div>
                 ) : (
                   <>
-                    <span>ENTRAR</span>
+                    <span>
+                      {mode === "login" ? "ENTRAR" : "CRIAR CONTA GRÁTIS"}
+                    </span>
                     <FaFingerprint size={18} />
                   </>
                 )}
@@ -785,6 +892,32 @@ const s: Record<string, React.CSSProperties> = {
     gap: "8px",
     transition: "all 0.2s ease",
     marginTop: "12px",
+  },
+  modeToggle: {
+    display: "flex",
+    gap: "0px",
+    marginBottom: "24px",
+    borderRadius: "10px",
+    overflow: "hidden",
+    border: "1px solid #1a2030",
+  },
+  modeBtn: {
+    flex: 1,
+    padding: "12px",
+    background: "transparent",
+    border: "none",
+    color: "#556677",
+    fontSize: "13px",
+    fontWeight: 600,
+    letterSpacing: "1px",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  },
+  modeBtnActive: {
+    background:
+      "linear-gradient(135deg, rgba(0,161,255,0.15) 0%, rgba(0,161,255,0.05) 100%)",
+    color: "#00A1FF",
+    boxShadow: "inset 0 -2px 0 #00A1FF",
   },
   footer: {
     marginTop: "32px",

@@ -106,7 +106,8 @@ def get_database_config() -> DatabaseConfig:
         if custom_path:
             sqlite_path = custom_path
         elif is_vercel:
-            sqlite_path = "/tmp/engcad.db"
+            # Vercel serverless requer /tmp para arquivos
+            sqlite_path = "/tmp/engcad.db"  # nosec B108
         else:
             from pathlib import Path
             sqlite_path = str(Path(__file__).resolve().parents[1] / "data" / "engcad.db")

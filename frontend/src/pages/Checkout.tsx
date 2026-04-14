@@ -22,8 +22,11 @@ import {
   FaPhone,
   FaCheckCircle,
   FaStar,
+  FaCreditCard,
+  FaSpinner,
 } from "react-icons/fa";
 import { COLORS, SHADOWS } from "../styles/premium";
+import { API_BASE_URL } from "../services/api";
 
 // ─────────────────── Plan data ───────────────────
 const PLAN_DATA: Record<string, any> = {
@@ -55,12 +58,44 @@ const PLAN_DATA: Record<string, any> = {
       "Suporte prioritário (24h)",
     ],
   },
+  enterprise: {
+    name: "Enterprise",
+    price: 1497,
+    color: "#8B5CF6",
+    icon: <FaBuilding />,
+    features: [
+      "Tudo do Professional",
+      "Projetos ilimitados",
+      "IA Assistente ilimitada",
+      "API completa de integração",
+      "Até 10 licenças incluídas",
+      "Suporte 24/7 com telefone",
+    ],
+  },
 };
 
 type Step = "summary" | "contact" | "payment" | "success";
+type PlanId = "starter" | "professional" | "enterprise";
+type BillingCycle = "monthly" | "annual";
 
 const PIX_KEY = "pagamentos@engenharia-cad.com.br";
 const WHATSAPP_NUMBER = "5531992681231";
+const PLAN_IDS: PlanId[] = ["starter", "professional", "enterprise"];
+const STEP_KEYS: Step[] = ["summary", "contact", "payment", "success"];
+
+const normalizePlanId = (value: string | null): PlanId =>
+  PLAN_IDS.includes(value as PlanId) ? (value as PlanId) : "professional";
+
+const normalizeBilling = (value: string | null): BillingCycle =>
+  value === "annual" ? "annual" : "monthly";
+
+const getStepFromParams = (params: URLSearchParams): Step => {
+  const explicitStep = params.get("step");
+  if (params.get("session_id") || params.get("session")) return "success";
+  return STEP_KEYS.includes(explicitStep as Step)
+    ? (explicitStep as Step)
+    : "summary";
+};
 
 // ─────────────────── Animated BG ───────────────────
 const AnimatedBg: React.FC = () => (
@@ -172,12 +207,15 @@ const StepIndicator: React.FC<{ current: Step }> = ({ current }) => {
 const Checkout: React.FC = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const planId = params.get("plan") || "professional";
-  const billing = params.get("billing") || "monthly";
+  const planId = normalizePlanId(params.get("plan"));
+  const billing = normalizeBilling(params.get("billing"));
   const plan = PLAN_DATA[planId] || PLAN_DATA.professional;
 
-  const [step, setStep] = useState<Step>("summary");
+  const [step, setStep] = useState<Step>(() => getStepFromParams(params));
   const [copied, setCopied] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState("");
+  const [pixToast, setPixToast] = useState(false);
 
   // Contact form
   const [form, setForm] = useState({
@@ -193,11 +231,84 @@ const Checkout: React.FC = () => {
     billing === "annual" ? Math.round(plan.price * 0.8) : plan.price;
   const annualTotal = finalPrice * 12;
 
+  useEffect(() => {
+    setStep(getStepFromParams(params));
+  }, [params]);
+
   const handleCopyPix = () => {
     navigator.clipboard.writeText(PIX_KEY).then(() => {
       setCopied(true);
+      setPixToast(true);
       setTimeout(() => setCopied(false), 3000);
+      setTimeout(() => setPixToast(false), 4000);
     });
+  };
+
+  // Stripe card payment handler
+  const handleStripePayment = async () => {
+    setStripeLoading(true);
+    setStripeError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const successUrl = new URL(`${window.location.origin}/checkout`);
+      successUrl.searchParams.set("plan", planId);
+      successUrl.searchParams.set("billing", billing);
+      successUrl.searchParams.set("step", "success");
+
+      const cancelUrl = new URL(`${window.location.origin}/checkout`);
+      cancelUrl.searchParams.set("plan", planId);
+      cancelUrl.searchParams.set("billing", billing);
+      cancelUrl.searchParams.set("step", "payment");
+
+      const response = await fetch(`${API_BASE_URL}/api/billing/checkout`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          email: form.email,
+          tier: planId,
+          billing_cycle: billing === "annual" ? "yearly" : "monthly",
+          success_url: successUrl.toString(),
+          cancel_url: cancelUrl.toString(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setStripeError("Faça login ou crie sua conta antes de continuar o pagamento.");
+        } else {
+          setStripeError(data.error || data.detail || "Não foi possível iniciar o checkout.");
+        }
+        return;
+      }
+
+      if (data.checkout_url) {
+        // Redirect to Stripe hosted checkout
+        window.location.href = data.checkout_url;
+      } else if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error || data.detail) {
+        setStripeError(data.error || data.detail);
+      } else {
+        setStripeError(
+          "Pagamento indisponível no momento. Use WhatsApp ou PIX.",
+        );
+      }
+    } catch (err) {
+      console.error("Stripe checkout error:", err);
+      setStripeError(
+        "Erro ao processar pagamento. Tente novamente ou use outra forma.",
+      );
+    } finally {
+      setStripeLoading(false);
+    }
   };
 
   const handleFormChange = (field: string, value: string) => {
@@ -750,6 +861,113 @@ const Checkout: React.FC = () => {
                   </span>
                 </motion.button>
 
+                {/* Option: Card Payment (Stripe) */}
+                <motion.button
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 4px 20px rgba(99,102,241,0.3)",
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleStripePayment}
+                  disabled={stripeLoading}
+                  style={{
+                    width: "100%",
+                    padding: "18px 20px",
+                    background: "rgba(99,102,241,0.08)",
+                    border: "1px solid rgba(99,102,241,0.4)",
+                    borderRadius: "12px",
+                    cursor: stripeLoading ? "wait" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    marginBottom: "12px",
+                    textAlign: "left",
+                    opacity: stripeLoading ? 0.7 : 1,
+                  }}
+                >
+                  {stripeLoading ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                    >
+                      <FaSpinner size={28} color="#6366F1" />
+                    </motion.div>
+                  ) : (
+                    <FaCreditCard size={28} color="#6366F1" />
+                  )}
+                  <div>
+                    <div
+                      style={{
+                        color: "#FFF",
+                        fontWeight: 700,
+                        fontSize: "15px",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      {stripeLoading ? "Processando..." : "Pagar com Cartão"}
+                    </div>
+                    <div style={{ color: "#8899aa", fontSize: "12px" }}>
+                      Checkout seguro com Visa, Mastercard, Amex, Elo
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      color: "#6366F1",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <FaLock size={9} /> SSL
+                  </span>
+                </motion.button>
+
+                {stripeError && (
+                  <div
+                    style={{
+                      color: COLORS.danger,
+                      fontSize: "12px",
+                      marginBottom: "12px",
+                      padding: "12px",
+                      background: "rgba(239,68,68,0.1)",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                    }}
+                  >
+                    <span>{stripeError}</span>
+                    <button
+                      onClick={() => {
+                        setStripeError("");
+                        handleStripePayment();
+                      }}
+                      style={{
+                        background: COLORS.danger,
+                        border: "none",
+                        borderRadius: "6px",
+                        color: "#FFF",
+                        padding: "6px 14px",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
+
                 {/* Option 2: Email */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -1061,6 +1279,37 @@ const Checkout: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* PIX Copy Toast */}
+      <AnimatePresence>
+        {pixToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            style={{
+              position: "fixed",
+              bottom: "32px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: COLORS.success,
+              color: "#FFF",
+              padding: "14px 28px",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              boxShadow: "0 8px 32px rgba(16,185,129,0.4)",
+              zIndex: 9999,
+            }}
+          >
+            <FaCheck size={14} />
+            Chave PIX copiada! Cole no app do seu banco.
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

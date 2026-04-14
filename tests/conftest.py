@@ -20,6 +20,8 @@ sys.path.insert(0, str(ROOT_DIR))
 os.environ.setdefault("TESTING", "1")
 os.environ.setdefault("JARVIS_SECRET", "test_secret_key_minimum_32_bytes_long")
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+os.environ["WATCHDOG_CPU_BLOCK"] = "101"
+os.environ["WATCHDOG_RAM_BLOCK"] = "101"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

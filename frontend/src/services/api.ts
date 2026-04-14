@@ -164,6 +164,52 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Auto-refresh expired tokens (401) before forcing re-login
+let _refreshing: Promise<string | null> | null = null;
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.detail === "Token expirado" &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/auth/refresh"
+    ) {
+      originalRequest._retry = true;
+      if (!_refreshing) {
+        _refreshing = (async () => {
+          try {
+            const token = safeStorage.getToken();
+            if (!token) return null;
+            const res = await api.post<{ access_token: string }>(
+              "/auth/refresh",
+              null,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            );
+            const newToken = res.data.access_token;
+            safeStorage.setToken(newToken);
+            return newToken;
+          } catch {
+            return null;
+          } finally {
+            _refreshing = null;
+          }
+        })();
+      }
+      const newToken = await _refreshing;
+      if (newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api.request(originalRequest);
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const shouldRetry = (error: AxiosError) => {

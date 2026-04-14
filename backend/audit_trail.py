@@ -119,7 +119,7 @@ class AuditEngine:
         resource_type: str,
         resource_id: str,
         description: str,
-        ip_address: str = "0.0.0.0",
+        ip_address: str = "unknown",  # nosec B104 - default para log, não bind
         user_agent: str = "unknown",
         severity: AuditSeverity = AuditSeverity.LOW,
         request_data: Dict = None,
@@ -424,7 +424,7 @@ class AuditLogInput(BaseModel):
     resource_type: str
     resource_id: str
     description: str
-    ip_address: str = "0.0.0.0"
+    ip_address: str = "unknown"  # nosec B104 - default para log
     severity: str = "low"
     success: bool = True
     error_message: Optional[str] = None

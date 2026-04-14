@@ -16,11 +16,22 @@ from __future__ import annotations
 import logging
 import math
 import re
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple, Union, Any
 from enum import Enum
+
+# === SECURITY: Usar defusedxml para prevenir ataques XXE (XML External Entity) ===
+try:
+    import defusedxml.ElementTree as ET
+    _SECURE_XML = True
+except ImportError:
+    import xml.etree.ElementTree as ET  # Fallback - menos seguro
+    _SECURE_XML = False
+    logging.getLogger(__name__).warning(
+        "defusedxml não instalado - usando xml.etree.ElementTree. "
+        "Execute: pip install defusedxml"
+    )
 
 # Tenta importar ezdxf, mas funciona sem ele usando parser embutido
 # Nota: Python 3.14+ pode ter problemas de compatibilidade, por isso capturamos Exception
@@ -646,8 +657,13 @@ class GeometryParser:
         """Parse arquivo SVG."""
         logger.info(f"Parseando SVG: {path}")
         
+        # Avisar se usando parser inseguro
+        if not _SECURE_XML:
+            logger.warning("Usando xml.etree.ElementTree (inseguro). Instale defusedxml.")
+        
         try:
-            tree = ET.parse(str(path))
+            # nosec B314 - defusedxml é usado quando disponível (ver imports)
+            tree = ET.parse(str(path))  # nosec B314
             root = tree.getroot()
         except Exception as e:
             logger.error(f"Erro ao ler SVG: {e}")

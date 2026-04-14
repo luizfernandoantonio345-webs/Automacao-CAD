@@ -10,22 +10,25 @@ Fluxo:
        - Mesmo HWID? Autorizado
        - HWID diferente? BLOQUEADO (máquina não autorizada)
     3. Servidor retorna token de sessão se aprovado
+
+Armazenamento: PostgreSQL/SQLite (persistente, não perde dados em cold starts)
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-import threading
 import time
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.hwid import validate_hwid
+from backend.database.db import (
+    get_license, create_license, update_license_access,
+    delete_license, list_all_licenses, get_user_by_email
+)
 
 logger = logging.getLogger("engcad.license")
 
@@ -49,31 +52,6 @@ def _require_auth(request: Request) -> str:
         raise HTTPException(status_code=401, detail="Token expirado")
     except _jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token inválido")
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STORE DE LICENÇAS — Arquivo JSON simples (produção usaria banco de dados)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-_LICENSE_FILE = Path("/tmp/licenses.json") if os.getenv("VERCEL") else Path(__file__).parent.parent / "data" / "licenses.json"
-_LICENSE_LOCK = threading.Lock()
-
-
-def _load_licenses() -> dict:
-    """Carrega o registro de licenças do disco."""
-    if not _LICENSE_FILE.exists():
-        return {}
-    try:
-        return json.loads(_LICENSE_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def _save_licenses(data: dict) -> None:
-    """Persiste o registro de licenças no disco."""
-    _LICENSE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _LICENSE_FILE.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -110,67 +88,55 @@ async def validate_license(req: HWIDValidateRequest):
     - Mesmo HWID → autorizado
     - HWID diferente → BLOQUEADO
     """
-    with _LICENSE_LOCK:
-        licenses = _load_licenses()
-        user_entry = licenses.get(req.username)
+    user_entry = get_license(req.username)
 
-        if user_entry is None:
-            # Primeiro acesso — registrar máquina
-            licenses[req.username] = {
-                "hwid": req.hwid,
-                "registered_at": time.time(),
-                "last_seen": time.time(),
-                "access_count": 1,
-            }
-            _save_licenses(licenses)
-            logger.info("Nova licença registrada: %s (HWID: %s...)", req.username, req.hwid[:8])
-            return LicenseStatusResponse(
-                authorized=True,
-                username=req.username,
-                machine_registered=True,
-                message="Licença ativada com sucesso nesta máquina.",
-            )
-
-        # Usuário existe — comparar HWID
-        stored_hwid = user_entry.get("hwid", "")
-
-        if validate_hwid(stored_hwid, req.hwid):
-            # Mesmo hardware — autorizado
-            user_entry["last_seen"] = time.time()
-            user_entry["access_count"] = user_entry.get("access_count", 0) + 1
-            _save_licenses(licenses)
-            logger.info("Acesso autorizado: %s (acesso #%d)", req.username, user_entry["access_count"])
-            return LicenseStatusResponse(
-                authorized=True,
-                username=req.username,
-                machine_registered=True,
-                message="Acesso autorizado.",
-            )
-
-        # HWID diferente — BLOQUEADO
-        logger.warning(
-            "ACESSO NEGADO: %s tentou acessar de máquina diferente (esperado: %s..., recebido: %s...)",
-            req.username, stored_hwid[:8], req.hwid[:8],
+    if user_entry is None:
+        # Primeiro acesso — registrar máquina no banco de dados
+        create_license(req.username, req.hwid)
+        logger.info("Nova licença registrada: %s (HWID: %s...)", req.username, req.hwid[:8])
+        return LicenseStatusResponse(
+            authorized=True,
+            username=req.username,
+            machine_registered=True,
+            message="Licença ativada com sucesso nesta máquina.",
         )
-        raise HTTPException(
-            status_code=403,
-            detail="Acesso negado: Este computador não está autorizado para esta licença. "
-                   "Contate o administrador para transferir a licença.",
+
+    # Usuário existe — comparar HWID
+    stored_hwid = user_entry.get("hwid", "")
+
+    if validate_hwid(stored_hwid, req.hwid):
+        # Mesmo hardware — autorizado
+        update_license_access(req.username)
+        access_count = user_entry.get("access_count", 0) + 1
+        logger.info("Acesso autorizado: %s (acesso #%d)", req.username, access_count)
+        return LicenseStatusResponse(
+            authorized=True,
+            username=req.username,
+            machine_registered=True,
+            message="Acesso autorizado.",
         )
+
+    # HWID diferente — BLOQUEADO
+    logger.warning(
+        "ACESSO NEGADO: %s tentou acessar de máquina diferente (esperado: %s..., recebido: %s...)",
+        req.username, stored_hwid[:8], req.hwid[:8],
+    )
+    raise HTTPException(
+        status_code=403,
+        detail="Acesso negado: Este computador não está autorizado para esta licença. "
+               "Contate o administrador para transferir a licença.",
+    )
 
 
 @router.get("/status/{username}")
 async def license_status(username: str, request: Request):
     """Retorna informações da licença de um usuário (admin)."""
     _require_auth(request)
-    with _LICENSE_LOCK:
-        licenses = _load_licenses()
-        user_entry = licenses.get(username)
+    user_entry = get_license(username)
 
     # Buscar tier do banco de dados
     tier = "demo"
     try:
-        from backend.database.db import get_user_by_email
         user = get_user_by_email(username)
         if user:
             tier = user.get("tier", "demo")
@@ -204,34 +170,30 @@ async def reset_license(username: str, request: Request):
     Requer autenticação.
     """
     _require_auth(request)
-    with _LICENSE_LOCK:
-        licenses = _load_licenses()
-        if username not in licenses:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado")
-        del licenses[username]
-        _save_licenses(licenses)
+    deleted = delete_license(username)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     logger.info("Licença resetada: %s", username)
     return {"message": f"Licença de '{username}' resetada. Próximo login registrará nova máquina."}
 
 
 @router.get("/all")
-async def list_all_licenses(request: Request):
+async def get_all_licenses(request: Request):
     """Lista todas as licenças registradas (admin). Requer autenticação."""
     _require_auth(request)
-    with _LICENSE_LOCK:
-        licenses = _load_licenses()
+    licenses = list_all_licenses()
 
     return {
         "total": len(licenses),
         "licenses": [
             {
-                "username": k,
-                "hwid_prefix": v["hwid"][:8] + "...",
-                "registered_at": v.get("registered_at"),
-                "last_seen": v.get("last_seen"),
-                "access_count": v.get("access_count", 0),
+                "username": lic["username"],
+                "hwid_prefix": lic["hwid"][:8] + "...",
+                "registered_at": lic.get("registered_at"),
+                "last_seen": lic.get("last_seen"),
+                "access_count": lic.get("access_count", 0),
             }
-            for k, v in licenses.items()
+            for lic in licenses
         ],
     }

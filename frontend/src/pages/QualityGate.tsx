@@ -8,9 +8,11 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import { ApiService, ProjectRecord, QualityCheckResult } from "../services/api";
+import { useTheme } from "../context/ThemeContext";
 
 const QualityGate = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   const projectIdParam = searchParams.get("project");
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
@@ -75,23 +77,42 @@ const QualityGate = () => {
   };
 
   const verdictColor = {
-    APROVADO: "#32CD32",
-    PARCIAL: "#FFD700",
-    REPROVADO: "#FF4B4B",
+    APROVADO: theme.accentSecondary,
+    PARCIAL: theme.accentWarning,
+    REPROVADO: theme.accentDanger,
   };
 
   return (
-    <div style={qg.container}>
+    <div
+      style={{
+        ...qg.container,
+        color: theme.textPrimary,
+        background: theme.gradientPage || theme.background,
+      }}
+    >
       <h2 style={{ letterSpacing: "4px", marginBottom: "30px" }}>
         <FaShieldAlt /> PAINEL DE AUDITORIA
       </h2>
 
       <div style={qg.grid}>
         {/* Seleção de Projeto */}
-        <div style={qg.card}>
-          <h3 style={qg.title}>SELECIONAR PROJETO</h3>
+        <div
+          style={{
+            ...qg.card,
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          <h3 style={{ ...qg.title, color: theme.textSecondary }}>
+            SELECIONAR PROJETO
+          </h3>
           <select
-            style={qg.select}
+            style={{
+              ...qg.select,
+              backgroundColor: theme.inputBackground,
+              border: `1px solid ${theme.inputBorder}`,
+              color: theme.textPrimary,
+            }}
             value={selectedId ?? ""}
             onChange={(e) => {
               setSelectedId(parseInt(e.target.value) || null);
@@ -120,6 +141,9 @@ const QualityGate = () => {
           <button
             style={{
               ...qg.runBtn,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.accentPrimary}`,
+              background: `linear-gradient(90deg, ${theme.accentSoft || `${theme.accentPrimary}15`} 0%, transparent 100%)`,
               opacity: selectedId && !running ? 1 : 0.4,
               cursor: selectedId && !running ? "pointer" : "not-allowed",
             }}
@@ -139,12 +163,20 @@ const QualityGate = () => {
         </div>
 
         {/* Resultado */}
-        <div style={qg.card}>
-          <h3 style={qg.title}>RESULTADO DA AUDITORIA</h3>
+        <div
+          style={{
+            ...qg.card,
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          <h3 style={{ ...qg.title, color: theme.textSecondary }}>
+            RESULTADO DA AUDITORIA
+          </h3>
           {loading ? (
-            <p style={{ color: "#555" }}>Carregando...</p>
+            <p style={{ color: theme.textSecondary }}>Carregando...</p>
           ) : !qcResult ? (
-            <p style={{ color: "#555", fontSize: 13 }}>
+            <p style={{ color: theme.textSecondary, fontSize: 13 }}>
               Selecione um projeto e clique em "Executar Verificação".
             </p>
           ) : (
@@ -161,11 +193,15 @@ const QualityGate = () => {
               >
                 <div style={{ fontSize: 12, color: "#000" }}>VEREDITO</div>
                 <div
-                  style={{ fontSize: 28, fontWeight: "bold", color: "#000" }}
+                  style={{
+                    fontSize: 28,
+                    fontWeight: "bold",
+                    color: theme.background,
+                  }}
                 >
                   {qcResult.verdict}
                 </div>
-                <div style={{ fontSize: 13, color: "#000" }}>
+                <div style={{ fontSize: 13, color: theme.background }}>
                   {qcResult.passed}/{qcResult.total} verificações aprovadas
                 </div>
               </div>
@@ -175,16 +211,16 @@ const QualityGate = () => {
                 <div key={i} style={qg.checkRow}>
                   <span>
                     {c.passed ? (
-                      <FaCheckCircle color="#32CD32" />
+                      <FaCheckCircle color={theme.accentSecondary} />
                     ) : (
-                      <FaTimesCircle color="#FF4B4B" />
+                      <FaTimesCircle color={theme.accentDanger} />
                     )}
                   </span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: "bold", fontSize: 13 }}>
                       {c.name}
                     </div>
-                    <div style={{ fontSize: 11, color: "#888" }}>
+                    <div style={{ fontSize: 11, color: theme.textSecondary }}>
                       {c.detail}
                     </div>
                   </div>
@@ -192,7 +228,11 @@ const QualityGate = () => {
               ))}
 
               <button
-                style={qg.nextBtn}
+                style={{
+                  ...qg.nextBtn,
+                  backgroundColor: theme.accentSecondary,
+                  color: theme.background,
+                }}
                 onClick={() => navigate(`/final-report?project=${selectedId}`)}
               >
                 PROSSEGUIR → RELATÓRIO FINAL
@@ -202,8 +242,16 @@ const QualityGate = () => {
         </div>
 
         {/* Especificação Técnica */}
-        <div style={qg.card}>
-          <h3 style={qg.title}>ESPECIFICAÇÃO TÉCNICA</h3>
+        <div
+          style={{
+            ...qg.card,
+            backgroundColor: theme.surface,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          <h3 style={{ ...qg.title, color: theme.textSecondary }}>
+            ESPECIFICAÇÃO TÉCNICA
+          </h3>
           {project ? (
             (() => {
               let spec: any = {};
@@ -239,13 +287,15 @@ const QualityGate = () => {
                   />
                 </div>
               ) : (
-                <p style={{ color: "#555", fontSize: 13 }}>
+                <p style={{ color: theme.textSecondary, fontSize: 13 }}>
                   Execute a verificação para gerar especificação.
                 </p>
               );
             })()
           ) : (
-            <p style={{ color: "#555", fontSize: 13 }}>Selecione um projeto.</p>
+            <p style={{ color: theme.textSecondary, fontSize: 13 }}>
+              Selecione um projeto.
+            </p>
           )}
         </div>
       </div>
@@ -259,12 +309,12 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
       display: "flex",
       justifyContent: "space-between",
       padding: "6px 0",
-      borderBottom: "1px solid #1a1a1a",
+      borderBottom: "1px solid rgba(128,128,128,0.25)",
       fontSize: 12,
     }}
   >
     <span style={{ color: "#888" }}>{label}</span>
-    <span style={{ color: "#FFF" }}>{value}</span>
+    <span style={{ color: "inherit" }}>{value}</span>
   </div>
 );
 

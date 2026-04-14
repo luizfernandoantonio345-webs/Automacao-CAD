@@ -359,6 +359,42 @@ const CncControl: React.FC = () => {
   const [aiInput, setAiInput] = useState("");
   const [isAiThinking, setIsAiThinking] = useState(false);
 
+  // ── Algoritmo de Nesting ──
+  type NestingAlgorithmType = "blf" | "nfp" | "genetic" | "sa" | "guillotine";
+  const [nestingAlgorithm, setNestingAlgorithm] =
+    useState<NestingAlgorithmType>("blf");
+  const [nestingPriority, setNestingPriority] = useState<
+    "speed" | "efficiency" | "balanced"
+  >("balanced");
+
+  const NESTING_ALGORITHMS = {
+    blf: {
+      name: "Bottom-Left Fill",
+      description: "Rápido, ideal para retângulos",
+      icon: "📦",
+    },
+    nfp: {
+      name: "No-Fit Polygon",
+      description: "Preciso para formas complexas",
+      icon: "🔷",
+    },
+    genetic: {
+      name: "Algoritmo Genético",
+      description: "Otimização global (mais lento)",
+      icon: "🧬",
+    },
+    sa: {
+      name: "Simulated Annealing",
+      description: "Refinamento iterativo",
+      icon: "🔥",
+    },
+    guillotine: {
+      name: "Guilhotina",
+      description: "Melhor para cortes lineares",
+      icon: "✂️",
+    },
+  };
+
   // ── Painel de Estatísticas e Validações ──
   const [showStatisticsPanel, setShowStatisticsPanel] = useState(true);
   const [validationIssues, setValidationIssues] = useState<
@@ -936,14 +972,98 @@ const CncControl: React.FC = () => {
   // SISTEMA DE NESTING (OTIMIZAÇÃO DE CHAPA)
   // ═══════════════════════════════════════════════════════════════════════════════
 
-  const runNesting = useCallback(() => {
+  const runNesting = useCallback(async () => {
     if (pieces.length === 0) return;
 
     setIsNesting(true);
 
-    // Simular processamento
+    // Tentar usar API do backend para nesting avançado
+    try {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      // Converter peças para o formato da API
+      const apiPieces = pieces.map((piece) => ({
+        name: piece.name,
+        type: piece.type,
+        width: piece.width,
+        height: piece.height,
+        diameter:
+          piece.type === "circle"
+            ? Math.min(piece.width, piece.height)
+            : undefined,
+        quantity: piece.quantity,
+        allow_rotation: true,
+      }));
+
+      const response = await fetch(`${API_BASE_URL}/api/cam/nesting/run`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          pieces: apiPieces,
+          sheet: {
+            width: sheetConfig.width,
+            height: sheetConfig.height,
+            margin: sheetConfig.margin,
+          },
+          algorithm: nestingAlgorithm,
+          priority: nestingPriority,
+          spacing: sheetConfig.spacing,
+          rotation_mode: "orthogonal",
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const apiResult = result.result || result;
+
+        setNestingResult({
+          placements: apiResult.placements || [],
+          efficiency: apiResult.efficiency || 0,
+          wasteArea: apiResult.waste_area || 0,
+          usedArea: apiResult.used_area || 0,
+          totalPieces: apiResult.total_pieces || 0,
+          unplacedPieces: apiResult.unplaced_pieces || 0,
+        });
+
+        // Converter para geometria
+        const geo = piecesToGeometry(pieces);
+        setGeometry(geo);
+        setFileName("nesting_otimizado.dxf");
+
+        // Sugestões baseadas na eficiência
+        const efficiency = apiResult.efficiency || 0;
+        setAiSuggestions((prev) => [
+          {
+            id: `sug_${Date.now()}`,
+            type:
+              efficiency > 75 ? "info" : efficiency > 60 ? "warning" : "error",
+            title: `${NESTING_ALGORITHMS[nestingAlgorithm].name}: ${efficiency.toFixed(1)}%`,
+            message:
+              efficiency > 75
+                ? "Excelente aproveitamento de material!"
+                : efficiency > 60
+                  ? "Considere testar outro algoritmo para melhorar."
+                  : "Tente o algoritmo Genético para melhor otimização.",
+            action: efficiency < 75 ? "Testar algoritmo Genético" : undefined,
+            priority: efficiency < 60 ? 1 : 3,
+          },
+          ...prev,
+        ]);
+
+        setIsNesting(false);
+        return;
+      }
+    } catch {
+      // Fallback para algoritmo local se a API falhar
+      console.log("API nesting unavailable, using local algorithm");
+    }
+
+    // Algoritmo local de fallback (Bottom-Left)
     setTimeout(() => {
-      // Algoritmo de nesting simplificado (Bottom-Left)
       const placements: NestingResult["placements"] = [];
       let usedArea = 0;
       let unplacedPieces = 0;
@@ -1103,7 +1223,13 @@ const CncControl: React.FC = () => {
         ...prev,
       ]);
     }, 1500);
-  }, [pieces, sheetConfig, piecesToGeometry]);
+  }, [
+    pieces,
+    sheetConfig,
+    piecesToGeometry,
+    nestingAlgorithm,
+    nestingPriority,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // SISTEMA DE IA ASSISTENTE
@@ -1699,7 +1825,7 @@ M02 (Fim do programa)
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#050507",
+          background: theme.gradientPage || theme.background,
           gap: "24px",
           padding: "32px",
           textAlign: "center",
@@ -1708,7 +1834,7 @@ M02 (Fim do programa)
         <div style={{ fontSize: "64px" }}>🔒</div>
         <h2
           style={{
-            color: "#fff",
+            color: theme.textPrimary,
             fontSize: "24px",
             fontWeight: 700,
             margin: 0,
@@ -1718,7 +1844,7 @@ M02 (Fim do programa)
         </h2>
         <p
           style={{
-            color: "#8899aa",
+            color: theme.textSecondary,
             fontSize: "15px",
             maxWidth: "480px",
             lineHeight: 1.6,
@@ -1726,9 +1852,12 @@ M02 (Fim do programa)
           }}
         >
           Este módulo está disponível nos planos{" "}
-          <strong style={{ color: "#00A1FF" }}>Professional</strong> e{" "}
-          <strong style={{ color: "#A855F7" }}>Enterprise</strong>. Gere G-code
-          otimizado, aninhamento inteligente e controle de corte plasma com IA.
+          <strong style={{ color: theme.accentPrimary }}>Professional</strong> e{" "}
+          <strong style={{ color: theme.accentInfo || theme.accentPrimary }}>
+            Enterprise
+          </strong>
+          . Gere G-code otimizado, aninhamento inteligente e controle de corte
+          plasma com IA.
         </p>
         <div
           style={{
@@ -1746,7 +1875,7 @@ M02 (Fim do programa)
             }
             style={{
               padding: "14px 32px",
-              background: "linear-gradient(135deg, #00A1FF, #0077BB)",
+              background: theme.gradientAccent || theme.accentPrimary,
               color: "#fff",
               border: "none",
               borderRadius: "10px",
@@ -3101,6 +3230,121 @@ M02 (Fim do programa)
                     )}
                   </>
                 )}
+              </div>
+
+              {/* Seletor de Algoritmo de Nesting */}
+              <div
+                style={{
+                  backgroundColor: theme.inputBackground,
+                  borderRadius: "12px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: theme.textSecondary,
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  🧠 Algoritmo de Otimização
+                </label>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "8px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {(
+                    Object.entries(NESTING_ALGORITHMS) as [
+                      typeof nestingAlgorithm,
+                      { name: string; description: string; icon: string },
+                    ][]
+                  ).map(([key, algo]) => (
+                    <button
+                      key={key}
+                      onClick={() => setNestingAlgorithm(key)}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: "8px",
+                        border:
+                          nestingAlgorithm === key
+                            ? `2px solid ${theme.warning}`
+                            : `1px solid ${theme.border}`,
+                        backgroundColor:
+                          nestingAlgorithm === key
+                            ? `${theme.warning}15`
+                            : "transparent",
+                        color:
+                          nestingAlgorithm === key
+                            ? theme.warning
+                            : theme.textSecondary,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <span style={{ fontSize: "16px" }}>{algo.icon}</span>
+                        <div>
+                          <div style={{ fontSize: "12px", fontWeight: 600 }}>
+                            {algo.name}
+                          </div>
+                          <div style={{ fontSize: "10px", opacity: 0.7 }}>
+                            {algo.description}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {(["speed", "balanced", "efficiency"] as const).map(
+                    (priority) => (
+                      <button
+                        key={priority}
+                        onClick={() => setNestingPriority(priority)}
+                        style={{
+                          flex: 1,
+                          padding: "8px",
+                          borderRadius: "6px",
+                          border:
+                            nestingPriority === priority
+                              ? `2px solid ${theme.accent}`
+                              : `1px solid ${theme.border}`,
+                          backgroundColor:
+                            nestingPriority === priority
+                              ? `${theme.accent}15`
+                              : "transparent",
+                          color:
+                            nestingPriority === priority
+                              ? theme.accent
+                              : theme.textSecondary,
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {priority === "speed"
+                          ? "⚡ Velocidade"
+                          : priority === "balanced"
+                            ? "⚖️ Equilibrado"
+                            : "📊 Eficiência"}
+                      </button>
+                    ),
+                  )}
+                </div>
               </div>
 
               {/* Botão de executar */}

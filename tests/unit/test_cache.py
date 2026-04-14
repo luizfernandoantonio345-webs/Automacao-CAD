@@ -24,14 +24,14 @@ def cache_module():
 @pytest.fixture
 def lru_cache(cache_module):
     """Cria instância de LRUCache para testes."""
-    config = cache_module.CacheConfig(max_size=5, ttl_seconds=1)
-    return cache_module.LRUCache(config)
+    # LRUCache takes max_size and default_ttl directly, not CacheConfig
+    return cache_module.LRUCache(max_size=5, default_ttl=1)
 
 
 @pytest.fixture
 def unified_cache(cache_module):
     """Cria instância de Cache unificado."""
-    config = cache_module.CacheConfig(max_size=10, ttl_seconds=2)
+    config = cache_module.CacheConfig(max_size=10, default_ttl=2)
     return cache_module.Cache(config)
 
 
@@ -49,8 +49,8 @@ class TestLRUCache:
     
     def test_get_missing_key(self, lru_cache):
         """Testa get de chave inexistente."""
+        # LRUCache.get() only takes key, no default parameter
         assert lru_cache.get("nonexistent") is None
-        assert lru_cache.get("nonexistent", "default") == "default"
     
     def test_delete(self, lru_cache):
         """Testa remoção de chave."""
@@ -113,11 +113,10 @@ class TestLRUCache:
         lru_cache.get("key1")  # hit
         lru_cache.get("nonexistent")  # miss
         
-        stats = lru_cache.stats()
-        
-        assert stats["hits"] == 2
-        assert stats["misses"] == 1
-        assert stats["size"] == 1
+        # LRUCache doesn't have stats() method, use internal attributes
+        assert lru_cache._hits == 2
+        assert lru_cache._misses == 1
+        assert len(lru_cache._cache) == 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -162,7 +161,7 @@ class TestCachedDecorator:
         """Testa cache de função."""
         call_count = [0]
         
-        @cache_module.cached(ttl=5, prefix="test")
+        @cache_module.cached(ttl=5)
         def expensive_function(x, y):
             call_count[0] += 1
             return x + y

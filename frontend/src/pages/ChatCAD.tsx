@@ -346,18 +346,54 @@ const STARTER_PROMPTS = [
 ];
 
 // ─────────────────── Main Component ───────────────────
+const STORAGE_KEY = "chatcad_history";
+
 const ChatCAD: React.FC = () => {
   const { addToast, handleApiError } = useToast();
   const { license, consumeAiQuery, triggerUpgrade } = useLicense();
   const navigate = useNavigate();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Load messages from localStorage on mount
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+      }
+    } catch (e) {
+      console.warn("Failed to load chat history:", e);
+    }
+    return [];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoExecute, setAutoExecute] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const nextId = useRef(1);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50))); // Keep last 50
+      } catch (e) {
+        console.warn("Failed to save chat history:", e);
+      }
+    }
+  }, [messages]);
+
+  // Initialize nextId from loaded messages
+  useEffect(() => {
+    if (messages.length > 0) {
+      const maxId = Math.max(...messages.map((m) => m.id));
+      nextId.current = maxId + 1;
+    }
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -680,21 +716,28 @@ const ChatCAD: React.FC = () => {
           </label>
 
           <button
-            onClick={() => setMessages([])}
+            onClick={() => {
+              setMessages([]);
+              localStorage.removeItem(STORAGE_KEY);
+              addToast("info", "ChatCAD", "Nova conversa iniciada");
+            }}
             style={{
-              background: "none",
-              border: "1px solid #1e293b",
+              background:
+                "linear-gradient(135deg, rgba(0,161,255,0.1), rgba(139,92,246,0.1))",
+              border: "1px solid rgba(0,161,255,0.3)",
               borderRadius: "8px",
-              padding: "7px 10px",
-              color: "#556677",
+              padding: "7px 12px",
+              color: "#00A1FF",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "4px",
+              gap: "6px",
               fontSize: "12px",
+              fontWeight: 600,
+              transition: "all 0.2s",
             }}
           >
-            <FaTrash size={11} /> Limpar
+            <FaTrash size={11} /> Nova conversa
           </button>
         </div>
       </div>

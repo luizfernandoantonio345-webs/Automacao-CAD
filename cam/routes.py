@@ -18,7 +18,10 @@ import logging
 import tempfile
 import os
 import hashlib
+import secrets
+import re
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, BackgroundTasks
@@ -53,6 +56,13 @@ router = APIRouter(prefix="/api/cam", tags=["cam-plasma"])
 MAX_FILE_SIZE_MB = 50
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 ALLOWED_EXTENSIONS = {".dxf", ".svg"}
+
+# Diretório seguro para uploads temporários
+_UPLOAD_DIR = Path(tempfile.gettempdir()) / "engcad_uploads"
+_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# Regex para nomes de arquivo seguros
+_SAFE_FILENAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
 # Custos estimados por material (R$/kg)
 MATERIAL_COSTS = {
@@ -247,10 +257,19 @@ async def parse_geometry(file: UploadFile = File(...)):
         logger.warning("[CAM-AUDIT] Tentativa de upload sem nome de arquivo")
         raise HTTPException(status_code=400, detail="Nome de arquivo não fornecido")
     
-    # Sanitizar nome do arquivo
-    safe_filename = os.path.basename(file.filename).replace("..", "")
+    # === SECURITY: Sanitização robusta de path traversal ===
+    # 1. Extrair apenas o basename (remove qualquer caminho)
+    original_name = file.filename
+    safe_filename = os.path.basename(original_name)
     
-    # Validar extensão
+    # 2. Remover caracteres de path traversal
+    safe_filename = safe_filename.replace("..", "")
+    safe_filename = safe_filename.replace("/", "")
+    safe_filename = safe_filename.replace("\\", "")
+    safe_filename = safe_filename.replace(":", "")
+    safe_filename = safe_filename.replace("\x00", "")  # Null byte injection
+    
+    # 3. Validar extensão
     ext = os.path.splitext(safe_filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         logger.warning(f"[CAM-AUDIT] Extensão não permitida: {ext}")
@@ -258,6 +277,10 @@ async def parse_geometry(file: UploadFile = File(...)):
             status_code=400, 
             detail=f"Formato não suportado: {ext}. Use .dxf ou .svg"
         )
+    
+    # 4. Gerar nome único seguro (evita sobrescrita e adição de timestamp)
+    unique_id = secrets.token_hex(8)
+    secure_filename = f"{unique_id}{ext}"
     
     try:
         # Ler conteúdo com limite de tamanho
@@ -275,9 +298,16 @@ async def parse_geometry(file: UploadFile = File(...)):
         file_hash = hashlib.sha256(content).hexdigest()[:16]
         logger.info(f"[CAM-AUDIT] Processando arquivo hash={file_hash}, size={len(content)} bytes")
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-            tmp.write(content)
-            tmp_path = tmp.name
+        # === SECURITY: Usar diretório seguro e nome único ===
+        tmp_path = _UPLOAD_DIR / secure_filename
+        
+        # Verificar que o path resolvido está dentro do diretório de upload
+        if not tmp_path.resolve().is_relative_to(_UPLOAD_DIR.resolve()):
+            logger.error(f"[CAM-AUDIT] Tentativa de path traversal detectada: {tmp_path}")
+            raise HTTPException(status_code=400, detail="Caminho de arquivo inválido")
+        
+        # Escrever arquivo de forma segura
+        tmp_path.write_bytes(content)
         
         try:
             # Parse
@@ -323,8 +353,12 @@ async def parse_geometry(file: UploadFile = File(...)):
             )
         
         finally:
-            # Limpar arquivo temporário
-            os.unlink(tmp_path)
+            # Limpar arquivo temporário de forma segura
+            try:
+                if tmp_path.exists():
+                    tmp_path.unlink()
+            except Exception as cleanup_err:
+                logger.warning(f"[CAM-AUDIT] Falha ao limpar arquivo temporário: {cleanup_err}")
     
     except Exception as e:
         logger.error(f"Erro no parse: {e}")

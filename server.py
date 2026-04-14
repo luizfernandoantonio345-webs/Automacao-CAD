@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import time
 import traceback
 import zipfile
@@ -20,8 +21,18 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import AfterValidator
-from typing import Annotated
+from typing import Annotated, Any
 from sse_starlette.sse import EventSourceResponse
+
+# Redis Session Management (Production-ready)
+try:
+    from backend.redis_session import SessionMiddleware, initialize_session_manager, close_session_manager
+    _REDIS_SESSION_AVAILABLE = True
+except ImportError:
+    _REDIS_SESSION_AVAILABLE = False
+    SessionMiddleware = None
+    initialize_session_manager = None
+    close_session_manager = None
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LOGGING ESTRUTURADO COM STRUCTLOG (Enterprise)
@@ -159,6 +170,12 @@ except ImportError as e:
     cad_detection_router = None
 
 try:
+    from backend.routes_storage import router as storage_router
+except ImportError as e:
+    _log.warning(f"Storage router not available: {e}")
+    storage_router = None
+
+try:
     from backend.database.db import (
         init_db, seed_default_user, authenticate_user, create_user,
         email_exists, get_user_by_email, create_project as db_create_project,
@@ -203,9 +220,25 @@ elif len(JARVIS_SECRET.encode("utf-8")) < _MIN_SECRET_BYTES:
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120"))
 _REGISTER_RATE_MAX = int(os.getenv("RATE_LIMIT_REGISTER_PER_MINUTE", "3"))
+_DEMO_RATE_MAX = 5
 _REQUEST_HISTORY: defaultdict[str, deque] = defaultdict(deque)
 _REGISTER_HISTORY: defaultdict[str, deque] = defaultdict(deque)
+_DEMO_HISTORY: defaultdict[str, deque] = defaultdict(deque)
 _RATE_LOCK = Lock()
+_RATE_LOCK_ASYNC = None  # Lazy-initialized asyncio.Lock
+
+# Redis rate-limit connection (optional, falls back to in-memory)
+_REDIS_RATE: Any = None
+try:
+    import redis as _redis_mod
+    _redis_url = os.getenv("REDIS_URL", "")
+    if _redis_url:
+        _REDIS_RATE = _redis_mod.Redis.from_url(_redis_url, decode_responses=True, socket_timeout=2)
+        _REDIS_RATE.ping()
+        logger.info("Redis rate-limiter conectado: %s", _redis_url[:30])
+except Exception as _redis_err:
+    _REDIS_RATE = None
+    logger.info("Redis rate-limiter indisponível (usando in-memory): %s", _redis_err)
 _SSE_CONNECTIONS: defaultdict[str, int] = defaultdict(int)
 _SSE_LOCK = Lock()
 _SSE_MAX_PER_IP = 5
@@ -216,7 +249,7 @@ _DEMO_TOKEN_EXPIRY_MINUTES = 10
 
 # ── Rotas que NÃO exigem autenticação ──
 _AUTH_WHITELIST = {
-    "", "/", "/login", "/auth/register", "/auth/demo", "/health", "/docs",
+    "", "/", "/login", "/auth/register", "/auth/demo", "/auth/refresh", "/health", "/healthz", "/docs",
     "/openapi.json", "/redoc",
     # Bridge endpoints para sincronizador local (não expõe dados sensíveis)
     "/api/bridge/pending", "/api/bridge/status", "/api/bridge/send",
@@ -245,6 +278,10 @@ _AUTH_WHITELIST = {
     # CAM Simulação Física endpoints (novos)
     "/api/cam/simulate/physics", "/api/cam/simulate/estimate-time",
     "/api/cam/simulate/machine-presets", "/api/cam/consumables/estimate",
+    # Monitoring endpoints (somente leitura, métricas do sistema)
+    "/api/monitoring/dashboard", "/api/monitoring/tasks",
+    # WebSocket stats (somente leitura)
+    "/ws/stats",
 }
 
 # ── Rotas bloqueadas para demo ──
@@ -308,6 +345,35 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "X-Request-ID", "X-Correlation-ID"],
 )
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECURITY HEADERS MIDDLEWARE (OWASP)
+# ══════════════════════════════════════════════════════════════════════════════
+try:
+    from backend.security import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    logger.info("Security headers middleware habilitado")
+except ImportError as e:
+    logger.warning("Security headers middleware não disponível: %s", e)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# REDIS SESSION MIDDLEWARE (Production)
+# ══════════════════════════════════════════════════════════════════════════════
+if _REDIS_SESSION_AVAILABLE and SessionMiddleware:
+    app.add_middleware(SessionMiddleware)
+    logger.info("Redis session middleware habilitado")
+else:
+    logger.warning("Redis session middleware não disponível - usando fallback em memória")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PERFORMANCE PROFILING MIDDLEWARE (Métricas de latência)
+# ══════════════════════════════════════════════════════════════════════════════
+try:
+    from backend.performance_middleware import PerformanceMiddleware
+    app.add_middleware(PerformanceMiddleware)
+    logger.info("Performance profiling middleware habilitado")
+except ImportError as e:
+    logger.warning("Performance middleware não disponível: %s", e)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RATE LIMITING MIDDLEWARE
@@ -410,6 +476,54 @@ if seed_default_user:
     seed_default_user()
 logger.info("Banco de dados Engenharia CAD inicializado")
 
+# ── Validação de variáveis de ambiente ──
+try:
+    from backend.env_validator import validate_environment, get_env_summary
+    
+    # Validar apenas em produção (raise_on_error=True se produção)
+    is_prod = _APP_ENV == "production"
+    env_result = validate_environment(strict=is_prod, raise_on_error=is_prod)
+    
+    if env_result["valid"]:
+        logger.info(f"✓ Variáveis de ambiente validadas: {len(env_result['validated'])} OK")
+    else:
+        for warning in env_result.get("warnings", []):
+            logger.warning(f"⚠ Env: {warning}")
+        for error in env_result.get("errors", []):
+            logger.error(f"✗ Env: {error}")
+            
+except ImportError as e:
+    logger.warning(f"Validador de ambiente não disponível: {e}")
+except Exception as e:
+    if _APP_ENV == "production":
+        logger.critical(f"FATAL: Falha na validação de ambiente: {e}")
+        raise SystemExit(f"FATAL: {e}")
+    else:
+        logger.warning(f"Validação de ambiente falhou (dev mode): {e}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# REDIS SESSION INITIALIZATION (Startup/Shutdown Events)
+# ══════════════════════════════════════════════════════════════════════════════
+if _REDIS_SESSION_AVAILABLE and initialize_session_manager and close_session_manager:
+    @app.on_event("startup")
+    async def startup_redis_session():
+        """Initialize Redis session manager on app startup"""
+        try:
+            await initialize_session_manager()
+            logger.info("✓ Redis session manager inicializado no startup")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar Redis session manager: {e}")
+            # Don't raise - allow app to continue with in-memory fallback
+    
+    @app.on_event("shutdown")
+    async def shutdown_redis_session():
+        """Close Redis connection on app shutdown"""
+        try:
+            await close_session_manager()
+            logger.info("✓ Redis session manager finalizado no shutdown")
+        except Exception as e:
+            logger.error(f"Erro ao finalizar Redis session manager: {e}")
+
 # ── AI Watchdog — IA de Baixo Nível invisível ──
 # Intercepta TODA request: sanitiza payloads, bloqueia operações em sobrecarga,
 # e injeta fallback se o handler crashar. Completamente invisível ao usuário.
@@ -450,6 +564,11 @@ if autocad_debug_router:
 if cad_detection_router:
     app.include_router(cad_detection_router)
     logger.info("CAD Detection & Auto-Launch routes carregados")
+
+# Include File Storage routes
+if storage_router:
+    app.include_router(storage_router)
+    logger.info("File Storage routes carregados")
 
 # Include License / HWID routes
 if license_router:
@@ -495,6 +614,161 @@ try:
     logger.info("LLM Gateway carregado com sucesso")
 except ImportError as e:
     logger.warning(f"LLM Gateway não disponível: {e}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# WEBSOCKET HUB (Real-time bidirecional multi-usuário)
+# ══════════════════════════════════════════════════════════════════════════════
+try:
+    from backend.websocket_hub import router as ws_router, ws_manager, start_ws_cleanup, stop_ws_cleanup
+    app.include_router(ws_router)
+    logger.info("WebSocket Hub carregado com sucesso")
+except ImportError as e:
+    logger.warning(f"WebSocket Hub não disponível: {e}")
+    ws_manager = None
+    start_ws_cleanup = stop_ws_cleanup = None
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SYSTEM MONITOR & TASK QUEUE (Startup/Shutdown)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.on_event("startup")
+async def startup_infrastructure():
+    """Inicializa componentes de infraestrutura no startup."""
+    # Task Queue
+    try:
+        from backend.task_queue import get_task_queue
+        tq = get_task_queue()
+        await tq.start(num_workers=int(os.getenv("TASK_QUEUE_WORKERS", "4")))
+        logger.info("✓ Task Queue iniciada")
+    except Exception as e:
+        logger.warning("Task Queue não iniciada: %s", e)
+
+    # System Monitor
+    try:
+        from backend.system_monitor import get_monitor
+        monitor = get_monitor()
+        await monitor.start()
+        logger.info("✓ System Monitor iniciado")
+    except Exception as e:
+        logger.warning("System Monitor não iniciado: %s", e)
+
+    # WebSocket cleanup
+    if start_ws_cleanup:
+        try:
+            start_ws_cleanup()
+            logger.info("✓ WebSocket cleanup task iniciada")
+        except Exception as e:
+            logger.warning("WS cleanup não iniciado: %s", e)
+
+    # Connection Pool (async PG)
+    try:
+        from backend.database.connection_pool import get_pool, AsyncPGPool
+        pool = get_pool()
+        if isinstance(pool, AsyncPGPool):
+            await pool.initialize()
+            logger.info("✓ PostgreSQL connection pool inicializado")
+        else:
+            logger.info("✓ SQLite connection pool ativo")
+    except Exception as e:
+        logger.warning("Connection pool: %s", e)
+
+
+@app.on_event("shutdown")
+async def shutdown_infrastructure():
+    """Finaliza componentes de infraestrutura."""
+    try:
+        from backend.task_queue import get_task_queue
+        await get_task_queue().stop()
+    except Exception:
+        pass
+    try:
+        from backend.system_monitor import get_monitor
+        await get_monitor().stop()
+    except Exception:
+        pass
+    if stop_ws_cleanup:
+        try:
+            stop_ws_cleanup()
+        except Exception:
+            pass
+    try:
+        from backend.database.connection_pool import get_pool, AsyncPGPool
+        pool = get_pool()
+        if isinstance(pool, AsyncPGPool):
+            await pool.close()
+    except Exception:
+        pass
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MONITORING ENDPOINTS (Dashboard de infraestrutura)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.get("/api/monitoring/dashboard")
+async def monitoring_dashboard():
+    """Dashboard completo de monitoramento do sistema."""
+    result: dict = {"timestamp": datetime.datetime.now(UTC).isoformat()}
+
+    # System Monitor
+    try:
+        from backend.system_monitor import get_monitor
+        result["system"] = get_monitor().get_full_dashboard()
+    except Exception as e:
+        result["system"] = {"error": str(e)}
+
+    # Task Queue
+    try:
+        from backend.task_queue import get_task_queue
+        tq = get_task_queue()
+        result["task_queue"] = tq.get_stats()
+        result["active_tasks"] = tq.get_active_tasks()
+    except Exception as e:
+        result["task_queue"] = {"error": str(e)}
+
+    # Connection Pool
+    try:
+        from backend.database.connection_pool import get_pool_stats
+        result["db_pool"] = get_pool_stats()
+    except Exception as e:
+        result["db_pool"] = {"error": str(e)}
+
+    # Cache
+    try:
+        from backend.distributed_cache import get_cache
+        result["cache"] = get_cache().stats
+    except Exception as e:
+        result["cache"] = {"error": str(e)}
+
+    # WebSocket
+    if ws_manager:
+        result["websocket"] = ws_manager.get_stats()
+
+    return result
+
+
+@app.get("/api/monitoring/tasks")
+async def monitoring_tasks(user_email: str = "", limit: int = 50):
+    """Lista tarefas ativas e histórico."""
+    try:
+        from backend.task_queue import get_task_queue
+        tq = get_task_queue()
+        return {
+            "active": tq.get_active_tasks(user_email or None),
+            "history": tq.get_history(user_email or None, limit=limit),
+            "stats": tq.get_stats(),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/monitoring/tasks/{task_id}")
+async def monitoring_task_status(task_id: str):
+    """Status de uma tarefa específica."""
+    try:
+        from backend.task_queue import get_task_queue
+        result = await get_task_queue().get_status(task_id)
+        if result:
+            return result.to_dict()
+        return {"error": "Tarefa não encontrada"}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 class LoginData(BaseModel):
@@ -675,26 +949,62 @@ def publish_ai_event(event_data: dict) -> None:
 
 
 def _enforce_rate_limit(client_ip: str) -> None:
-    now = time.time()
-    with _RATE_LOCK:
-        bucket = _REQUEST_HISTORY[client_ip]
-        while bucket and now - bucket[0] > RATE_LIMIT_WINDOW_SECONDS:
-            bucket.popleft()
-        if len(bucket) >= RATE_LIMIT_MAX_REQUESTS:
-            raise HTTPException(status_code=429, detail="Limite de requisicoes excedido")
-        bucket.append(now)
+    """Rate limit síncrono (thread-safe). Uses Redis when available, falls back to in-memory.
+    
+    NOTA: Esta função usa threading.Lock e deve ser chamada via
+    asyncio.to_thread() em contextos async para não bloquear o event loop.
+    """
+    _enforce_rate_generic(client_ip, "rl:req", _REQUEST_HISTORY, RATE_LIMIT_MAX_REQUESTS, "Limite de requisicoes excedido")
 
 
 def _enforce_register_rate_limit(client_ip: str) -> None:
-    """Rate limit específico para /auth/register (3/min)."""
+    """Rate limit específico para /auth/register (3/min).
+    
+    NOTA: Esta função usa threading.Lock e deve ser chamada via
+    asyncio.to_thread() em contextos async para não bloquear o event loop.
+    """
+    _enforce_rate_generic(client_ip, "rl:reg", _REGISTER_HISTORY, _REGISTER_RATE_MAX, "Muitas tentativas de registro. Aguarde.")
+
+
+def _enforce_demo_rate_limit(client_ip: str) -> None:
+    """Rate limit específico para /auth/demo (5/min)."""
+    _enforce_rate_generic(client_ip, "rl:demo", _DEMO_HISTORY, _DEMO_RATE_MAX, "Muitas tentativas de demonstração. Aguarde.")
+
+
+def _enforce_rate_generic(client_ip: str, prefix: str, fallback: defaultdict, max_requests: int, error_msg: str) -> None:
+    """Generic rate limiter: Redis-backed with in-memory fallback."""
+    if _REDIS_RATE:
+        try:
+            key = f"{prefix}:{client_ip}"
+            current = _REDIS_RATE.incr(key)
+            if current == 1:
+                _REDIS_RATE.expire(key, RATE_LIMIT_WINDOW_SECONDS)
+            if current > max_requests:
+                raise HTTPException(status_code=429, detail=error_msg)
+            return
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # Fall through to in-memory
+
     now = time.time()
     with _RATE_LOCK:
-        bucket = _REGISTER_HISTORY[client_ip]
+        bucket = fallback[client_ip]
         while bucket and now - bucket[0] > RATE_LIMIT_WINDOW_SECONDS:
             bucket.popleft()
-        if len(bucket) >= _REGISTER_RATE_MAX:
-            raise HTTPException(status_code=429, detail="Muitas tentativas de registro. Aguarde.")
+        if len(bucket) >= max_requests:
+            raise HTTPException(status_code=429, detail=error_msg)
         bucket.append(now)
+        
+        # Periodic cleanup to prevent memory leak
+        if prefix == "rl:req" and len(fallback) > 10000:
+            stale_cutoff = now - RATE_LIMIT_WINDOW_SECONDS * 2
+            stale_ips = [
+                ip for ip, b in fallback.items()
+                if not b or b[-1] < stale_cutoff
+            ]
+            for ip in stale_ips[:1000]:
+                del fallback[ip]
 
 
 def _decode_token(request: Request) -> dict | None:
@@ -726,15 +1036,36 @@ async def auth_and_rate_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     path = request.url.path.rstrip("/")
 
-    # ── Rate limiting global ──
-    _enforce_rate_limit(client_ip)
+    # ── Rate limiting global (executar em threadpool para não bloquear) ──
+    try:
+        await asyncio.to_thread(_enforce_rate_limit, client_ip)
+    except HTTPException as e:
+        return _json_response(e.status_code, {"detail": e.detail}, request)
 
     # ── Rate limiting específico para register ──
     if path == "/auth/register":
-        _enforce_register_rate_limit(client_ip)
+        try:
+            await asyncio.to_thread(_enforce_register_rate_limit, client_ip)
+        except HTTPException as e:
+            return _json_response(e.status_code, {"detail": e.detail}, request)
+
+    # ── Rate limiting específico para demo (5/min) ──
+    if path == "/auth/demo":
+        try:
+            await asyncio.to_thread(_enforce_demo_rate_limit, client_ip)
+        except HTTPException as e:
+            return _json_response(e.status_code, {"detail": e.detail}, request)
 
     # ── Rotas públicas (sem auth) ──
     if path in _AUTH_WHITELIST:
+        return await call_next(request)
+
+    # ── Billing routes: webhooks usam Stripe signature, não JWT ──
+    if path.startswith("/api/billing/webhooks/") or path.startswith("/api/billing/subscription/"):
+        return await call_next(request)
+
+    # ── Bridge routes: todas públicas (agente local, sem dados sensíveis) ──
+    if path.startswith("/api/bridge/"):
         return await call_next(request)
 
     # ── AI routes: permitir acesso público para leitura ──
@@ -752,6 +1083,14 @@ async def auth_and_rate_middleware(request: Request, call_next):
     # ── SSE routes verificadas separadamente (dentro do handler) ──
     if path.startswith("/sse/"):
         # Auth é verificada dentro do handler SSE
+        return await call_next(request)
+
+    # ── WebSocket (auth verificada dentro do handler) ──
+    if path.startswith("/ws"):
+        return await call_next(request)
+
+    # ── Monitoring routes: acesso público para dashboards ──
+    if path.startswith("/api/monitoring/"):
         return await call_next(request)
 
     # ── Todas as outras rotas: exigir JWT válido ──
@@ -923,6 +1262,44 @@ def auth_me(request: Request):
     raise HTTPException(status_code=401, detail="Usuário não encontrado")
 
 
+@app.post("/auth/refresh")
+def auth_refresh(request: Request):
+    """Renova um token JWT válido (ou recém-expirado em até 24h) sem exigir re-login."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+    token = auth_header[7:]
+    try:
+        # Aceitar tokens expirados em até 24h para refresh
+        payload = jwt.decode(
+            token, JARVIS_SECRET, algorithms=["HS256"],
+            options={"verify_exp": False}
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    user_email = payload.get("user", "")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    # Verificar se o token expirou há mais de 24h
+    exp = payload.get("exp", 0)
+    now = datetime.datetime.now(UTC).timestamp()
+    if exp and now - exp > 86400:
+        raise HTTPException(status_code=401, detail="Token expirado há muito tempo. Faça login novamente.")
+
+    # Demo users get short-lived tokens
+    if user_email == _DEMO_EMAIL:
+        new_token = _make_token(user_email, expiry_minutes=_DEMO_TOKEN_EXPIRY_MINUTES)
+    else:
+        new_token = _make_token(user_email, expiry_minutes=60)
+
+    return {
+        "access_token": new_token,
+        "token_type": "bearer",
+    }
+
+
 @app.get("/")
 def root():
     """Status público da API."""
@@ -937,16 +1314,140 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check real — verifica banco de dados e dependências."""
-    from backend.database.db import _get_conn
+    """Health check consolidado — banco, IA, Redis, Celery e AutoCAD."""
+    from urllib.parse import urlparse
+
     db_ok = False
+    db_ephemeral = None
+    db_error = None
     try:
+        from backend.database.db import _get_conn, is_ephemeral
+
         conn = _get_conn()
         conn.execute("SELECT 1")
         db_ok = True
-    except Exception:
-        pass
-    return {"autocad": True, "database": db_ok, "status": "healthy" if db_ok else "degraded"}
+        db_ephemeral = bool(is_ephemeral())
+    except Exception as exc:
+        db_error = str(exc)
+
+    redis_url = os.getenv("REDIS_URL") or os.getenv("CELERY_RESULT_BACKEND", "")
+    redis_ok = False
+    redis_configured = redis_url.startswith("redis://")
+    redis_error = None
+    if redis_configured:
+        try:
+            from redis import Redis
+
+            redis_client = Redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+            redis_client.ping()
+            redis_ok = True
+        except Exception as exc:
+            redis_error = str(exc)
+
+    celery_broker = os.getenv("CELERY_BROKER_URL", "")
+    celery_ok = False
+    celery_configured = bool(celery_broker)
+    celery_error = None
+    if celery_configured:
+        try:
+            parsed = urlparse(celery_broker)
+            host = parsed.hostname
+            port = parsed.port
+            if parsed.scheme in {"amqp", "amqps"}:
+                port = port or (5671 if parsed.scheme == "amqps" else 5672)
+            elif parsed.scheme.startswith("redis"):
+                port = port or 6379
+            if host and port:
+                import socket
+
+                with socket.create_connection((host, int(port)), timeout=2):
+                    celery_ok = True
+            else:
+                celery_error = "Broker URL inválida para verificação de conectividade"
+        except Exception as exc:
+            celery_error = str(exc)
+
+    autocad_ok = False
+    autocad_details: dict = {}
+    autocad_error = None
+    try:
+        from backend.autocad_driver import acad_driver
+
+        autocad_details = acad_driver.health_check()
+        autocad_ok = bool(
+            autocad_details.get("healthy", False)
+            or autocad_details.get("driver_status") in {"Connected", "Bridge", "Cloud"}
+        )
+    except Exception as exc:
+        autocad_error = str(exc)
+
+    llm_providers: dict = {}
+    llm_available = False
+    llm_error = None
+    try:
+        from ai_engines.llm_gateway import OPENAI_API_KEY, ANTHROPIC_API_KEY, OLLAMA_BASE_URL
+        from urllib.request import urlopen, Request
+
+        ollama_ok = False
+        try:
+            req = Request(f"{OLLAMA_BASE_URL}/api/tags", method="GET")
+            with urlopen(req, timeout=2.5) as response:
+                ollama_ok = response.status == 200
+        except Exception:
+            ollama_ok = False
+
+        llm_providers = {
+            "openai": {"configured": bool(OPENAI_API_KEY), "available": bool(OPENAI_API_KEY)},
+            "anthropic": {"configured": bool(ANTHROPIC_API_KEY), "available": bool(ANTHROPIC_API_KEY)},
+            "ollama": {"configured": True, "available": ollama_ok},
+        }
+        llm_available = any(p.get("available") for p in llm_providers.values())
+    except Exception as exc:
+        llm_error = str(exc)
+
+    status = "healthy" if db_ok else "degraded"
+
+    return {
+        "status": status,
+        "autocad": autocad_ok,
+        "database": db_ok,
+        "services": {
+            "database": {
+                "ok": db_ok,
+                "ephemeral": db_ephemeral,
+                "error": db_error,
+            },
+            "redis": {
+                "ok": redis_ok,
+                "configured": redis_configured,
+                "url": redis_url if redis_configured else None,
+                "error": redis_error,
+            },
+            "celery": {
+                "ok": celery_ok,
+                "configured": celery_configured,
+                "broker": celery_broker if celery_configured else None,
+                "error": celery_error,
+            },
+            "llm": {
+                "ok": llm_available,
+                "providers": llm_providers,
+                "error": llm_error,
+            },
+            "autocad": {
+                "ok": autocad_ok,
+                "driver": autocad_details,
+                "error": autocad_error,
+            },
+        },
+    }
+
+
+@app.get("/healthz")
+def healthz_check():
+    """Endpoint curto de liveness/readiness para CI e smoke checks."""
+    result = health_check()
+    return {"status": result.get("status", "degraded")}
 
 
 @app.get("/project-stats")
@@ -1619,9 +2120,71 @@ def get_job_status(job_id: str):
 # BRIDGE MODE — Comunicação com AutoCAD remoto via sincronizador
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Fila de comandos pendentes para o sincronizador
-_bridge_commands: list = []
-_bridge_command_id = 0
+# Fila de comandos pendentes (persistente em SQLite)
+_bridge_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "bridge_queue.db")
+_bridge_db_lock = Lock()
+
+
+def _bridge_init_db() -> None:
+    os.makedirs(os.path.dirname(_bridge_db_path), exist_ok=True)
+    with sqlite3.connect(_bridge_db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bridge_commands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lisp_code TEXT NOT NULL,
+                operation TEXT NOT NULL,
+                timestamp TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+
+
+def _bridge_enqueue(lisp_code: str, operation: str) -> int:
+    with _bridge_db_lock:
+        with sqlite3.connect(_bridge_db_path) as conn:
+            cur = conn.execute(
+                "INSERT INTO bridge_commands (lisp_code, operation, timestamp) VALUES (?, ?, ?)",
+                (lisp_code, operation, datetime.datetime.now(UTC).isoformat()),
+            )
+            conn.commit()
+            return int(cur.lastrowid)
+
+
+def _bridge_list() -> list[dict]:
+    with _bridge_db_lock:
+        with sqlite3.connect(_bridge_db_path) as conn:
+            rows = conn.execute(
+                "SELECT id, lisp_code, operation, timestamp FROM bridge_commands ORDER BY id ASC"
+            ).fetchall()
+    return [
+        {
+            "id": row[0],
+            "lisp_code": row[1],
+            "operation": row[2],
+            "timestamp": row[3],
+        }
+        for row in rows
+    ]
+
+
+def _bridge_ack(cmd_id: str) -> bool:
+    with _bridge_db_lock:
+        with sqlite3.connect(_bridge_db_path) as conn:
+            cur = conn.execute("DELETE FROM bridge_commands WHERE id = ?", (cmd_id,))
+            conn.commit()
+            return cur.rowcount > 0
+
+
+def _bridge_pending_count() -> int:
+    with _bridge_db_lock:
+        with sqlite3.connect(_bridge_db_path) as conn:
+            row = conn.execute("SELECT COUNT(*) FROM bridge_commands").fetchone()
+    return int(row[0]) if row else 0
+
+
+_bridge_init_db()
 
 # Status de conexão do cliente
 _bridge_client_info = {
@@ -1728,21 +2291,21 @@ Documentação: https://automacao-cad-frontend.vercel.app/docs
 @app.get("/api/bridge/pending")
 async def get_bridge_pending():
     """Retorna comandos pendentes para o sincronizador local."""
-    global _bridge_commands, _bridge_client_info
+    global _bridge_client_info
     
     # Atualizar last_seen quando sincronizador faz polling
     _bridge_client_info["last_seen"] = datetime.datetime.now(UTC).isoformat()
     _bridge_client_info["connected"] = True
     
-    commands = _bridge_commands.copy()
+    commands = _bridge_list()
     return {"commands": commands, "count": len(commands)}
 
 
 @app.post("/api/bridge/ack/{cmd_id}")
 async def ack_bridge_command(cmd_id: str):
     """Confirma que um comando foi processado pelo sincronizador."""
-    global _bridge_commands, _bridge_client_info
-    _bridge_commands = [c for c in _bridge_commands if str(c.get("id")) != str(cmd_id)]
+    global _bridge_client_info
+    _bridge_ack(str(cmd_id))
     _bridge_client_info["commands_executed"] = _bridge_client_info.get("commands_executed", 0) + 1
     return {"status": "acknowledged", "id": cmd_id}
 
@@ -1750,25 +2313,19 @@ async def ack_bridge_command(cmd_id: str):
 @app.post("/api/bridge/send")
 async def send_bridge_command(request: Request):
     """Envia um comando LISP para a fila do sincronizador."""
-    global _bridge_commands, _bridge_command_id
     data = await request.json()
-    
-    _bridge_command_id += 1
-    cmd = {
-        "id": _bridge_command_id,
-        "lisp_code": data.get("lisp_code", ""),
-        "operation": data.get("operation", "custom"),
-        "timestamp": datetime.datetime.now(UTC).isoformat(),
-    }
-    _bridge_commands.append(cmd)
-    
-    return {"status": "queued", "id": _bridge_command_id}
+
+    cmd_id = _bridge_enqueue(
+        lisp_code=data.get("lisp_code", ""),
+        operation=data.get("operation", "custom"),
+    )
+
+    return {"status": "queued", "id": cmd_id}
 
 
 @app.post("/api/bridge/draw-pipe")
 async def bridge_draw_pipe(request: Request):
     """Gera comando LISP para desenhar tubo e envia para fila."""
-    global _bridge_commands, _bridge_command_id
     data = await request.json()
     
     points = data.get("points", [[0,0,0], [1000,0,0]])
@@ -1791,22 +2348,14 @@ async def bridge_draw_pipe(request: Request):
 (c:ENGCAD_PIPE)
 '''
     
-    _bridge_command_id += 1
-    cmd = {
-        "id": _bridge_command_id,
-        "lisp_code": lisp_code,
-        "operation": "draw-pipe",
-        "timestamp": datetime.datetime.now(UTC).isoformat(),
-    }
-    _bridge_commands.append(cmd)
-    
-    return {"status": "queued", "id": _bridge_command_id, "operation": "draw-pipe"}
+    cmd_id = _bridge_enqueue(lisp_code=lisp_code, operation="draw-pipe")
+
+    return {"status": "queued", "id": cmd_id, "operation": "draw-pipe"}
 
 
 @app.post("/api/bridge/insert-component")
 async def bridge_insert_component(request: Request):
     """Gera comando LISP para inserir componente e envia para fila."""
-    global _bridge_commands, _bridge_command_id
     data = await request.json()
     
     block_name = data.get("block_name", "VALVE-GATE")
@@ -1828,16 +2377,9 @@ async def bridge_insert_component(request: Request):
 (c:ENGCAD_COMPONENT)
 '''
     
-    _bridge_command_id += 1
-    cmd = {
-        "id": _bridge_command_id,
-        "lisp_code": lisp_code,
-        "operation": "insert-component",
-        "timestamp": datetime.datetime.now(UTC).isoformat(),
-    }
-    _bridge_commands.append(cmd)
-    
-    return {"status": "queued", "id": _bridge_command_id, "operation": "insert-component"}
+    cmd_id = _bridge_enqueue(lisp_code=lisp_code, operation="insert-component")
+
+    return {"status": "queued", "id": cmd_id, "operation": "insert-component"}
 
 
 @app.get("/api/bridge/status")
@@ -1857,7 +2399,7 @@ async def bridge_status():
     
     return {
         "mode": "bridge",
-        "pending_commands": len(_bridge_commands),
+        "pending_commands": _bridge_pending_count(),
         "status": "active",
         "message": "Modo Bridge ativo. Use o sincronizador no PC do AutoCAD.",
         "client": {

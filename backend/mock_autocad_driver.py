@@ -567,7 +567,7 @@ class MockAutoCADDriver:
         if not self._drawing:
             return {"success": False, "error": "Nenhum desenho aberto"}
         
-        save_path = path or self._drawing.path or f"/tmp/mock_{int(time.time())}.dwg"
+        save_path = path or self._drawing.path or f"/tmp/mock_{int(time.time())}.dwg"  # nosec B108 - mock driver
         self._drawing.path = save_path
         self._drawing.modified = False
         
@@ -766,4 +766,4 @@ if __name__ == "__main__":
     
     # Salvar
     print("\nSalvando...")
-    print(driver.save("/tmp/test_mock.dwg"))
+    print(driver.save("/tmp/test_mock.dwg"))  # nosec B108 - test code
