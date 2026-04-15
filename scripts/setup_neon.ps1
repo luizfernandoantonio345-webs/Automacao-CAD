@@ -30,7 +30,7 @@ if (-not (Test-Path "$ProjectRoot\alembic.ini")) {
 }
 if (-not (Test-Path "$ProjectRoot\alembic.ini")) {
     Write-Host "ERRO: Execute este script no diretorio do projeto!" -ForegroundColor Red
-    Write-Host "      Ou navegue para: C:\Users\Sueli\Desktop\Automação CAD" -ForegroundColor Yellow
+    Write-Host "      Ou navegue para: C:\Users\Sueli\Desktop\Automacao CAD" -ForegroundColor Yellow
     exit 1
 }
 
@@ -66,46 +66,61 @@ if (-not $DatabaseUrl.Contains("sslmode=")) {
 }
 
 Write-Host ""
-Write-Host "✓ Connection String validada!" -ForegroundColor Green
+Write-Host "[OK] Connection String validada!" -ForegroundColor Green
 
 # Definir variável de ambiente
 $env:DATABASE_URL = $DatabaseUrl
-Write-Host "✓ DATABASE_URL definida" -ForegroundColor Green
+Write-Host "[OK] DATABASE_URL definida" -ForegroundColor Green
 
 # Ativar ambiente virtual
 Write-Host ""
 Write-Host "Ativando ambiente virtual..." -ForegroundColor Cyan
 if (Test-Path ".\.venv\Scripts\Activate.ps1") {
     & ".\.venv\Scripts\Activate.ps1"
-    Write-Host "✓ Ambiente virtual ativado" -ForegroundColor Green
+    Write-Host "[OK] Ambiente virtual ativado" -ForegroundColor Green
 } else {
-    Write-Host "⚠ Ambiente virtual nao encontrado, continuando..." -ForegroundColor Yellow
+    Write-Host "[!] Ambiente virtual nao encontrado, continuando..." -ForegroundColor Yellow
 }
+
+# Criar script Python temporário para testar conexão
+$testScript = @'
+import os
+import sys
+try:
+    import psycopg2
+    url = os.environ.get("DATABASE_URL", "")
+    if not url:
+        print("ERRO: DATABASE_URL nao definida")
+        sys.exit(1)
+    conn = psycopg2.connect(url)
+    cur = conn.cursor()
+    cur.execute("SELECT version()")
+    version = cur.fetchone()[0]
+    print(f"Conectado: {version[:60]}...")
+    conn.close()
+    sys.exit(0)
+except Exception as e:
+    print(f"ERRO: {e}")
+    sys.exit(1)
+'@
+
+$testScriptPath = "$env:TEMP\test_neon_connection.py"
+$testScript | Out-File -FilePath $testScriptPath -Encoding UTF8
 
 # Testar conexão
 Write-Host ""
-Write-Host "Testando conexão com PostgreSQL..." -ForegroundColor Cyan
-try {
-    python -c @"
-import os
-import psycopg2
-url = os.environ['DATABASE_URL']
-conn = psycopg2.connect(url)
-cur = conn.cursor()
-cur.execute('SELECT version()')
-version = cur.fetchone()[0]
-print(f'✓ Conectado: {version[:50]}...')
-conn.close()
-"@
-    Write-Host "✓ Conexão OK!" -ForegroundColor Green
-} catch {
-    Write-Host "ERRO: Falha na conexão!" -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
+Write-Host "Testando conexao com PostgreSQL..." -ForegroundColor Cyan
+$result = python $testScriptPath
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[OK] $result" -ForegroundColor Green
+} else {
+    Write-Host "ERRO: Falha na conexao!" -ForegroundColor Red
+    Write-Host $result -ForegroundColor Red
     Write-Host ""
     Write-Host "Verifique:" -ForegroundColor Yellow
-    Write-Host "  1. A Connection String está correta?" -ForegroundColor Yellow
-    Write-Host "  2. Você está conectado à internet?" -ForegroundColor Yellow
-    Write-Host "  3. psycopg2 está instalado? (pip install psycopg2-binary)" -ForegroundColor Yellow
+    Write-Host "  1. A Connection String esta correta?" -ForegroundColor Yellow
+    Write-Host "  2. Voce esta conectado a internet?" -ForegroundColor Yellow
+    Write-Host "  3. psycopg2 esta instalado? (pip install psycopg2-binary)" -ForegroundColor Yellow
     exit 1
 }
 
@@ -114,53 +129,67 @@ Write-Host ""
 Write-Host "Executando migrations do Alembic..." -ForegroundColor Cyan
 try {
     alembic upgrade head
-    Write-Host "✓ Migrations concluidas!" -ForegroundColor Green
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Migrations concluidas!" -ForegroundColor Green
+    } else {
+        throw "Alembic retornou erro"
+    }
 } catch {
     Write-Host "ERRO: Falha nas migrations!" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
 
-# Verificar tabelas criadas
-Write-Host ""
-Write-Host "Verificando tabelas criadas..." -ForegroundColor Cyan
-python -c @"
+# Criar script Python para verificar tabelas
+$verifyScript = @'
 import os
 import psycopg2
-url = os.environ['DATABASE_URL']
+url = os.environ.get("DATABASE_URL", "")
 conn = psycopg2.connect(url)
 cur = conn.cursor()
-cur.execute(\"\"\"
+cur.execute("""
     SELECT table_name FROM information_schema.tables 
     WHERE table_schema = 'public' 
     ORDER BY table_name
-\"\"\")
+""")
 tables = cur.fetchall()
-print(f'Tabelas criadas: {len(tables)}')
+print(f"Tabelas criadas: {len(tables)}")
 for t in tables:
-    print(f'  - {t[0]}')
+    print(f"  - {t[0]}")
 conn.close()
-"@
+'@
+
+$verifyScriptPath = "$env:TEMP\verify_neon_tables.py"
+$verifyScript | Out-File -FilePath $verifyScriptPath -Encoding UTF8
+
+# Verificar tabelas criadas
+Write-Host ""
+Write-Host "Verificando tabelas criadas..." -ForegroundColor Cyan
+python $verifyScriptPath
+
+# Limpar arquivos temporários
+Remove-Item $testScriptPath -ErrorAction SilentlyContinue
+Remove-Item $verifyScriptPath -ErrorAction SilentlyContinue
 
 # Instruções finais
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Green
-Write-Host " CONFIGURAÇÃO LOCAL CONCLUÍDA!" -ForegroundColor Green
+Write-Host " CONFIGURACAO LOCAL CONCLUIDA!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Próximo passo: Configurar no Vercel" -ForegroundColor Yellow
+Write-Host "Proximo passo: Configurar no Vercel" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "1. Acesse: https://vercel.com/dashboard" -ForegroundColor Cyan
 Write-Host "2. Selecione: automacao-cad-backend" -ForegroundColor Cyan
-Write-Host "3. Vá para: Settings -> Environment Variables" -ForegroundColor Cyan
+Write-Host "3. Va para: Settings -> Environment Variables" -ForegroundColor Cyan
 Write-Host "4. Adicione:" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "   Key:   DATABASE_URL" -ForegroundColor White
-Write-Host "   Value: $DatabaseUrl" -ForegroundColor Gray
+Write-Host "   Value: (a URL que voce colou acima)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "5. Marque: Production e Preview" -ForegroundColor Cyan
 Write-Host "6. Clique: Save" -ForegroundColor Cyan
-Write-Host "7. Faça Redeploy do projeto" -ForegroundColor Cyan
+Write-Host "7. Faca Redeploy do projeto" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Depois verifique em:" -ForegroundColor Yellow
 Write-Host "https://automacao-cad-backend.vercel.app/health" -ForegroundColor White
@@ -169,7 +198,7 @@ Write-Host ""
 # Copiar URL para clipboard
 try {
     $DatabaseUrl | Set-Clipboard
-    Write-Host "✓ DATABASE_URL copiada para a área de transferência!" -ForegroundColor Green
+    Write-Host "[OK] DATABASE_URL copiada para a area de transferencia!" -ForegroundColor Green
 } catch {
     # Ignorar erro de clipboard
 }
