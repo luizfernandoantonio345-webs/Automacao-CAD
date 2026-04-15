@@ -130,7 +130,18 @@ echo      OK: DETECTAR_AUTOCAD.ps1
 echo.
 echo [5/6] Testando conexao com o servidor...
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $r=$null; try{$r=Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop}catch{}; if($r){Write-Host '      OK: Servidor online!' -ForegroundColor Green}else{Write-Host '      AVISO: Servidor offline - modo local' -ForegroundColor Yellow}"
+:: Criar script temporario para teste de conexao
+echo $ProgressPreference='SilentlyContinue' > "%TEMP%\test_conn.ps1"
+echo [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12 >> "%TEMP%\test_conn.ps1"
+echo try { >> "%TEMP%\test_conn.ps1"
+echo     $r = Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop >> "%TEMP%\test_conn.ps1"
+echo     Write-Host '      OK: Servidor online!' -ForegroundColor Green >> "%TEMP%\test_conn.ps1"
+echo } catch { >> "%TEMP%\test_conn.ps1"
+echo     Write-Host '      AVISO: Servidor offline - modo local ativado' -ForegroundColor Yellow >> "%TEMP%\test_conn.ps1"
+echo } >> "%TEMP%\test_conn.ps1"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\test_conn.ps1"
+del "%TEMP%\test_conn.ps1" 2>nul
 
 :: =====================================================================
 :: PASSO 6: Iniciar agente
