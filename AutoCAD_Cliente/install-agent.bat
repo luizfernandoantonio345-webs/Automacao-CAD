@@ -52,28 +52,32 @@ echo [2/6] Preparando download...
 
 set "BASE_URL=https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente"
 
-:: Criar script PowerShell de download com try/catch
+:: Criar script PowerShell de download com UTF-8 e try/catch
 > "%DEST%\_download.ps1" (
     echo $ErrorActionPreference = 'Stop'
     echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     echo $baseUrl = '%BASE_URL%'
     echo $dest = '%DEST%'
     echo $wc = New-Object System.Net.WebClient
+    echo $wc.Encoding = [System.Text.Encoding]::UTF8
     echo $success = $true
     echo Write-Host '      Conectando ao GitHub...' -ForegroundColor Cyan
     echo try {
     echo     Write-Host '      Baixando SINCRONIZADOR.ps1...' -NoNewline
-    echo     $wc.DownloadFile^("$baseUrl/SINCRONIZADOR.ps1", "$dest\SINCRONIZADOR.ps1"^)
+    echo     $content = $wc.DownloadString^("$baseUrl/SINCRONIZADOR.ps1"^)
+    echo     [System.IO.File]::WriteAllText^("$dest\SINCRONIZADOR.ps1", $content, [System.Text.Encoding]::UTF8^)
     echo     Write-Host ' OK' -ForegroundColor Green
     echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
     echo try {
     echo     Write-Host '      Baixando DETECTAR_AUTOCAD.ps1...' -NoNewline
-    echo     $wc.DownloadFile^("$baseUrl/DETECTAR_AUTOCAD.ps1", "$dest\DETECTAR_AUTOCAD.ps1"^)
+    echo     $content = $wc.DownloadString^("$baseUrl/DETECTAR_AUTOCAD.ps1"^)
+    echo     [System.IO.File]::WriteAllText^("$dest\DETECTAR_AUTOCAD.ps1", $content, [System.Text.Encoding]::UTF8^)
     echo     Write-Host ' OK' -ForegroundColor Green
     echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
     echo try {
     echo     Write-Host '      Baixando INICIAR_SINCRONIZADOR.bat...' -NoNewline
-    echo     $wc.DownloadFile^("$baseUrl/INICIAR_SINCRONIZADOR.bat", "$dest\INICIAR_SINCRONIZADOR.bat"^)
+    echo     $content = $wc.DownloadString^("$baseUrl/INICIAR_SINCRONIZADOR.bat"^)
+    echo     [System.IO.File]::WriteAllText^("$dest\INICIAR_SINCRONIZADOR.bat", $content, [System.Text.Encoding]::UTF8^)
     echo     Write-Host ' OK' -ForegroundColor Green
     echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
     echo if ^($success^) { exit 0 } else { exit 1 }
@@ -122,6 +126,34 @@ if not exist "%DEST%\DETECTAR_AUTOCAD.ps1" (
     goto :ERROR_WAIT
 )
 echo      OK: DETECTAR_AUTOCAD.ps1
+
+:: Validar sintaxe do SINCRONIZADOR.ps1
+echo      Validando sintaxe...
+> "%TEMP%\_validate.ps1" (
+    echo $errors = $null
+    echo [void][System.Management.Automation.Language.Parser]::ParseFile^('%DEST%\SINCRONIZADOR.ps1', [ref]$null, [ref]$errors^)
+    echo if ^($errors.Count -gt 0^) {
+    echo     Write-Host '      ERRO: Arquivo corrompido durante download!' -ForegroundColor Red
+    echo     $errors ^| ForEach-Object { Write-Host "         Linha $^($_.Extent.StartLineNumber^): $^($_.Message^)" -ForegroundColor Yellow }
+    echo     exit 1
+    echo }
+    echo Write-Host '      OK: Sintaxe valida' -ForegroundColor Green
+    echo exit 0
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\_validate.ps1"
+set "VALIDATE_RESULT=%errorlevel%"
+del "%TEMP%\_validate.ps1" 2>nul
+
+if not "%VALIDATE_RESULT%"=="0" (
+    echo.
+    echo ERRO: Arquivo SINCRONIZADOR.ps1 foi corrompido.
+    echo.
+    echo Tente novamente. Se persistir:
+    echo   1. Desative temporariamente o antivirus
+    echo   2. Baixe manualmente de: %BASE_URL%/SINCRONIZADOR.ps1
+    echo.
+    goto :ERROR_WAIT
+)
 
 :: =====================================================================
 :: PASSO 5: Testar conexao com backend

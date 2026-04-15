@@ -66,11 +66,11 @@ $global:startTime = Get-Date
 function Write-Header {
     Clear-Host
     Write-Host ""
-    Write-Host "╔═══════════════════════════════════════════════════════════════════════╗" -ForegroundColor $colors.Header
-    Write-Host "║           ENGENHARIA CAD - SINCRONIZADOR BRIDGE v2.0                  ║" -ForegroundColor $colors.Header
-    Write-Host "╠═══════════════════════════════════════════════════════════════════════╣" -ForegroundColor $colors.Header
-    Write-Host "║  Backend: $($BackendUrl.PadRight(55))║" -ForegroundColor $colors.Info
-    Write-Host "╚═══════════════════════════════════════════════════════════════════════╝" -ForegroundColor $colors.Header
+    Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
+    Write-Host "|           ENGENHARIA CAD - SINCRONIZADOR BRIDGE v2.1                   |" -ForegroundColor $colors.Header
+    Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
+    Write-Host "|  Backend: $($BackendUrl.PadRight(55))|" -ForegroundColor $colors.Info
+    Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
     Write-Host ""
 }
 
@@ -86,21 +86,21 @@ function Show-Dashboard {
     $uptime = (Get-Date) - $global:startTime
     $uptimeStr = "{0:D2}:{1:D2}:{2:D2}" -f $uptime.Hours, $uptime.Minutes, $uptime.Seconds
     
-    $connStatus = if ($global:isConnected) { "🟢 CONECTADO" } else { "🔴 DESCONECTADO" }
+    $connStatus = if ($global:isConnected) { "[OK] CONECTADO" } else { "[X] DESCONECTADO" }
     $connColor = if ($global:isConnected) { $colors.Success } else { $colors.Error }
     
-    $cadStatus = if ($global:cadInfo.type) { "$($global:cadInfo.type) $($global:cadInfo.version)" } else { "Não detectado" }
+    $cadStatus = if ($global:cadInfo.type) { "$($global:cadInfo.type) $($global:cadInfo.version)" } else { "Nao detectado" }
     
     Write-Host ""
-    Write-Host "┌─────────────────────────────────────────────────────────────────────┐" -ForegroundColor $colors.Info
-    Write-Host "│ STATUS: " -NoNewline -ForegroundColor $colors.Info
+    Write-Host "+-----------------------------------------------------------------------+" -ForegroundColor $colors.Info
+    Write-Host "| STATUS: " -NoNewline -ForegroundColor $colors.Info
     Write-Host $connStatus.PadRight(20) -NoNewline -ForegroundColor $connColor
     Write-Host "Uptime: $uptimeStr".PadRight(30) -NoNewline -ForegroundColor $colors.Dim
-    Write-Host "│" -ForegroundColor $colors.Info
-    Write-Host "│ CAD: $($cadStatus.PadRight(30))" -NoNewline -ForegroundColor $colors.Info
+    Write-Host "|" -ForegroundColor $colors.Info
+    Write-Host "| CAD: $($cadStatus.PadRight(30))" -NoNewline -ForegroundColor $colors.Info
     Write-Host "Comandos: $($global:commandsExecuted)".PadRight(24) -NoNewline -ForegroundColor $colors.Success
-    Write-Host "│" -ForegroundColor $colors.Info
-    Write-Host "└─────────────────────────────────────────────────────────────────────┘" -ForegroundColor $colors.Info
+    Write-Host "|" -ForegroundColor $colors.Info
+    Write-Host "+-----------------------------------------------------------------------+" -ForegroundColor $colors.Info
     Write-Host ""
 }
 
@@ -266,10 +266,10 @@ function Process-Command($cmd) {
     $filename = "cmd_$($cmd.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').lsp"
     $filepath = Join-Path $DROP_PATH $filename
     
-    Write-Status "═══════════════════════════════════════════════════════════════" "Header"
+    Write-Status "================================================================" "Header"
     Write-Status "  COMANDO RECEBIDO! ID: $($cmd.id)" "Success"
-    Write-Status "  Operação: $($cmd.operation)" "Info"
-    Write-Status "═══════════════════════════════════════════════════════════════" "Header"
+    Write-Status "  Operacao: $($cmd.operation)" "Info"
+    Write-Status "================================================================" "Header"
     
     try {
         # Salvar arquivo LISP
