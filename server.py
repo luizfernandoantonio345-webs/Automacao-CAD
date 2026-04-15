@@ -2358,10 +2358,13 @@ async def download_sincronizador():
     
     # Arquivos a incluir no ZIP
     files_to_include = [
+        "INSTALAR.bat",
+        "INSTALAR.ps1",
         "DETECTAR_AUTOCAD.ps1",
         "SINCRONIZADOR.ps1",
         "INICIAR_SINCRONIZADOR.bat",
         "forge_vigilante.lsp",
+        "acaddoc.lsp",
     ]
     
     # Criar ZIP em memória
@@ -2370,37 +2373,52 @@ async def download_sincronizador():
         for filename in files_to_include:
             filepath = os.path.join(cliente_dir, filename)
             if os.path.isfile(filepath):
-                zf.write(filepath, f"Sincronizador_ForgeCad/{filename}")
+                zf.write(filepath, f"Engenharia_CAD_Instalador/{filename}")
         
         # Adicionar README com instruções
-        readme_content = """# Sincronizador ForgeCad - Instalação
+        readme_content = """# Engenharia CAD - Instalador
 
 ## Requisitos
 - Windows 10/11
 - PowerShell 5.1+
-- AutoCAD 2020+
+- AutoCAD 2020+ (ou GstarCAD, ZWCAD, BricsCAD)
 
-## Instalação Rápida
-1. Extraia esta pasta em um local de sua preferência
-2. Execute **INICIAR_SINCRONIZADOR.bat** como Administrador
-3. O sincronizador detectará o AutoCAD automaticamente
+## Instalação Automática (RECOMENDADO)
+1. Extraia esta pasta para qualquer local
+2. Clique com botão direito em **INSTALAR.bat** → "Executar como administrador"
+3. Siga as instruções na tela
+4. Pronto! O sistema será configurado automaticamente
+
+## O que o instalador faz
+- Copia os arquivos para C:\\EngenhariaCAD
+- Configura o auto-load no AutoCAD
+- Cria pasta de comandos C:\\AutoCAD_Drop
+- Cria atalho na área de trabalho
+- Testa conexão com o servidor
+
+## Instalação Manual (alternativa)
+1. Execute **INICIAR_SINCRONIZADOR.bat** para iniciar o sincronizador
+2. No AutoCAD, use APPLOAD para carregar forge_vigilante.lsp
+3. Digite FORGE_START no AutoCAD
 
 ## Arquivos
-- **INICIAR_SINCRONIZADOR.bat** - Inicia o sincronizador (execute este)
-- **SINCRONIZADOR.ps1** - Script principal de sincronização
-- **DETECTAR_AUTOCAD.ps1** - Detecta instalações do AutoCAD
-- **forge_vigilante.lsp** - Plugin AutoLISP para AutoCAD
+- **INSTALAR.bat** - Instalador completo (execute este primeiro)
+- **INICIAR_SINCRONIZADOR.bat** - Inicia conexão com o servidor
+- **forge_vigilante.lsp** - Plugin para AutoCAD
+- **acaddoc.lsp** - Auto-load do plugin
 
-## Uso
-1. Abra o AutoCAD
-2. Execute o sincronizador
-3. Acesse o dashboard web e envie comandos
-4. Os comandos serão executados automaticamente no AutoCAD
+## Comandos do AutoCAD
+- FORGE_START - Iniciar monitoramento
+- FORGE_STOP - Parar monitoramento
+- FORGE_STATUS - Ver status atual
+
+## Desinstalar
+Execute: powershell -File INSTALAR.ps1 -Uninstall
 
 ## Suporte
-Documentação: https://automacao-cad-frontend.vercel.app/docs
+Site: https://automacao-cad-frontend.vercel.app
 """
-        zf.writestr("Sincronizador_ForgeCad/README.md", readme_content)
+        zf.writestr("Engenharia_CAD_Instalador/README.md", readme_content)
     
     zip_buffer.seek(0)
     
@@ -2408,7 +2426,7 @@ Documentação: https://automacao-cad-frontend.vercel.app/docs
         zip_buffer,
         media_type="application/zip",
         headers={
-            "Content-Disposition": "attachment; filename=Sincronizador_ForgeCad.zip"
+            "Content-Disposition": "attachment; filename=Engenharia_CAD_Instalador.zip"
         }
     )
 
