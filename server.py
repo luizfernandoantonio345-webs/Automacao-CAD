@@ -1385,7 +1385,10 @@ def health_check():
         from backend.database.db import _get_conn, is_ephemeral, _USE_PG
 
         conn = _get_conn()
-        conn.execute("SELECT 1")
+        if _USE_PG:
+            conn.cursor().execute("SELECT 1")
+        else:
+            conn.execute("SELECT 1")
         db_ok = True
         db_ephemeral = bool(is_ephemeral())
         db_type = "postgresql" if _USE_PG else "sqlite"
