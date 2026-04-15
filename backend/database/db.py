@@ -110,6 +110,51 @@ def _q(sql: str) -> str:
     return sql
 
 
+class _PgCursorAdapter:
+    """Compat layer: faz psycopg2 cursor se comportar como sqlite cursor."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, sql: str, params: tuple | list | None = None):
+        if params is None:
+            self._cursor.execute(sql)
+        else:
+            self._cursor.execute(sql, params)
+        # Compatibilidade com padrões do código: cur.execute(...).fetchone()
+        return self
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+
+class _PgConnAdapter:
+    """Compat layer para uso de conn.execute(...) e conn.cursor()."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return _PgCursorAdapter(self._conn.cursor())
+
+    def execute(self, sql: str, params: tuple | list | None = None):
+        cur = self.cursor()
+        return cur.execute(sql, params)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+
 @contextmanager
 def get_db():
     """Context manager para transações.
@@ -124,6 +169,8 @@ def get_db():
                 yield conn
             return
     conn = _get_conn()
+    if _USE_PG:
+        conn = _PgConnAdapter(conn)
     try:
         yield conn
         conn.commit()
@@ -280,6 +327,21 @@ _PG_TABLES = [
     )""",
 ]
 
+# Compatibilidade: em alguns ambientes o schema inicial de Alembic é mais antigo
+# e não contém todas as colunas usadas pelo backend atual.
+_PG_COMPAT_ALTERS = [
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'demo'",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS limite INTEGER DEFAULT 100",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS usado INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS empresa TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login DOUBLE PRECISION",
+    "ALTER TABLE projects ADD COLUMN IF NOT EXISTS piping_spec TEXT DEFAULT '{}'",
+    "ALTER TABLE projects ADD COLUMN IF NOT EXISTS completed_at DOUBLE PRECISION",
+    "ALTER TABLE uploads ADD COLUMN IF NOT EXISTS row_count INTEGER DEFAULT 0",
+    "ALTER TABLE uploads ADD COLUMN IF NOT EXISTS projects_generated INTEGER DEFAULT 0",
+    "ALTER TABLE uploads ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'uploaded'",
+]
+
 
 def init_db() -> None:
     """Cria tabelas se não existirem."""
@@ -288,6 +350,8 @@ def init_db() -> None:
             cur = conn.cursor()
             for ddl in _PG_TABLES:
                 cur.execute(ddl)
+            for alter in _PG_COMPAT_ALTERS:
+                cur.execute(alter)
         else:
             conn.executescript(_SQLITE_SCHEMA)
     engine_name = "PostgreSQL" if _USE_PG else "SQLite"
