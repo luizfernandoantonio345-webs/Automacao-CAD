@@ -479,8 +479,14 @@ while ($true) {
         
         # Heartbeat a cada 5 segundos
         if (((Get-Date) - $lastHeartbeat).TotalSeconds -ge $HEARTBEAT_INTERVAL) {
+            $wasConnected = $global:isConnected
             $sent = Send-ConnectionStatus $true
             if ($sent) {
+                if (-not $wasConnected -and $reconnectAttempts -gt 0) {
+                    Write-Host ""
+                    Write-Status "RECONECTADO! Backend online novamente." "Success"
+                    try { [Console]::Beep(800, 100); [Console]::Beep(1000, 100) } catch { }
+                }
                 $reconnectAttempts = 0
             }
             else {
