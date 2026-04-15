@@ -130,7 +130,7 @@ echo      OK: DETECTAR_AUTOCAD.ps1
 echo.
 echo [5/6] Testando conexao com o servidor...
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing | Out-Null; Write-Host '      OK: Servidor online!' -ForegroundColor Green } catch { Write-Host '      AVISO: Servidor offline - modo local' -ForegroundColor Yellow }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $r=$null; try{$r=Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing -ErrorAction Stop}catch{}; if($r){Write-Host '      OK: Servidor online!' -ForegroundColor Green}else{Write-Host '      AVISO: Servidor offline - modo local' -ForegroundColor Yellow}"
 
 :: =====================================================================
 :: PASSO 6: Iniciar agente
