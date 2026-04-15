@@ -11,10 +11,7 @@ import {
   Paper,
   Button,
   TextField,
-  Select,
   MenuItem,
-  FormControl,
-  InputLabel,
   CircularProgress,
   Alert,
   Dialog,
@@ -254,38 +251,38 @@ const AdminPanel: React.FC = () => {
               sx={{ flex: 1 }}
             />
 
-            <FormControl sx={{ flex: 1, minWidth: 200 }}>
-              <InputLabel>Ação</InputLabel>
-              <Select
-                value={filters.action}
-                onChange={(e) =>
-                  setFilters({ ...filters, action: e.target.value })
-                }
-                label="Ação"
-              >
-                <MenuItem value="">Todas</MenuItem>
-                {actions.map((action) => (
-                  <MenuItem key={action} value={action}>
-                    {action}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField
+              select
+              label="Ação"
+              size="small"
+              value={filters.action}
+              onChange={(e) =>
+                setFilters({ ...filters, action: e.target.value })
+              }
+              sx={{ flex: 1, minWidth: 200 }}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {actions.map((action) => (
+                <MenuItem key={action} value={action}>
+                  {action}
+                </MenuItem>
+              ))}
+            </TextField>
 
-            <FormControl sx={{ flex: 1, minWidth: 150 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                label="Status"
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="success">Sucesso</MenuItem>
-                <MenuItem value="failure">Falha</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              select
+              label="Status"
+              size="small"
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+              sx={{ flex: 1, minWidth: 150 }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="success">Sucesso</MenuItem>
+              <MenuItem value="failure">Falha</MenuItem>
+            </TextField>
           </Stack>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
