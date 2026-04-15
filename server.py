@@ -2183,31 +2183,55 @@ _bridge_db_path = os.path.join(_bridge_default_dir, "bridge_queue.db")
 _bridge_db_lock = Lock()
 _bridge_db_initialized = False
 
+# Fallback em memória quando SQLite falha (ambiente serverless)
+_bridge_memory_queue: list[dict] = []
+_bridge_memory_mode = False
+
 
 def _bridge_init_db() -> None:
-    global _bridge_db_initialized
+    """Inicializa banco SQLite ou fallback em memória se falhar."""
+    global _bridge_db_initialized, _bridge_memory_mode
     if _bridge_db_initialized:
         return
-    os.makedirs(os.path.dirname(_bridge_db_path), exist_ok=True)
-    with sqlite3.connect(_bridge_db_path) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS bridge_commands (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                lisp_code TEXT NOT NULL,
-                operation TEXT NOT NULL,
-                timestamp TEXT NOT NULL
+    try:
+        os.makedirs(os.path.dirname(_bridge_db_path), exist_ok=True)
+        with sqlite3.connect(_bridge_db_path, timeout=5) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS bridge_commands (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    lisp_code TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
-        conn.commit()
-    _bridge_db_initialized = True
+            conn.commit()
+        _bridge_db_initialized = True
+        _bridge_memory_mode = False
+    except Exception as e:
+        # Fallback para modo memória se SQLite falhar
+        logger.warning(f"SQLite bridge init failed, using memory mode: {e}")
+        _bridge_db_initialized = True
+        _bridge_memory_mode = True
 
 
 def _bridge_enqueue(lisp_code: str, operation: str) -> int:
     _bridge_init_db()
+    
+    # Modo memória (fallback)
+    if _bridge_memory_mode:
+        cmd_id = len(_bridge_memory_queue) + 1
+        _bridge_memory_queue.append({
+            "id": cmd_id,
+            "lisp_code": lisp_code,
+            "operation": operation,
+            "timestamp": datetime.datetime.now(UTC).isoformat(),
+        })
+        return cmd_id
+    
     with _bridge_db_lock:
-        with sqlite3.connect(_bridge_db_path) as conn:
+        with sqlite3.connect(_bridge_db_path, timeout=5) as conn:
             cur = conn.execute(
                 "INSERT INTO bridge_commands (lisp_code, operation, timestamp) VALUES (?, ?, ?)",
                 (lisp_code, operation, datetime.datetime.now(UTC).isoformat()),
@@ -2218,37 +2242,67 @@ def _bridge_enqueue(lisp_code: str, operation: str) -> int:
 
 def _bridge_list() -> list[dict]:
     _bridge_init_db()
-    with _bridge_db_lock:
-        with sqlite3.connect(_bridge_db_path) as conn:
-            rows = conn.execute(
-                "SELECT id, lisp_code, operation, timestamp FROM bridge_commands ORDER BY id ASC"
-            ).fetchall()
-    return [
-        {
-            "id": row[0],
-            "lisp_code": row[1],
-            "operation": row[2],
-            "timestamp": row[3],
-        }
-        for row in rows
-    ]
+    
+    # Modo memória (fallback)
+    if _bridge_memory_mode:
+        return list(_bridge_memory_queue)
+    
+    try:
+        with _bridge_db_lock:
+            with sqlite3.connect(_bridge_db_path, timeout=5) as conn:
+                rows = conn.execute(
+                    "SELECT id, lisp_code, operation, timestamp FROM bridge_commands ORDER BY id ASC"
+                ).fetchall()
+        return [
+            {
+                "id": row[0],
+                "lisp_code": row[1],
+                "operation": row[2],
+                "timestamp": row[3],
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        logger.warning(f"SQLite bridge_list failed: {e}")
+        return []
 
 
 def _bridge_ack(cmd_id: str) -> bool:
     _bridge_init_db()
-    with _bridge_db_lock:
-        with sqlite3.connect(_bridge_db_path) as conn:
-            cur = conn.execute("DELETE FROM bridge_commands WHERE id = ?", (cmd_id,))
-            conn.commit()
-            return cur.rowcount > 0
+    
+    # Modo memória (fallback)
+    if _bridge_memory_mode:
+        global _bridge_memory_queue
+        original_len = len(_bridge_memory_queue)
+        _bridge_memory_queue = [c for c in _bridge_memory_queue if str(c["id"]) != str(cmd_id)]
+        return len(_bridge_memory_queue) < original_len
+    
+    try:
+        with _bridge_db_lock:
+            with sqlite3.connect(_bridge_db_path, timeout=5) as conn:
+                cur = conn.execute("DELETE FROM bridge_commands WHERE id = ?", (cmd_id,))
+                conn.commit()
+                return cur.rowcount > 0
+    except Exception as e:
+        logger.warning(f"SQLite bridge_ack failed: {e}")
+        return False
 
 
 def _bridge_pending_count() -> int:
     _bridge_init_db()
-    with _bridge_db_lock:
-        with sqlite3.connect(_bridge_db_path) as conn:
-            row = conn.execute("SELECT COUNT(*) FROM bridge_commands").fetchone()
-    return int(row[0]) if row else 0
+    
+    # Modo memória (fallback)
+    if _bridge_memory_mode:
+        return len(_bridge_memory_queue)
+    
+    try:
+        with _bridge_db_lock:
+            with sqlite3.connect(_bridge_db_path, timeout=5) as conn:
+                row = conn.execute("SELECT COUNT(*) FROM bridge_commands").fetchone()
+        return int(row[0]) if row else 0
+    except Exception as e:
+        logger.warning(f"SQLite bridge_pending_count failed: {e}")
+        return 0
 
 
 # Inicialização lazy — não chamar no top-level para evitar crash em serverless
@@ -2268,18 +2322,22 @@ _bridge_client_info = {
 async def bridge_connection(request: Request):
     """Recebe status de conexão do sincronizador."""
     global _bridge_client_info
-    data = await request.json()
-    
-    _bridge_client_info = {
-        "connected": data.get("connected", False),
-        "last_seen": datetime.datetime.now(UTC).isoformat(),
-        "cad_type": data.get("cad_type"),
-        "cad_version": data.get("cad_version"),
-        "machine": data.get("machine"),
-        "commands_executed": _bridge_client_info.get("commands_executed", 0),
-    }
-    
-    return {"status": "ok", "received": _bridge_client_info}
+    try:
+        data = await request.json()
+        
+        _bridge_client_info = {
+            "connected": data.get("connected", False),
+            "last_seen": datetime.datetime.now(UTC).isoformat(),
+            "cad_type": data.get("cad_type"),
+            "cad_version": data.get("cad_version"),
+            "machine": data.get("machine"),
+            "commands_executed": _bridge_client_info.get("commands_executed", 0),
+        }
+        
+        return {"status": "ok", "received": _bridge_client_info}
+    except Exception as e:
+        logger.error(f"Bridge connection error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2360,34 +2418,47 @@ async def get_bridge_pending():
     """Retorna comandos pendentes para o sincronizador local."""
     global _bridge_client_info
     
-    # Atualizar last_seen quando sincronizador faz polling
-    _bridge_client_info["last_seen"] = datetime.datetime.now(UTC).isoformat()
-    _bridge_client_info["connected"] = True
-    
-    commands = _bridge_list()
-    return {"commands": commands, "count": len(commands)}
+    try:
+        # Atualizar last_seen quando sincronizador faz polling
+        _bridge_client_info["last_seen"] = datetime.datetime.now(UTC).isoformat()
+        _bridge_client_info["connected"] = True
+        
+        commands = _bridge_list()
+        return {"commands": commands, "count": len(commands)}
+    except Exception as e:
+        logger.error(f"Bridge pending error: {e}")
+        # Retornar lista vazia em vez de erro 500
+        return {"commands": [], "count": 0, "error": str(e)}
 
 
 @app.post("/api/bridge/ack/{cmd_id}")
 async def ack_bridge_command(cmd_id: str):
     """Confirma que um comando foi processado pelo sincronizador."""
     global _bridge_client_info
-    _bridge_ack(str(cmd_id))
-    _bridge_client_info["commands_executed"] = _bridge_client_info.get("commands_executed", 0) + 1
-    return {"status": "acknowledged", "id": cmd_id}
+    try:
+        _bridge_ack(str(cmd_id))
+        _bridge_client_info["commands_executed"] = _bridge_client_info.get("commands_executed", 0) + 1
+        return {"status": "acknowledged", "id": cmd_id}
+    except Exception as e:
+        logger.error(f"Bridge ack error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.post("/api/bridge/send")
 async def send_bridge_command(request: Request):
     """Envia um comando LISP para a fila do sincronizador."""
-    data = await request.json()
+    try:
+        data = await request.json()
 
-    cmd_id = _bridge_enqueue(
-        lisp_code=data.get("lisp_code", ""),
-        operation=data.get("operation", "custom"),
-    )
+        cmd_id = _bridge_enqueue(
+            lisp_code=data.get("lisp_code", ""),
+            operation=data.get("operation", "custom"),
+        )
 
-    return {"status": "queued", "id": cmd_id}
+        return {"status": "queued", "id": cmd_id}
+    except Exception as e:
+        logger.error(f"Bridge send error: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.post("/api/bridge/draw-pipe")
