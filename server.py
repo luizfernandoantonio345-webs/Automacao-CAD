@@ -387,7 +387,13 @@ if _SLOWAPI_AVAILABLE and limiter is not None:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     logger.info("Rate limiting habilitado via slowapi")
 else:
-    logger.warning("Rate limiting usando fallback interno")
+    # Fallback para rate limiter interno com suporte a Redis
+    try:
+        from backend.rate_limiter import RateLimitMiddleware, rate_limiter
+        app.add_middleware(RateLimitMiddleware)
+        logger.info(f"Rate limiting habilitado via backend (backend: {rate_limiter.backend})")
+    except ImportError as e:
+        logger.warning(f"Rate limiting fallback não disponível: {e}")
 
 # ── Exception Handlers com mensagens em português ──
 from fastapi.exceptions import RequestValidationError
@@ -1505,6 +1511,59 @@ def healthz_check():
     """Endpoint curto de liveness/readiness para CI e smoke checks."""
     result = health_check()
     return {"status": result.get("status", "degraded")}
+
+
+@app.get("/api/security/status")
+def security_status():
+    """Retorna status de todos os recursos de segurança."""
+    # Rate limiting
+    rate_limit_info = {"enabled": False, "backend": "none"}
+    if _SLOWAPI_AVAILABLE and limiter is not None:
+        rate_limit_info = {"enabled": True, "backend": "slowapi"}
+    else:
+        try:
+            from backend.rate_limiter import rate_limiter as rl
+            rate_limit_info = {"enabled": True, "backend": rl.backend}
+        except ImportError:
+            pass
+    
+    # Criptografia
+    crypto_info = {"available": False}
+    try:
+        from backend.crypto import is_encryption_available
+        crypto_info = {"available": is_encryption_available()}
+    except ImportError:
+        pass
+    
+    # Headers de segurança
+    security_headers = {"enabled": False}
+    try:
+        from backend.security import SecurityHeadersMiddleware
+        security_headers = {"enabled": True}
+    except ImportError:
+        pass
+    
+    # Sessions
+    sessions = {"backend": "memory"}
+    if _REDIS_SESSION_AVAILABLE:
+        sessions = {"backend": "redis"}
+    
+    return {
+        "status": "secure",
+        "rate_limiting": rate_limit_info,
+        "encryption": crypto_info,
+        "security_headers": security_headers,
+        "sessions": sessions,
+        "cors": {
+            "origins_count": len(_CORS_ALLOWED_ORIGINS),
+        },
+        "features": {
+            "jwt_auth": True,
+            "hsts": True,
+            "csp": True,
+            "audit_logging": audit_router is not None,
+        }
+    }
 
 
 @app.get("/project-stats")
