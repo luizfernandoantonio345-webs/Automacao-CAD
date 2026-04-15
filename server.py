@@ -183,6 +183,7 @@ try:
         get_projects as db_get_projects, get_project_stats,
         add_quality_check, get_quality_checks,
         create_upload, update_upload, get_uploads,
+        _hash_password, _q, get_db,
     )
 except ImportError as e:
     _log.warning(f"Database module not available: {e}")
@@ -190,6 +191,7 @@ except ImportError as e:
     email_exists = get_user_by_email = db_create_project = None
     db_update_project = db_get_project = db_get_projects = get_project_stats = None
     add_quality_check = get_quality_checks = create_upload = update_upload = get_uploads = None
+    _hash_password = _q = get_db = None
 
 # logger = logging.getLogger(__name__)  # Deprecated - using structlog
 
@@ -1235,6 +1237,48 @@ def auth_register(data: RegisterData):
         "limite": user["limite"],
         "usado": user["usado"],
     }
+
+
+@app.post("/admin/seed-test-user")
+def admin_seed_test_user():
+    """
+    Endpoint administrativo para criar/atualizar usuário de teste.
+    Usado apenas para setup inicial de contas de teste.
+    """
+    TEST_EMAIL = "santossod345@gmail.com"
+    TEST_SENHA = "Santos14"
+    TEST_EMPRESA = "Conta Teste Enterprise"
+    
+    if email_exists(TEST_EMAIL):
+        # Atualizar senha e tier
+        pw_hash = _hash_password(TEST_SENHA)
+        with get_db() as conn:
+            conn.execute(
+                _q("UPDATE users SET password_hash = ?, tier = ?, limite = ? WHERE email = ?"),
+                (pw_hash, "enterprise", 999999, TEST_EMAIL)
+            )
+        return {
+            "status": "updated",
+            "email": TEST_EMAIL,
+            "tier": "enterprise",
+            "message": "Usuário atualizado com sucesso. Senha: Santos14"
+        }
+    else:
+        # Criar novo usuário
+        user = create_user(
+            email=TEST_EMAIL,
+            username="santossod345",
+            password=TEST_SENHA,
+            empresa=TEST_EMPRESA,
+            tier="enterprise",
+            limite=999999
+        )
+        return {
+            "status": "created",
+            "email": TEST_EMAIL,
+            "tier": "enterprise",
+            "message": "Usuário criado com sucesso. Senha: Santos14"
+        }
 
 
 @app.post("/auth/demo")
