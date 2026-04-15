@@ -1,5 +1,6 @@
 @echo off
-chcp 65001 > nul
+setlocal enabledelayedexpansion
+chcp 65001 > nul 2>&1
 title Engenharia CAD - Instalacao do Agente AutoCAD
 color 0B
 
@@ -9,62 +10,143 @@ echo    ENGENHARIA CAD - INSTALADOR DO AGENTE AUTOCAD
 echo ================================================================
 echo.
 
-:: Diretorio de instalacao
+:: =====================================================================
+:: PASSO 0: Verificar requisitos do sistema
+:: =====================================================================
+
+echo [0/6] Verificando requisitos do sistema...
+
+where powershell >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ERRO CRITICO: PowerShell nao encontrado!
+    echo Windows 7 ou superior ja vem com PowerShell.
+    goto :ERROR_WAIT
+)
+echo      OK: PowerShell encontrado.
+
+:: =====================================================================
+:: PASSO 1: Criar pasta de instalacao
+:: =====================================================================
+
 set "DEST=%USERPROFILE%\EngCAD-Agente"
 
-echo [1/5] Criando pasta de instalacao...
-if not exist "%DEST%" mkdir "%DEST%"
-if errorlevel 1 (
-    echo ERRO: Nao foi possivel criar a pasta "%DEST%"
-    goto :ERROR
+echo.
+echo [1/6] Criando pasta de instalacao...
+
+if not exist "%DEST%" (
+    mkdir "%DEST%" 2>nul
+    if errorlevel 1 (
+        echo      ERRO: Nao foi possivel criar a pasta
+        goto :ERROR_WAIT
+    )
 )
 echo      OK: %DEST%
+
+:: =====================================================================
+:: PASSO 2: Criar script de download robusto
+:: =====================================================================
+
 echo.
+echo [2/6] Preparando download...
 
-:: URLs dos arquivos
-set "BASE=https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente"
+set "BASE_URL=https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente"
 
-echo [2/5] Baixando arquivos do agente...
+:: Criar script PowerShell de download com try/catch
+> "%DEST%\_download.ps1" (
+    echo $ErrorActionPreference = 'Stop'
+    echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    echo $baseUrl = '%BASE_URL%'
+    echo $dest = '%DEST%'
+    echo $wc = New-Object System.Net.WebClient
+    echo $success = $true
+    echo Write-Host '      Conectando ao GitHub...' -ForegroundColor Cyan
+    echo try {
+    echo     Write-Host '      Baixando SINCRONIZADOR.ps1...' -NoNewline
+    echo     $wc.DownloadFile^("$baseUrl/SINCRONIZADOR.ps1", "$dest\SINCRONIZADOR.ps1"^)
+    echo     Write-Host ' OK' -ForegroundColor Green
+    echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
+    echo try {
+    echo     Write-Host '      Baixando DETECTAR_AUTOCAD.ps1...' -NoNewline
+    echo     $wc.DownloadFile^("$baseUrl/DETECTAR_AUTOCAD.ps1", "$dest\DETECTAR_AUTOCAD.ps1"^)
+    echo     Write-Host ' OK' -ForegroundColor Green
+    echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
+    echo try {
+    echo     Write-Host '      Baixando INICIAR_SINCRONIZADOR.bat...' -NoNewline
+    echo     $wc.DownloadFile^("$baseUrl/INICIAR_SINCRONIZADOR.bat", "$dest\INICIAR_SINCRONIZADOR.bat"^)
+    echo     Write-Host ' OK' -ForegroundColor Green
+    echo } catch { Write-Host ' FALHOU' -ForegroundColor Red; Write-Host "         $^($_^)" -ForegroundColor Yellow; $success = $false }
+    echo if ^($success^) { exit 0 } else { exit 1 }
+)
 
-:: Criar script temporario de download (evita problemas com ^ no CMD)
-echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 > "%DEST%\_download.ps1"
-echo Write-Host '      Baixando SINCRONIZADOR.ps1...' >> "%DEST%\_download.ps1"
-echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/SINCRONIZADOR.ps1', '%DEST%\SINCRONIZADOR.ps1') >> "%DEST%\_download.ps1"
-echo Write-Host '      Baixando DETECTAR_AUTOCAD.ps1...' >> "%DEST%\_download.ps1"
-echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/DETECTAR_AUTOCAD.ps1', '%DEST%\DETECTAR_AUTOCAD.ps1') >> "%DEST%\_download.ps1"
-echo Write-Host '      Baixando INICIAR_SINCRONIZADOR.bat...' >> "%DEST%\_download.ps1"
-echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/INICIAR_SINCRONIZADOR.bat', '%DEST%\INICIAR_SINCRONIZADOR.bat') >> "%DEST%\_download.ps1"
-echo Write-Host '      OK!' -ForegroundColor Green >> "%DEST%\_download.ps1"
+:: =====================================================================
+:: PASSO 3: Executar download
+:: =====================================================================
+
+echo.
+echo [3/6] Baixando arquivos do agente...
+echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%DEST%\_download.ps1"
+set "DOWNLOAD_RESULT=%errorlevel%"
+
 del "%DEST%\_download.ps1" 2>nul
 
-echo.
+if not "%DOWNLOAD_RESULT%"=="0" (
+    echo.
+    echo ERRO: Nao foi possivel baixar todos os arquivos.
+    echo.
+    echo Possiveis causas:
+    echo   1. Sem conexao com a internet
+    echo   2. GitHub fora do ar
+    echo   3. Firewall/antivirus bloqueando
+    echo.
+    goto :ERROR_WAIT
+)
 
-echo [3/5] Verificando arquivos baixados...
+:: =====================================================================
+:: PASSO 4: Verificar arquivos baixados
+:: =====================================================================
+
+echo.
+echo [4/6] Verificando arquivos...
+
 if not exist "%DEST%\SINCRONIZADOR.ps1" (
-    echo ERRO: Arquivo SINCRONIZADOR.ps1 nao encontrado apos download.
-    goto :ERROR
+    echo      ERRO: SINCRONIZADOR.ps1 nao encontrado!
+    goto :ERROR_WAIT
 )
-echo      OK: SINCRONIZADOR.ps1 verificado
+echo      OK: SINCRONIZADOR.ps1
+
 if not exist "%DEST%\DETECTAR_AUTOCAD.ps1" (
-    echo ERRO: Arquivo DETECTAR_AUTOCAD.ps1 nao encontrado apos download.
-    goto :ERROR
+    echo      ERRO: DETECTAR_AUTOCAD.ps1 nao encontrado!
+    goto :ERROR_WAIT
 )
-echo      OK: DETECTAR_AUTOCAD.ps1 verificado
-echo.
+echo      OK: DETECTAR_AUTOCAD.ps1
 
-echo [4/5] Testando conexao com o backend...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $r = Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing; Write-Host '      OK: Backend online!' -ForegroundColor Green } catch { Write-Host '      Aviso: Backend offline (modo local)' -ForegroundColor Yellow }"
-echo.
+:: =====================================================================
+:: PASSO 5: Testar conexao com backend
+:: =====================================================================
 
-echo [5/5] Iniciando agente sincronizador...
+echo.
+echo [5/6] Testando conexao com o servidor...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing | Out-Null; Write-Host '      OK: Servidor online!' -ForegroundColor Green } catch { Write-Host '      AVISO: Servidor offline - modo local' -ForegroundColor Yellow }"
+
+:: =====================================================================
+:: PASSO 6: Iniciar agente
+:: =====================================================================
+
+echo.
+echo [6/6] Pronto para iniciar!
 echo.
 echo ================================================================
-echo    O AGENTE VAI INICIAR AGORA
-echo    Esta janela ficara aberta mostrando o status
-echo    Para PARAR o agente: feche esta janela (X)
+echo    INSTALACAO CONCLUIDA COM SUCESSO!
 echo ================================================================
+echo.
+echo IMPORTANTE:
+echo   - Esta janela ficara aberta mostrando o status
+echo   - Para PARAR: feche esta janela (X) ou Ctrl+C
+echo   - Para REINICIAR: execute INICIAR_SINCRONIZADOR.bat
 echo.
 echo Pressione qualquer tecla para iniciar o agente...
 pause > nul
@@ -77,24 +159,19 @@ echo ================================================================
 echo    AGENTE ENCERRADO
 echo ================================================================
 echo.
-echo O agente foi encerrado.
+echo Para reiniciar: %DEST%\INICIAR_SINCRONIZADOR.bat
 echo.
-echo Para reiniciar, execute:
-echo   %DEST%\INICIAR_SINCRONIZADOR.bat
-echo.
-goto :END
+pause
+goto :EOF
 
-:ERROR
+:ERROR_WAIT
 echo.
 echo ================================================================
-echo    ERRO NA INSTALACAO
+echo    INSTALACAO FALHOU
 echo ================================================================
 echo.
-echo Ocorreu um erro durante a instalacao.
-echo Verifique sua conexao com a internet.
+echo A janela fechara em 60 segundos...
+echo Ou pressione qualquer tecla para fechar agora.
 echo.
-
-:END
-echo.
-echo Pressione qualquer tecla para fechar...
-pause > nul
+timeout /t 60
+goto :EOF

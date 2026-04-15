@@ -1,27 +1,44 @@
 # =============================================================================
-# ENGENHARIA CAD - SINCRONIZADOR v2.0
+# ENGENHARIA CAD - SINCRONIZADOR v2.1
 # Conecta com o backend, detecta CAD automaticamente, mostra status em tempo real
+# Versão robusta com tratamento de TODOS os erros possíveis
 # =============================================================================
 
 param(
     [string]$BackendUrl = "https://automacao-cad-backend.vercel.app"
 )
 
-# IMPORTANTE: Não ocultar erros na inicialização
+# IMPORTANTE: Capturar TODOS os erros na inicialização
 $ErrorActionPreference = "Stop"
-$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# Garantir que a janela não feche em caso de erro
+# Tentar configurar encoding (pode falhar em alguns terminais)
+try {
+    $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {
+    # Ignorar erro de encoding - não é crítico
+}
+
+# Garantir que a janela NUNCA feche sem feedback
 trap {
     Write-Host ""
-    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Red
-    Write-Host "  ERRO FATAL NO SINCRONIZADOR" -ForegroundColor Red
-    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host "  ERRO NO SINCRONIZADOR" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Erro: $_" -ForegroundColor Yellow
+    Write-Host "Detalhes do erro:" -ForegroundColor Yellow
+    Write-Host "$_" -ForegroundColor White
     Write-Host ""
+    Write-Host "Stack trace:" -ForegroundColor DarkGray
+    Write-Host "$($_.ScriptStackTrace)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
     Write-Host "Pressione qualquer tecla para fechar..." -ForegroundColor Cyan
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host ""
+    try {
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    } catch {
+        Start-Sleep -Seconds 30
+    }
     exit 1
 }
 
@@ -35,7 +52,7 @@ $colors = @{
     Header  = "Magenta"
 }
 
-$DROP_PATH = "C:\AutoCAD_Drop"
+$DROP_PATH = $null  # Será definido em Ensure-DropFolder
 $POLL_INTERVAL = 3
 $HEARTBEAT_INTERVAL = 5
 
@@ -279,73 +296,148 @@ function Process-Command($cmd) {
 }
 
 function Ensure-DropFolder {
-    if (-not (Test-Path $DROP_PATH)) {
-        New-Item -ItemType Directory -Path $DROP_PATH -Force | Out-Null
-        Write-Status "Pasta $DROP_PATH criada" "Success"
+    # Tentar C:\AutoCAD_Drop primeiro (preferido para LSP)
+    $primaryPath = "C:\AutoCAD_Drop"
+    $fallbackPath = Join-Path $env:USERPROFILE "AutoCAD_Drop"
+    
+    # Tentar criar a pasta primária
+    try {
+        if (-not (Test-Path $primaryPath)) {
+            New-Item -ItemType Directory -Path $primaryPath -Force -ErrorAction Stop | Out-Null
+        }
+        $script:DROP_PATH = $primaryPath
+        Write-Status "Pasta de comandos: $primaryPath" "Success"
+        return
+    } catch {
+        Write-Status "Nao foi possivel criar $primaryPath (requer admin)" "Warning"
+    }
+    
+    # Usar fallback na pasta do usuário
+    try {
+        if (-not (Test-Path $fallbackPath)) {
+            New-Item -ItemType Directory -Path $fallbackPath -Force -ErrorAction Stop | Out-Null
+        }
+        $script:DROP_PATH = $fallbackPath
+        Write-Status "Usando pasta alternativa: $fallbackPath" "Warning"
+    } catch {
+        Write-Status "ERRO: Nao foi possivel criar pasta de comandos!" "Error"
+        $script:DROP_PATH = $fallbackPath  # Tentar usar mesmo assim
     }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN LOOP
+# MAIN LOOP - Execução principal com tratamento de erros
 # ─────────────────────────────────────────────────────────────────────────────
 
-Write-Header
-
-# Após inicialização, ignorar erros de rede para não fechar o loop
-$ErrorActionPreference = "SilentlyContinue"
-
-Ensure-DropFolder
-$cadDetected = Detect-CAD
-
-# Auto-abrir CAD se licença válida e CAD não está rodando
-if (-not $cadDetected) {
-    Start-AutoCADIfNeeded | Out-Null
+try {
+    Write-Header
+} catch {
+    Write-Host "ENGENHARIA CAD - SINCRONIZADOR v2.1" -ForegroundColor Cyan
+    Write-Host ""
 }
 
-Write-Status "Iniciando conexão com o backend..." "Info"
-Send-ConnectionStatus $true
+# Após inicialização visual, ignorar erros de rede para não fechar o loop
+$ErrorActionPreference = "SilentlyContinue"
+
+# Configurar pasta de comandos (com fallback)
+try {
+    Ensure-DropFolder
+} catch {
+    Write-Status "Aviso: Erro ao criar pasta de comandos" "Warning"
+    $script:DROP_PATH = Join-Path $env:USERPROFILE "AutoCAD_Drop"
+}
+
+# Detectar CAD (não é crítico se falhar)
+try {
+    $cadDetected = Detect-CAD
+} catch {
+    Write-Status "Aviso: Erro ao detectar CAD - continuando..." "Warning"
+    $cadDetected = $false
+}
+
+# Tentar abrir CAD se não detectado (não é crítico)
+if (-not $cadDetected) {
+    try {
+        Start-AutoCADIfNeeded | Out-Null
+    } catch {
+        Write-Status "Aviso: Nao foi possivel iniciar CAD automaticamente" "Warning"
+    }
+}
+
+Write-Status "Iniciando conexao com o backend..." "Info"
+
+# Tentar conectar (não é crítico se falhar)
+try {
+    Send-ConnectionStatus $true | Out-Null
+} catch {
+    Write-Status "Aviso: Backend offline - tentarei reconectar..." "Warning"
+}
 
 $lastDashboard = Get-Date
 $lastHeartbeat = Get-Date
+$reconnectAttempts = 0
 
 Write-Host ""
-Write-Status "🎯 Aguardando comandos do sistema web..." "Success"
+Write-Status "Aguardando comandos do sistema web..." "Success"
 Write-Host ""
 Write-Host "Pressione Ctrl+C para encerrar" -ForegroundColor $colors.Dim
 Write-Host ""
 
-try {
-    while ($true) {
+# Loop principal infinito - NUNCA deve fechar sozinho
+while ($true) {
+    try {
         # Atualizar dashboard a cada 10 segundos
         if (((Get-Date) - $lastDashboard).TotalSeconds -ge 10) {
-            Show-Dashboard
+            try { Show-Dashboard } catch { }
             $lastDashboard = Get-Date
         }
         
         # Heartbeat a cada 5 segundos
         if (((Get-Date) - $lastHeartbeat).TotalSeconds -ge $HEARTBEAT_INTERVAL) {
-            Send-ConnectionStatus $true | Out-Null
+            $sent = Send-ConnectionStatus $true
+            if ($sent) {
+                $reconnectAttempts = 0
+            } else {
+                $reconnectAttempts++
+                if ($reconnectAttempts % 12 -eq 0) {  # A cada minuto
+                    Write-Status "Backend offline há $([math]::Floor($reconnectAttempts * 5 / 60)) min - tentando reconectar..." "Warning"
+                }
+            }
             $lastHeartbeat = Get-Date
         }
         
-        # Buscar comandos pendentes
-        $commands = Get-PendingCommands
-        
-        if ($commands -and $commands.Count -gt 0) {
-            foreach ($cmd in $commands) {
-                Process-Command $cmd
+        # Buscar comandos pendentes (só se conectado)
+        if ($global:isConnected) {
+            $commands = Get-PendingCommands
+            
+            if ($commands -and $commands.Count -gt 0) {
+                foreach ($cmd in $commands) {
+                    try {
+                        Process-Command $cmd
+                    } catch {
+                        Write-Status "Erro ao processar comando: $_" "Error"
+                    }
+                }
             }
         }
         
-        # Cursor piscando para indicar que está ativo
+        # Indicador visual de atividade
         Write-Host "." -NoNewline -ForegroundColor $colors.Dim
         
         Start-Sleep -Seconds $POLL_INTERVAL
     }
+    catch {
+        # Capturar qualquer erro no loop e continuar
+        Write-Status "Erro no loop: $_ - continuando..." "Warning"
+        Start-Sleep -Seconds 5
+    }
 }
-finally {
-    Write-Host ""
-    Write-Status "Desconectando do backend..." "Warning"
-    Send-ConnectionStatus $false
-    Write-Status "Sincronizador encerrado." "Info"
-}
+
+# Este código só executa se o loop for interrompido (Ctrl+C)
+Write-Host ""
+Write-Status "Desconectando do backend..." "Warning"
+try { Send-ConnectionStatus $false } catch { }
+Write-Status "Sincronizador encerrado." "Info"
+Write-Host ""
+Write-Host "Pressione qualquer tecla para fechar..." -ForegroundColor Cyan
+try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") } catch { Start-Sleep -Seconds 5 }

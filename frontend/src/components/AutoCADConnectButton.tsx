@@ -375,6 +375,25 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
             sub="Uma janela preta abrira, baixara os arquivos e iniciara o agente automaticamente."
           />
 
+          {/* Aviso sobre SmartScreen / Antivírus */}
+          <Box
+            sx={{
+              mt: 1,
+              mb: 2,
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.warning.main, 0.08),
+              border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+            }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 700, color: theme.palette.warning.dark, display: "block", mb: 0.5 }}>
+              Windows SmartScreen ou Antivirus bloqueou?
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.5 }}>
+              Se aparecer "Windows protegeu seu PC": clique em <b>"Mais informacoes"</b> e depois em <b>"Executar assim mesmo"</b>. O arquivo e seguro e o codigo e aberto no GitHub.
+            </Typography>
+          </Box>
+
           {/* Modo avançado - expansível */}
           <Box
             onClick={() => setAdvancedOpen((v) => !v)}
