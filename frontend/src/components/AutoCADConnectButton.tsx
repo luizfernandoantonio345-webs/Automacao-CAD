@@ -116,11 +116,24 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
     isConnected ? disconnect() : connect();
   };
 
-  const handleDownloadInstaller = () => {
-    const a = document.createElement("a");
-    a.href = INSTALLER_BAT_URL;
-    a.download = "install-agent-autocad.bat";
-    a.click();
+  const handleDownloadInstaller = async () => {
+    try {
+      // Fetch o conteúdo e criar blob local para forçar download (cross-origin não permite download direto)
+      const response = await fetch(INSTALLER_BAT_URL);
+      const text = await response.text();
+      const blob = new Blob([text], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "install-agent-autocad.bat";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      // Fallback: abre em nova aba se fetch falhar
+      window.open(INSTALLER_BAT_URL, "_blank");
+    }
   };
 
   const handleCopyAdvanced = () => {
