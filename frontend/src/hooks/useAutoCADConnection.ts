@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { API_BASE_URL } from "../services/api";
 
 export interface AutoCADStatus {
   connected: boolean;
@@ -33,7 +34,7 @@ export const useAutoCADConnection = (): UseAutoCADConnectionReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const AGENT_URL = "http://localhost:8100";
-  const BACKEND_URL = "http://localhost:8000";
+  const BACKEND_URL = API_BASE_URL;
 
   const fetchAgentHealth = useCallback(
     async (signal?: AbortSignal): Promise<AutoCADStatus | null> => {
@@ -59,11 +60,12 @@ export const useAutoCADConnection = (): UseAutoCADConnectionReturn => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: "C:/AutoCAD_Drop/" }),
       });
-      if (!response.ok) throw new Error("Backend config failed");
+      if (!response.ok) throw new Error(`Backend config failed (${response.status})`);
     } catch (err) {
       console.error("Backend connect error:", err);
+      throw err;
     }
-  }, []);
+  }, [BACKEND_URL]);
 
   const connect = useCallback(async () => {
     setIsLoading(true);

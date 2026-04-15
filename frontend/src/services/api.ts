@@ -30,7 +30,28 @@ const configuredApiBase =
   (typeof window !== "undefined" && (window as any).__ENGCAD_API_URL__) ||
   process.env.REACT_APP_API_URL ||
   getDefaultApiBase();
-export const API_BASE_URL = normalizeBaseUrl(configuredApiBase);
+
+const normalizeCanonicalBackend = (value: string): string => {
+  const normalized = normalizeBaseUrl(value);
+  if (typeof window === "undefined") return normalized;
+
+  const frontendHost = window.location.hostname;
+  const isDeployedFrontend =
+    frontendHost.includes("vercel.app") || frontendHost.includes("automacao-cad");
+
+  // If a preview backend URL was injected (e.g. automacao-cad-backend-xyz.vercel.app),
+  // pin to canonical production backend to avoid stale preview environments.
+  if (
+    isDeployedFrontend &&
+    /https?:\/\/automacao-cad-backend-[^.]+\.vercel\.app/i.test(normalized)
+  ) {
+    return "https://automacao-cad-backend.vercel.app";
+  }
+
+  return normalized;
+};
+
+export const API_BASE_URL = normalizeCanonicalBackend(configuredApiBase);
 
 // Runtime fallback base captured at initialization
 const runtimeDefaultApiBase = normalizeBaseUrl(getDefaultApiBase());

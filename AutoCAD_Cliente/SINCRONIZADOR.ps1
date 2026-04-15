@@ -14,7 +14,8 @@ $ErrorActionPreference = "Stop"
 # Tentar configurar encoding (pode falhar em alguns terminais)
 try {
     $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-} catch {
+}
+catch {
     # Ignorar erro de encoding - não é crítico
 }
 
@@ -36,7 +37,8 @@ trap {
     Write-Host ""
     try {
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    } catch {
+    }
+    catch {
         Start-Sleep -Seconds 30
     }
     exit 1
@@ -55,6 +57,8 @@ $colors = @{
 $DROP_PATH = $null  # Será definido em Ensure-DropFolder
 $POLL_INTERVAL = 3
 $HEARTBEAT_INTERVAL = 5
+$HTTP_TIMEOUT_SEC = 30
+$MAX_RECONNECT_SLEEP_SEC = 10
 
 # Estado global
 $global:isConnected = $false
@@ -80,6 +84,31 @@ function Write-Status($msg, $type = "Info") {
     $timestamp = (Get-Date).ToString("HH:mm:ss")
     Write-Host "[$timestamp] " -NoNewline -ForegroundColor $colors.Dim
     Write-Host $msg -ForegroundColor $color
+}
+
+function Get-RequestErrorSummary($err) {
+    try {
+        $msg = $err.Exception.Message
+        $statusCode = $null
+        $statusText = $null
+
+        if ($err.Exception.Response -and $err.Exception.Response.StatusCode) {
+            $statusCode = [int]$err.Exception.Response.StatusCode
+            $statusText = $err.Exception.Response.StatusDescription
+        }
+
+        if ($statusCode) {
+            if ($statusText) {
+                return "HTTP $($statusCode) ($($statusText)): $msg"
+            }
+            return "HTTP $($statusCode): $msg"
+        }
+
+        return $msg
+    }
+    catch {
+        return "Erro de rede desconhecido"
+    }
 }
 
 function Show-Dashboard {
@@ -235,14 +264,15 @@ function Send-ConnectionStatus($connected) {
     try {
         $response = Invoke-RestMethod -Uri "$BackendUrl/api/bridge/connection" `
             -Method POST -Body $body -ContentType "application/json" `
-            -TimeoutSec 10 -ErrorAction Stop
+            -TimeoutSec $HTTP_TIMEOUT_SEC -ErrorAction Stop
         
         $global:isConnected = $true
+        $global:lastError = $null
         return $true
     }
     catch {
         $global:isConnected = $false
-        $global:lastError = $_.Exception.Message
+        $global:lastError = Get-RequestErrorSummary $_
         return $false
     }
 }
@@ -250,14 +280,15 @@ function Send-ConnectionStatus($connected) {
 function Get-PendingCommands {
     try {
         $response = Invoke-RestMethod -Uri "$BackendUrl/api/bridge/pending" `
-            -Method GET -TimeoutSec 10 -ErrorAction Stop
+            -Method GET -TimeoutSec $HTTP_TIMEOUT_SEC -ErrorAction Stop
         
         $global:isConnected = $true
+        $global:lastError = $null
         return $response.commands
     }
     catch {
         $global:isConnected = $false
-        $global:lastError = $_.Exception.Message
+        $global:lastError = Get-RequestErrorSummary $_
         return @()
     }
 }
@@ -308,7 +339,8 @@ function Ensure-DropFolder {
         $script:DROP_PATH = $primaryPath
         Write-Status "Pasta de comandos: $primaryPath" "Success"
         return
-    } catch {
+    }
+    catch {
         Write-Status "Nao foi possivel criar $primaryPath (requer admin)" "Warning"
     }
     
@@ -319,19 +351,21 @@ function Ensure-DropFolder {
         }
         $script:DROP_PATH = $fallbackPath
         Write-Status "Usando pasta alternativa: $fallbackPath" "Warning"
-    } catch {
+    }
+    catch {
         Write-Status "ERRO: Nao foi possivel criar pasta de comandos!" "Error"
         $script:DROP_PATH = $fallbackPath  # Tentar usar mesmo assim
     }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MAIN LOOP - Execução principal com tratamento de erros
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# MAIN LOOP - Execucao principal com tratamento de erros
+# -----------------------------------------------------------------------------
 
 try {
     Write-Header
-} catch {
+}
+catch {
     Write-Host "ENGENHARIA CAD - SINCRONIZADOR v2.1" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -342,7 +376,8 @@ $ErrorActionPreference = "SilentlyContinue"
 # Configurar pasta de comandos (com fallback)
 try {
     Ensure-DropFolder
-} catch {
+}
+catch {
     Write-Status "Aviso: Erro ao criar pasta de comandos" "Warning"
     $script:DROP_PATH = Join-Path $env:USERPROFILE "AutoCAD_Drop"
 }
@@ -350,7 +385,8 @@ try {
 # Detectar CAD (não é crítico se falhar)
 try {
     $cadDetected = Detect-CAD
-} catch {
+}
+catch {
     Write-Status "Aviso: Erro ao detectar CAD - continuando..." "Warning"
     $cadDetected = $false
 }
@@ -359,7 +395,8 @@ try {
 if (-not $cadDetected) {
     try {
         Start-AutoCADIfNeeded | Out-Null
-    } catch {
+    }
+    catch {
         Write-Status "Aviso: Nao foi possivel iniciar CAD automaticamente" "Warning"
     }
 }
@@ -368,8 +405,15 @@ Write-Status "Iniciando conexao com o backend..." "Info"
 
 # Tentar conectar (não é crítico se falhar)
 try {
-    Send-ConnectionStatus $true | Out-Null
-} catch {
+    $preflightConnected = Send-ConnectionStatus $true
+    if ($preflightConnected) {
+        Write-Status "Conexao com bridge estabelecida." "Success"
+    }
+    else {
+        Write-Status "Bridge indisponivel no momento: $($global:lastError)" "Warning"
+    }
+}
+catch {
     Write-Status "Aviso: Backend offline - tentarei reconectar..." "Warning"
 }
 
@@ -397,10 +441,13 @@ while ($true) {
             $sent = Send-ConnectionStatus $true
             if ($sent) {
                 $reconnectAttempts = 0
-            } else {
+            }
+            else {
                 $reconnectAttempts++
-                if ($reconnectAttempts % 12 -eq 0) {  # A cada minuto
-                    Write-Status "Backend offline há $([math]::Floor($reconnectAttempts * 5 / 60)) min - tentando reconectar..." "Warning"
+                if ($reconnectAttempts % 12 -eq 0) {
+                    # A cada minuto
+                    $details = if ($global:lastError) { " | ultimo erro: $($global:lastError)" } else { "" }
+                    Write-Status "Backend offline há $([math]::Floor($reconnectAttempts * 5 / 60)) min - tentando reconectar...$details" "Warning"
                 }
             }
             $lastHeartbeat = Get-Date
@@ -414,7 +461,8 @@ while ($true) {
                 foreach ($cmd in $commands) {
                     try {
                         Process-Command $cmd
-                    } catch {
+                    }
+                    catch {
                         Write-Status "Erro ao processar comando: $_" "Error"
                     }
                 }
@@ -423,8 +471,14 @@ while ($true) {
         
         # Indicador visual de atividade
         Write-Host "." -NoNewline -ForegroundColor $colors.Dim
-        
-        Start-Sleep -Seconds $POLL_INTERVAL
+
+        $sleepSecs = if ($global:isConnected) {
+            $POLL_INTERVAL
+        }
+        else {
+            [Math]::Min($POLL_INTERVAL + [Math]::Floor($reconnectAttempts / 4), $MAX_RECONNECT_SLEEP_SEC)
+        }
+        Start-Sleep -Seconds $sleepSecs
     }
     catch {
         # Capturar qualquer erro no loop e continuar
