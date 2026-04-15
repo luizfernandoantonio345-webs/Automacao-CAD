@@ -9,7 +9,7 @@ echo    ENGENHARIA CAD - INSTALADOR DO AGENTE AUTOCAD
 echo ================================================================
 echo.
 
-:: Diretorio de instalacao sem acentos, sem espacos, sem admin
+:: Diretorio de instalacao
 set "DEST=%USERPROFILE%\EngCAD-Agente"
 
 echo [1/5] Criando pasta de instalacao...
@@ -21,32 +21,23 @@ if errorlevel 1 (
 echo      OK: %DEST%
 echo.
 
-:: URLs dos arquivos no repositorio (raw GitHub)
+:: URLs dos arquivos
 set "BASE=https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente"
 
 echo [2/5] Baixando arquivos do agente...
 
-:: Usar WebClient.DownloadFile - funciona em qualquer Windows 7+ sem alias
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
-   try { ^
-     Write-Host '      Baixando SINCRONIZADOR.ps1...'; ^
-     (New-Object System.Net.WebClient).DownloadFile('%BASE%/SINCRONIZADOR.ps1', '%DEST%\SINCRONIZADOR.ps1'); ^
-     Write-Host '      Baixando DETECTAR_AUTOCAD.ps1...'; ^
-     (New-Object System.Net.WebClient).DownloadFile('%BASE%/DETECTAR_AUTOCAD.ps1', '%DEST%\DETECTAR_AUTOCAD.ps1'); ^
-     Write-Host '      Baixando INICIAR_SINCRONIZADOR.bat...'; ^
-     (New-Object System.Net.WebClient).DownloadFile('%BASE%/INICIAR_SINCRONIZADOR.bat', '%DEST%\INICIAR_SINCRONIZADOR.bat'); ^
-     Write-Host '      OK: Todos os arquivos baixados!' -ForegroundColor Green; ^
-   } catch { ^
-     Write-Host ('      ERRO: ' + $_.Exception.Message) -ForegroundColor Red; ^
-     exit 1; ^
-   }"
+:: Criar script temporario de download (evita problemas com ^ no CMD)
+echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 > "%DEST%\_download.ps1"
+echo Write-Host '      Baixando SINCRONIZADOR.ps1...' >> "%DEST%\_download.ps1"
+echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/SINCRONIZADOR.ps1', '%DEST%\SINCRONIZADOR.ps1') >> "%DEST%\_download.ps1"
+echo Write-Host '      Baixando DETECTAR_AUTOCAD.ps1...' >> "%DEST%\_download.ps1"
+echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/DETECTAR_AUTOCAD.ps1', '%DEST%\DETECTAR_AUTOCAD.ps1') >> "%DEST%\_download.ps1"
+echo Write-Host '      Baixando INICIAR_SINCRONIZADOR.bat...' >> "%DEST%\_download.ps1"
+echo (New-Object System.Net.WebClient).DownloadFile('%BASE%/INICIAR_SINCRONIZADOR.bat', '%DEST%\INICIAR_SINCRONIZADOR.bat') >> "%DEST%\_download.ps1"
+echo Write-Host '      OK!' -ForegroundColor Green >> "%DEST%\_download.ps1"
 
-if errorlevel 1 (
-    echo.
-    echo ERRO ao baixar arquivos. Verifique sua conexao com a internet.
-    goto :ERROR
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%DEST%\_download.ps1"
+del "%DEST%\_download.ps1" 2>nul
 
 echo.
 
@@ -56,22 +47,15 @@ if not exist "%DEST%\SINCRONIZADOR.ps1" (
     goto :ERROR
 )
 echo      OK: SINCRONIZADOR.ps1 verificado
+if not exist "%DEST%\DETECTAR_AUTOCAD.ps1" (
+    echo ERRO: Arquivo DETECTAR_AUTOCAD.ps1 nao encontrado apos download.
+    goto :ERROR
+)
+echo      OK: DETECTAR_AUTOCAD.ps1 verificado
 echo.
 
 echo [4/5] Testando conexao com o backend...
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
-   try { ^
-     $resp = Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing; ^
-     if ($resp.StatusCode -eq 200) { ^
-       Write-Host '      OK: Backend online!' -ForegroundColor Green; ^
-     } else { ^
-       Write-Host '      Aviso: Backend respondeu com status' $resp.StatusCode -ForegroundColor Yellow; ^
-     } ^
-   } catch { ^
-     Write-Host '      Aviso: Nao foi possivel conectar ao backend (modo offline)' -ForegroundColor Yellow; ^
-   }"
-
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $r = Invoke-WebRequest -Uri 'https://automacao-cad-backend.vercel.app/health' -TimeoutSec 10 -UseBasicParsing; Write-Host '      OK: Backend online!' -ForegroundColor Green } catch { Write-Host '      Aviso: Backend offline (modo local)' -ForegroundColor Yellow }"
 echo.
 
 echo [5/5] Iniciando agente sincronizador...
@@ -93,15 +77,10 @@ echo ================================================================
 echo    AGENTE ENCERRADO
 echo ================================================================
 echo.
-echo O agente foi encerrado. Isso pode ter ocorrido por:
-echo   - Voce fechou a janela
-echo   - Ocorreu um erro no script
-echo   - O CAD foi fechado
+echo O agente foi encerrado.
 echo.
 echo Para reiniciar, execute:
 echo   %DEST%\INICIAR_SINCRONIZADOR.bat
-echo.
-echo Ou clique novamente no botao "Instalar / Executar Agente" no site.
 echo.
 goto :END
 
@@ -112,10 +91,7 @@ echo    ERRO NA INSTALACAO
 echo ================================================================
 echo.
 echo Ocorreu um erro durante a instalacao.
-echo Verifique:
-echo   1. Sua conexao com a internet
-echo   2. Se o Windows bloqueou o download (antivirus/firewall)
-echo   3. Se voce tem permissao para criar pastas em %USERPROFILE%
+echo Verifique sua conexao com a internet.
 echo.
 
 :END
