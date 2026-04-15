@@ -7,8 +7,23 @@ param(
     [string]$BackendUrl = "https://automacao-cad-backend.vercel.app"
 )
 
-$ErrorActionPreference = "SilentlyContinue"
+# IMPORTANTE: Não ocultar erros na inicialização
+$ErrorActionPreference = "Stop"
 $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# Garantir que a janela não feche em caso de erro
+trap {
+    Write-Host ""
+    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Red
+    Write-Host "  ERRO FATAL NO SINCRONIZADOR" -ForegroundColor Red
+    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Erro: $_" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Pressione qualquer tecla para fechar..." -ForegroundColor Cyan
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    exit 1
+}
 
 # Cores para o terminal
 $colors = @{
@@ -275,6 +290,10 @@ function Ensure-DropFolder {
 # ─────────────────────────────────────────────────────────────────────────────
 
 Write-Header
+
+# Após inicialização, ignorar erros de rede para não fechar o loop
+$ErrorActionPreference = "SilentlyContinue"
+
 Ensure-DropFolder
 $cadDetected = Detect-CAD
 
