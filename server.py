@@ -253,6 +253,8 @@ _DEMO_TOKEN_EXPIRY_MINUTES = 10
 _AUTH_WHITELIST = {
     "", "/", "/login", "/auth/register", "/auth/demo", "/auth/refresh", "/health", "/healthz", "/docs",
     "/openapi.json", "/redoc",
+    # Admin endpoint para seed de usuário de teste (temporário)
+    "/admin/seed-test-user",
     # Bridge endpoints para sincronizador local (não expõe dados sensíveis)
     "/api/bridge/pending", "/api/bridge/status", "/api/bridge/send",
     "/api/bridge/draw-pipe", "/api/bridge/insert-component",
