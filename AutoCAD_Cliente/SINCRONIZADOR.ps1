@@ -1,7 +1,7 @@
 # =============================================================================
-# ENGENHARIA CAD - SINCRONIZADOR v2.1
-# Conecta com o backend, detecta CAD automaticamente, mostra status em tempo real
-# Versão robusta com tratamento de TODOS os erros possíveis
+# ENGENHARIA CAD - SINCRONIZADOR v2.2
+# Conecta com o backend, detecta e abre CAD automaticamente
+# Versão robusta com conexão automática e diagnóstico detalhado
 # =============================================================================
 
 param(
@@ -71,9 +71,10 @@ function Write-Header {
     Clear-Host
     Write-Host ""
     Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
-    Write-Host "|           ENGENHARIA CAD - SINCRONIZADOR BRIDGE v2.1                   |" -ForegroundColor $colors.Header
+    Write-Host "|           ENGENHARIA CAD - SINCRONIZADOR BRIDGE v2.2                   |" -ForegroundColor $colors.Header
     Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
     Write-Host "|  Backend: $($BackendUrl.PadRight(55))|" -ForegroundColor $colors.Info
+    Write-Host "|  O CAD sera aberto automaticamente se detectado                        |" -ForegroundColor $colors.Dim
     Write-Host "+=========================================================================+" -ForegroundColor $colors.Header
     Write-Host ""
 }
@@ -198,58 +199,91 @@ function Start-AutoCADIfNeeded {
         return $true
     }
     
-    # Verificar se existe licença válida no backend
-    try {
-        $licenseCheck = Invoke-RestMethod -Uri "$BackendUrl/api/license/status/$env:USERNAME" `
-            -Method GET -TimeoutSec 10 -ErrorAction Stop
-        
-        if ($licenseCheck.tier -and $licenseCheck.tier -ne "demo") {
-            Write-Status "Licença $($licenseCheck.tier) detectada. Iniciando CAD automaticamente..." "Success"
-        }
-        else {
-            Write-Status "Licença demo — CAD não será aberto automaticamente." "Warning"
-            return $false
-        }
-    }
-    catch {
-        Write-Status "Não foi possível verificar licença. Tentando abrir CAD..." "Warning"
-    }
+    Write-Status "CAD não está rodando. Tentando abrir automaticamente..." "Info"
     
-    # Procurar executável do CAD
+    # Procurar executável do CAD em múltiplos locais
     $cadPaths = @(
+        # AutoCAD (versões recentes)
+        "C:\Program Files\Autodesk\AutoCAD 2026\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD 2025\acad.exe",
         "C:\Program Files\Autodesk\AutoCAD 2024\acad.exe",
         "C:\Program Files\Autodesk\AutoCAD 2023\acad.exe",
         "C:\Program Files\Autodesk\AutoCAD 2022\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD 2021\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD 2020\acad.exe",
+        # AutoCAD LT
+        "C:\Program Files\Autodesk\AutoCAD LT 2024\acad.exe",
+        "C:\Program Files\Autodesk\AutoCAD LT 2023\acad.exe",
+        # GstarCAD
         "C:\Program Files\Gstarsoft\GstarCAD 2024\gcad.exe",
-        "C:\Program Files\Gstarsoft\GstarCAD 2023\gcad.exe"
+        "C:\Program Files\Gstarsoft\GstarCAD 2023\gcad.exe",
+        "C:\Program Files\Gstarsoft\GstarCAD 2022\gcad.exe",
+        # ZWCAD
+        "C:\Program Files\ZWSOFT\ZWCAD 2024\ZWCAD.exe",
+        "C:\Program Files\ZWSOFT\ZWCAD 2023\ZWCAD.exe",
+        # BricsCAD
+        "C:\Program Files\Bricsys\BricsCAD V24\bricscad.exe",
+        "C:\Program Files\Bricsys\BricsCAD V23\bricscad.exe"
     )
+    
+    # Também buscar via registro do Windows
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Autodesk\AutoCAD",
+        "HKLM:\SOFTWARE\Gstarsoft\GstarCAD"
+    )
+    
+    foreach ($regPath in $regPaths) {
+        try {
+            if (Test-Path $regPath) {
+                $versions = Get-ChildItem $regPath -ErrorAction SilentlyContinue
+                foreach ($v in $versions) {
+                    $exePath = (Get-ItemProperty -Path $v.PSPath -Name "Location" -ErrorAction SilentlyContinue).Location
+                    if ($exePath) {
+                        $acadExe = Join-Path $exePath "acad.exe"
+                        $gcadExe = Join-Path $exePath "gcad.exe"
+                        if (Test-Path $acadExe) { $cadPaths += $acadExe }
+                        if (Test-Path $gcadExe) { $cadPaths += $gcadExe }
+                    }
+                }
+            }
+        }
+        catch { }
+    }
     
     foreach ($cadPath in $cadPaths) {
         if (Test-Path $cadPath) {
             Write-Status "Abrindo CAD: $cadPath" "Success"
             Start-Process -FilePath $cadPath -WindowStyle Normal
             
-            # Aguardar o CAD iniciar (máximo 30 segundos)
+            # Aguardar o CAD iniciar (máximo 45 segundos)
             $waited = 0
-            while ($waited -lt 30) {
-                Start-Sleep -Seconds 2
-                $waited += 2
-                $running = Get-Process | Where-Object { $_.Name -match "acad|gcad" }
+            Write-Host "  Aguardando CAD iniciar" -NoNewline -ForegroundColor $colors.Dim
+            while ($waited -lt 45) {
+                Start-Sleep -Seconds 3
+                $waited += 3
+                Write-Host "." -NoNewline -ForegroundColor $colors.Dim
+                $running = Get-Process | Where-Object { $_.Name -match "acad|gcad|zwcad|bricscad" }
                 if ($running) {
+                    Write-Host ""
                     Write-Status "CAD iniciado com sucesso!" "Success"
-                    [Console]::Beep(600, 200)
-                    [Console]::Beep(800, 200)
-                    [Console]::Beep(1000, 300)
+                    Write-Host ""
+                    Write-Host "  +----------------------------------------------------------+" -ForegroundColor $colors.Success
+                    Write-Host "  |  IMPORTANTE: No AutoCAD, execute o comando FORGE_START  |" -ForegroundColor $colors.Warning
+                    Write-Host "  |  para ativar o monitoramento de comandos.               |" -ForegroundColor $colors.Warning
+                    Write-Host "  +----------------------------------------------------------+" -ForegroundColor $colors.Success
+                    Write-Host ""
+                    try { [Console]::Beep(600, 150); [Console]::Beep(800, 150); [Console]::Beep(1000, 200) } catch { }
                     Detect-CAD | Out-Null
                     return $true
                 }
             }
-            Write-Status "CAD demorou para iniciar. Continuando..." "Warning"
+            Write-Host ""
+            Write-Status "CAD demorou para iniciar. Continuando sem ele..." "Warning"
             return $false
         }
     }
     
-    Write-Status "Nenhum CAD instalado encontrado." "Warning"
+    Write-Status "Nenhum CAD instalado encontrado. Abra o AutoCAD manualmente." "Warning"
     return $false
 }
 
@@ -391,14 +425,16 @@ catch {
     $cadDetected = $false
 }
 
-# Tentar abrir CAD se não detectado (não é crítico)
-if (-not $cadDetected) {
-    try {
-        Start-AutoCADIfNeeded | Out-Null
+# Sempre tentar abrir CAD automaticamente se não estiver rodando
+try {
+    $cadStarted = Start-AutoCADIfNeeded
+    if ($cadStarted) {
+        # Re-detectar após abrir
+        Detect-CAD | Out-Null
     }
-    catch {
-        Write-Status "Aviso: Nao foi possivel iniciar CAD automaticamente" "Warning"
-    }
+}
+catch {
+    Write-Status "Aviso: Nao foi possivel iniciar CAD automaticamente" "Warning"
 }
 
 Write-Status "Iniciando conexao com o backend..." "Info"
@@ -422,9 +458,14 @@ $lastHeartbeat = Get-Date
 $reconnectAttempts = 0
 
 Write-Host ""
-Write-Status "Aguardando comandos do sistema web..." "Success"
+Write-Host "+=========================================================================+" -ForegroundColor $colors.Success
+Write-Host "|                   SINCRONIZADOR ATIVO E CONECTADO                      |" -ForegroundColor $colors.Success
+Write-Host "+=========================================================================+" -ForegroundColor $colors.Success
 Write-Host ""
-Write-Host "Pressione Ctrl+C para encerrar" -ForegroundColor $colors.Dim
+Write-Host "  O sistema esta pronto para receber comandos do site web." -ForegroundColor $colors.Info
+Write-Host "  Mantenha esta janela aberta enquanto estiver trabalhando." -ForegroundColor $colors.Dim
+Write-Host ""
+Write-Host "  Pressione Ctrl+C para encerrar" -ForegroundColor $colors.Dim
 Write-Host ""
 
 # Loop principal infinito - NUNCA deve fechar sozinho

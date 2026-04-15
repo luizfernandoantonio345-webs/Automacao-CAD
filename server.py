@@ -258,7 +258,7 @@ _AUTH_WHITELIST = {
     # Bridge endpoints para sincronizador local (não expõe dados sensíveis)
     "/api/bridge/pending", "/api/bridge/status", "/api/bridge/send",
     "/api/bridge/draw-pipe", "/api/bridge/insert-component",
-    "/api/bridge/connection", "/api/bridge/ack",
+    "/api/bridge/connection", "/api/bridge/ack", "/api/bridge/health",
     # Download do sincronizador (público para facilitar instalação)
     "/api/download/sincronizador",
     # Status endpoints para dashboard (somente leitura)
@@ -2477,6 +2477,41 @@ async def bridge_status():
             "last_seen": _bridge_client_info.get("last_seen"),
             "commands_executed": _bridge_client_info.get("commands_executed", 0),
         }
+    }
+
+
+@app.get("/api/bridge/health")
+async def bridge_health():
+    """
+    Health check do agente Bridge para o frontend.
+    Retorna status de conexão baseado no último heartbeat.
+    O frontend usa este endpoint ao invés de localhost:8100/health.
+    """
+    global _bridge_client_info
+    
+    # Verificar se cliente ainda está conectado (timeout 30s - tolerante a cold start)
+    connected = False
+    seconds_since_heartbeat = None
+    
+    if _bridge_client_info.get("last_seen"):
+        try:
+            last_seen = datetime.datetime.fromisoformat(_bridge_client_info["last_seen"].replace("Z", "+00:00"))
+            diff = (datetime.datetime.now(UTC) - last_seen.replace(tzinfo=UTC)).total_seconds()
+            seconds_since_heartbeat = int(diff)
+            connected = diff < 30  # 30s timeout (heartbeat a cada 5s)
+        except:
+            pass
+    
+    return {
+        "status": "ok" if connected else "disconnected",
+        "connected": connected,
+        "last_heartbeat": _bridge_client_info.get("last_seen"),
+        "seconds_since_heartbeat": seconds_since_heartbeat,
+        "cad_type": _bridge_client_info.get("cad_type"),
+        "cad_version": _bridge_client_info.get("cad_version"),
+        "machine": _bridge_client_info.get("machine"),
+        "commands_pending": _bridge_pending_count(),
+        "commands_executed": _bridge_client_info.get("commands_executed", 0),
     }
 
 

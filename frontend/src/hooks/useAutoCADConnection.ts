@@ -7,6 +7,12 @@ export interface AutoCADStatus {
   cad_running: boolean;
   process_id: number | null;
   cad_type: string | null;
+  cad_version: string | null;
+  machine: string | null;
+  commands_pending: number;
+  commands_executed: number;
+  last_heartbeat: string | null;
+  seconds_since_heartbeat: number | null;
   reconnect_attempts: number;
 }
 
@@ -25,6 +31,12 @@ interface UseAutoCADConnectionReturn {
   isLoading: boolean;
 }
 
+/**
+ * Hook para gerenciar conexão com o Agente AutoCAD via Backend Bridge.
+ * 
+ * O sincronizador PowerShell envia heartbeats para /api/bridge/connection.
+ * Este hook consulta /api/bridge/health para verificar o status.
+ */
 export const useAutoCADConnection = (): UseAutoCADConnectionReturn => {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [cadStatus, setCadStatus] = useState<AutoCADStatus | null>(null);
@@ -33,40 +45,69 @@ export const useAutoCADConnection = (): UseAutoCADConnectionReturn => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const AGENT_URL = "http://localhost:8100";
   const BACKEND_URL = API_BASE_URL;
 
-  const fetchAgentHealth = useCallback(
+  /**
+   * Consulta o status do agente via backend (não mais localhost:8100)
+   */
+  const fetchBridgeHealth = useCallback(
     async (signal?: AbortSignal): Promise<AutoCADStatus | null> => {
       try {
-        const response = await fetch(`${AGENT_URL}/health`, { signal });
+        const response = await fetch(`${BACKEND_URL}/api/bridge/health`, { 
+          signal,
+          headers: { "Accept": "application/json" },
+        });
         if (!response.ok) {
-          throw new Error(`Agent HTTP ${response.status}`);
+          throw new Error(`Bridge health HTTP ${response.status}`);
         }
         const data = await response.json();
-        return data.cad_manager || data.autocad_driver || null;
+        
+        // Mapear resposta do backend para AutoCADStatus
+        return {
+          connected: data.connected ?? false,
+          driver_status: data.status ?? "unknown",
+          cad_running: data.connected && data.cad_type != null,
+          process_id: null, // Não disponível via bridge
+          cad_type: data.cad_type ?? null,
+          cad_version: data.cad_version ?? null,
+          machine: data.machine ?? null,
+          commands_pending: data.commands_pending ?? 0,
+          commands_executed: data.commands_executed ?? 0,
+          last_heartbeat: data.last_heartbeat ?? null,
+          seconds_since_heartbeat: data.seconds_since_heartbeat ?? null,
+          reconnect_attempts: 0,
+        };
       } catch (err) {
         if (signal?.aborted) return null;
+        console.error("Bridge health error:", err);
         return null;
       }
     },
-    [],
+    [BACKEND_URL],
   );
 
-  const connectToBackend = useCallback(async (): Promise<void> => {
+  /**
+   * Configura o backend para modo bridge (opcional, já é o default)
+   */
+  const configureBridgeMode = useCallback(async (): Promise<void> => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/autocad/config/bridge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: "C:/AutoCAD_Drop/" }),
       });
-      if (!response.ok) throw new Error(`Backend config failed (${response.status})`);
+      if (!response.ok) {
+        console.warn(`Backend config returned ${response.status}, continuing anyway`);
+      }
     } catch (err) {
-      console.error("Backend connect error:", err);
-      throw err;
+      console.warn("Backend config error (non-blocking):", err);
+      // Não bloquear - o sincronizador pode funcionar mesmo sem esta config
     }
   }, [BACKEND_URL]);
 
+  /**
+   * Inicia conexão - configura backend e aguarda heartbeat do sincronizador
+   */
   const connect = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -74,71 +115,100 @@ export const useAutoCADConnection = (): UseAutoCADConnectionReturn => {
     abortControllerRef.current = new AbortController();
 
     try {
-      // 1. Connect backend
-      await connectToBackend();
+      // 1. Configurar backend para modo bridge
+      await configureBridgeMode();
 
-      // 2. Poll agent until connected
+      // 2. Aguardar heartbeat do sincronizador (poll /api/bridge/health)
       const signal = abortControllerRef.current.signal;
       const startTime = Date.now();
-      while (Date.now() - startTime < 30000) {
-        // 30s timeout
-        const agentStatus = await fetchAgentHealth(signal);
-        if (agentStatus?.connected && agentStatus.cad_running) {
+      const TIMEOUT_MS = 60000; // 60s timeout (sincronizador pode demorar para abrir CAD)
+      
+      while (Date.now() - startTime < TIMEOUT_MS) {
+        const bridgeStatus = await fetchBridgeHealth(signal);
+        if (bridgeStatus?.connected) {
           setStatus("connected");
-          setCadStatus(agentStatus);
+          setCadStatus(bridgeStatus);
+          setError(null);
           return;
         }
+        // Mostrar feedback ao usuário
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        setError(`Aguardando sincronizador... (${elapsed}s)`);
         await new Promise((r) => setTimeout(r, 2000));
       }
-      throw new Error("Timeout waiting for agent");
+      throw new Error("Sincronizador não conectou. Execute o instalador no PC do AutoCAD.");
     } catch (err: any) {
-      setError(err.message || "Connection failed");
-      setStatus("error");
+      if (!abortControllerRef.current?.signal.aborted) {
+        setError(err.message || "Falha na conexão");
+        setStatus("error");
+      }
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [fetchAgentHealth, connectToBackend]);
+  }, [fetchBridgeHealth, configureBridgeMode]);
 
+  /**
+   * Desconecta - apenas para polling do frontend
+   */
   const disconnect = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Stop polling
+      // Cancelar conexão em andamento
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      // Parar polling
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       setStatus("disconnected");
+      setCadStatus(null);
+      setError(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  /**
+   * Polling contínuo do status do bridge
+   */
   useEffect(() => {
-    const pollAgent = async () => {
-      const agentStatus = await fetchAgentHealth();
-      if (agentStatus) {
-        setCadStatus(agentStatus);
-        setStatus(
-          agentStatus.connected && agentStatus.cad_running
-            ? "connected"
-            : "disconnected",
-        );
-        setError(null);
+    const pollBridgeHealth = async () => {
+      const bridgeStatus = await fetchBridgeHealth();
+      if (bridgeStatus) {
+        setCadStatus(bridgeStatus);
+        if (bridgeStatus.connected) {
+          setStatus("connected");
+          setError(null);
+        } else {
+          // Só marcar desconectado se já estava conectado antes
+          if (status === "connected") {
+            setStatus("disconnected");
+            setError("Sincronizador desconectou. Verifique se está rodando.");
+          }
+        }
       } else {
-        setStatus("disconnected");
-        setError("Agent not running");
+        // Falha no fetch - backend pode estar offline
+        if (status === "connected") {
+          setStatus("error");
+          setError("Falha ao consultar status do bridge");
+        }
       }
     };
 
-    pollAgent(); // Initial poll
-    intervalRef.current = setInterval(pollAgent, 3000); // Poll every 3s
+    // Poll inicial
+    pollBridgeHealth();
+    
+    // Poll a cada 5s (alinhado com heartbeat do sincronizador)
+    intervalRef.current = setInterval(pollBridgeHealth, 5000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [fetchAgentHealth]);
+  }, [fetchBridgeHealth, status]);
 
   return {
     status,
