@@ -60,7 +60,6 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
   const { status, cadStatus, error, connect, disconnect, isLoading } =
     useAutoCADConnection();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const config = STATUS_CONFIG[status];
   const isConnected = status === "connected";
@@ -86,12 +85,17 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
   };
 
   const psCommand =
-    'Set-ExecutionPolicy Bypass -Scope Process -Force; irm "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1" | iex';
+    'irm "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1" | iex';
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(psCommand).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const cmdCommand =
+    'powershell -ExecutionPolicy Bypass -Command "irm \'https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1\' | iex"';
+
+  const [copiedCmd, setCopiedCmd] = useState<"ps" | "cmd" | null>(null);
+
+  const handleCopy = (text: string, type: "ps" | "cmd") => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedCmd(type);
+      setTimeout(() => setCopiedCmd(null), 2000);
     });
   };
 
@@ -329,7 +333,7 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
         </DialogTitle>
 
         <DialogContent sx={{ pt: 3, pb: 1 }}>
-          {/* Opção 1 — Comando rápido */}
+          {/* Opção 1a — PowerShell */}
           <Typography
             variant="subtitle2"
             sx={{
@@ -340,47 +344,135 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
               gap: 1,
             }}
           >
-            <Terminal size={16} /> Opção 1 — Comando rápido (PowerShell)
+            <Terminal size={16} /> Opção 1 — Comando rápido
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Abra o <b>PowerShell como Administrador</b> e cole o comando abaixo:
-          </Typography>
-          <Box
+
+          {/* PowerShell */}
+          <Paper
+            variant="outlined"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
               p: 1.5,
               borderRadius: 2,
-              background: alpha(theme.palette.common.black, 0.04),
-              border: `1px solid ${theme.palette.divider}`,
-              mb: 2.5,
+              mb: 1.5,
+              background: alpha("#012456", 0.05),
+              borderColor: alpha("#012456", 0.2),
             }}
           >
-            <Box
-              component="code"
+            <Typography
+              variant="caption"
               sx={{
-                flex: 1,
-                fontSize: "0.72rem",
-                fontFamily: "monospace",
-                wordBreak: "break-all",
-                color: "text.primary",
+                fontWeight: 700,
+                color: "#012456",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mb: 0.8,
               }}
             >
-              {psCommand}
-            </Box>
-            <IconButton
-              onClick={handleCopy}
-              size="small"
-              sx={{ flexShrink: 0 }}
+              ⚡ Windows PowerShell
+              <Chip label="Recomendado" size="small" color="primary" sx={{ height: 18, fontSize: "0.6rem", ml: 0.5 }} />
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              Clique com botão direito no menu Iniciar → <b>Windows PowerShell (Admin)</b>
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                p: 1,
+                borderRadius: 1.5,
+                background: alpha(theme.palette.common.black, 0.06),
+              }}
             >
-              {copied ? (
-                <CheckCheck size={16} color={theme.palette.success.main} />
-              ) : (
-                <Copy size={16} />
-              )}
-            </IconButton>
-          </Box>
+              <Box
+                component="code"
+                sx={{
+                  flex: 1,
+                  fontSize: "0.7rem",
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                  color: "text.primary",
+                }}
+              >
+                {psCommand}
+              </Box>
+              <IconButton
+                onClick={() => handleCopy(psCommand, "ps")}
+                size="small"
+                sx={{ flexShrink: 0 }}
+              >
+                {copiedCmd === "ps" ? (
+                  <CheckCheck size={16} color={theme.palette.success.main} />
+                ) : (
+                  <Copy size={16} />
+                )}
+              </IconButton>
+            </Box>
+          </Paper>
+
+          {/* CMD */}
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              mb: 2.5,
+              background: alpha("#000", 0.03),
+              borderColor: alpha("#000", 0.12),
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mb: 0.8,
+              }}
+            >
+              ▪ Prompt de Comando (CMD)
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+              Tecle <b>Win + R</b> → digite <b>cmd</b> → Enter
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                p: 1,
+                borderRadius: 1.5,
+                background: alpha(theme.palette.common.black, 0.06),
+              }}
+            >
+              <Box
+                component="code"
+                sx={{
+                  flex: 1,
+                  fontSize: "0.7rem",
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                  color: "text.primary",
+                }}
+              >
+                {cmdCommand}
+              </Box>
+              <IconButton
+                onClick={() => handleCopy(cmdCommand, "cmd")}
+                size="small"
+                sx={{ flexShrink: 0 }}
+              >
+                {copiedCmd === "cmd" ? (
+                  <CheckCheck size={16} color={theme.palette.success.main} />
+                ) : (
+                  <Copy size={16} />
+                )}
+              </IconButton>
+            </Box>
+          </Paper>
 
           {/* Opção 2 — Download manual */}
           <Typography
