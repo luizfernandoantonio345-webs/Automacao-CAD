@@ -85,10 +85,10 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
   };
 
   const psCommand =
-    'irm "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1" | iex';
+    '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1").Content))';
 
   const cmdCommand =
-    'powershell -ExecutionPolicy Bypass -Command "irm \'https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1\' | iex"';
+    'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri ''https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1'').Content))"';
 
   const [copiedCmd, setCopiedCmd] = useState<"ps" | "cmd" | null>(null);
 
@@ -374,6 +374,17 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
               Clique com botão direito no menu Iniciar → <b>Windows PowerShell (Admin)</b>
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mb: 1,
+                color: theme.palette.warning.main,
+                fontWeight: 600,
+              }}
+            >
+              Se aparecer "IRM não reconhecido", você está no terminal errado. Use este comando sem alterar.
             </Typography>
             <Box
               sx={{
