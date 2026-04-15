@@ -1373,14 +1373,16 @@ def health_check():
 
     db_ok = False
     db_ephemeral = None
+    db_type = "unknown"
     db_error = None
     try:
-        from backend.database.db import _get_conn, is_ephemeral
+        from backend.database.db import _get_conn, is_ephemeral, _USE_PG
 
         conn = _get_conn()
         conn.execute("SELECT 1")
         db_ok = True
         db_ephemeral = bool(is_ephemeral())
+        db_type = "postgresql" if _USE_PG else "sqlite"
     except Exception as exc:
         db_error = str(exc)
 
@@ -1468,6 +1470,7 @@ def health_check():
         "services": {
             "database": {
                 "ok": db_ok,
+                "type": db_type,
                 "ephemeral": db_ephemeral,
                 "error": db_error,
             },
