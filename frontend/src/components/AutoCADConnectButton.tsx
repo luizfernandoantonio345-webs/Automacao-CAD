@@ -84,11 +84,14 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
     window.open(`${REPO_BASE}/../AutoSetup_License_Connect.bat`, "_blank");
   };
 
+  const scriptUrl =
+    "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1";
+
   const psCommand =
-    '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1").Content))';
+    `[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri \"${scriptUrl}\").Content))`;
 
   const cmdCommand =
-    'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri ''https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR_INTELIGENTE.ps1'').Content))"';
+    `powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; Invoke-Command -ScriptBlock ([ScriptBlock]::Create((Invoke-WebRequest -UseBasicParsing -Uri \"${scriptUrl}\").Content))"`;
 
   const [copiedCmd, setCopiedCmd] = useState<"ps" | "cmd" | null>(null);
 
