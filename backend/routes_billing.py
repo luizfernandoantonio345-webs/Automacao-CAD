@@ -741,3 +741,390 @@ async def get_usage(email: str):
             "limit": "unlimited",
         }
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INVOICES - Histórico de Faturas
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class InvoiceResponse(BaseModel):
+    id: str
+    number: str
+    status: str  # paid, pending, failed, refunded
+    amount: int  # centavos
+    currency: str
+    description: str
+    created_at: str
+    paid_at: Optional[str]
+    pdf_url: Optional[str]
+    period_start: str
+    period_end: str
+
+
+@router.get("/invoices")
+async def list_invoices(
+    email: str,
+    limit: int = 12,
+    status: Optional[str] = None
+):
+    """
+    Lista faturas do usuário.
+    
+    - **email**: Email do usuário
+    - **limit**: Máximo de faturas a retornar (default 12)
+    - **status**: Filtrar por status (paid, pending, failed, refunded)
+    """
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        invoices_data = data.get("invoices", {}).get(email, [])
+    
+    # Filtrar por status se especificado
+    if status:
+        invoices_data = [inv for inv in invoices_data if inv.get("status") == status]
+    
+    # Ordenar por data (mais recente primeiro)
+    invoices_data = sorted(invoices_data, key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    # Limitar resultados
+    invoices_data = invoices_data[:limit]
+    
+    # Se não houver faturas, gerar algumas de exemplo para demonstração
+    if not invoices_data:
+        now = datetime.now(UTC)
+        sub = data.get("subscriptions", {}).get(email, {})
+        tier = sub.get("tier", "starter")
+        tier_config = PRICING_TIERS.get(tier, PRICING_TIERS["starter"])
+        
+        # Gerar faturas dos últimos 3 meses como exemplo
+        demo_invoices = []
+        for i in range(3):
+            month_date = now - timedelta(days=30 * i)
+            period_start = month_date.replace(day=1)
+            if period_start.month == 12:
+                period_end = period_start.replace(year=period_start.year + 1, month=1) - timedelta(days=1)
+            else:
+                period_end = period_start.replace(month=period_start.month + 1) - timedelta(days=1)
+            
+            demo_invoices.append({
+                "id": f"inv_{hashlib.sha256(f'{email}{i}'.encode()).hexdigest()[:16]}",
+                "number": f"INV-{month_date.strftime('%Y%m')}-{1000 + i:04d}",
+                "status": "paid" if i > 0 else ("pending" if now.day < 5 else "paid"),
+                "amount": tier_config["price_monthly"] * 100,  # Em centavos
+                "currency": tier_config["currency"],
+                "description": f"Assinatura {tier_config['name']} - {month_date.strftime('%B %Y')}",
+                "created_at": period_start.isoformat(),
+                "paid_at": (period_start + timedelta(days=1)).isoformat() if i > 0 else None,
+                "pdf_url": f"/api/billing/invoices/inv_{hashlib.sha256(f'{email}{i}'.encode()).hexdigest()[:16]}/pdf",
+                "period_start": period_start.isoformat(),
+                "period_end": period_end.isoformat(),
+            })
+        invoices_data = demo_invoices
+    
+    return {
+        "invoices": invoices_data,
+        "total": len(invoices_data),
+        "has_more": False,
+    }
+
+
+@router.get("/invoices/{invoice_id}/pdf")
+async def get_invoice_pdf(invoice_id: str, email: str):
+    """
+    Retorna URL para download do PDF da fatura.
+    Em produção, isso geraria o PDF ou retornaria URL do Stripe.
+    """
+    # Em produção, buscar PDF do Stripe ou gerar dinamicamente
+    # Por enquanto, retornar informações para gerar no frontend
+    
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        invoices = data.get("invoices", {}).get(email, [])
+    
+    invoice = next((inv for inv in invoices if inv.get("id") == invoice_id), None)
+    
+    # Se não encontrar, criar dados de demonstração
+    if not invoice:
+        invoice = {
+            "id": invoice_id,
+            "number": f"INV-{datetime.now(UTC).strftime('%Y%m')}-0001",
+            "amount": 29700,
+            "currency": "BRL",
+            "status": "paid",
+            "description": "Assinatura Starter - Demonstração",
+            "created_at": datetime.now(UTC).isoformat(),
+            "paid_at": datetime.now(UTC).isoformat(),
+        }
+    
+    return {
+        "invoice_id": invoice_id,
+        "download_url": f"https://automacao-cad-backend.vercel.app/api/billing/invoices/{invoice_id}/download",
+        "invoice": invoice,
+        "message": "PDF será gerado em breve. Por enquanto, use os dados da fatura para exibição.",
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAYMENT METHODS - Métodos de Pagamento
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class PaymentMethodResponse(BaseModel):
+    id: str
+    type: str  # card, pix, boleto
+    brand: Optional[str]  # visa, mastercard, etc
+    last4: Optional[str]
+    exp_month: Optional[int]
+    exp_year: Optional[int]
+    is_default: bool
+    created_at: str
+
+
+class AddPaymentMethodRequest(BaseModel):
+    type: str = Field(..., description="Tipo: card, pix, boleto")
+    token: Optional[str] = Field(None, description="Token do Stripe para cartão")
+    set_default: bool = Field(default=True, description="Definir como método padrão")
+
+
+@router.get("/payment-methods")
+async def list_payment_methods(email: str):
+    """Lista métodos de pagamento do usuário."""
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        methods = data.get("payment_methods", {}).get(email, [])
+    
+    # Se não houver métodos, retornar exemplo para demonstração
+    if not methods:
+        methods = [
+            {
+                "id": "pm_demo_visa",
+                "type": "card",
+                "brand": "visa",
+                "last4": "4242",
+                "exp_month": 12,
+                "exp_year": 2027,
+                "is_default": True,
+                "created_at": datetime.now(UTC).isoformat(),
+            }
+        ]
+    
+    return {
+        "payment_methods": methods,
+        "default_method": next((m["id"] for m in methods if m.get("is_default")), None),
+    }
+
+
+@router.post("/payment-methods")
+async def add_payment_method(email: str, request: AddPaymentMethodRequest):
+    """
+    Adiciona um novo método de pagamento.
+    
+    Em produção, isso usaria o Stripe para processar o token do cartão.
+    """
+    new_method = {
+        "id": f"pm_{secrets.token_hex(8)}",
+        "type": request.type,
+        "brand": "visa" if request.type == "card" else None,
+        "last4": "4242" if request.type == "card" else None,
+        "exp_month": 12 if request.type == "card" else None,
+        "exp_year": 2027 if request.type == "card" else None,
+        "is_default": request.set_default,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        if "payment_methods" not in data:
+            data["payment_methods"] = {}
+        if email not in data["payment_methods"]:
+            data["payment_methods"][email] = []
+        
+        # Se set_default, remover default dos outros
+        if request.set_default:
+            for m in data["payment_methods"][email]:
+                m["is_default"] = False
+        
+        data["payment_methods"][email].append(new_method)
+        _save_billing_data(data)
+    
+    return {
+        "success": True,
+        "payment_method": new_method,
+        "message": "Método de pagamento adicionado com sucesso",
+    }
+
+
+@router.delete("/payment-methods/{method_id}")
+async def remove_payment_method(email: str, method_id: str):
+    """Remove um método de pagamento."""
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        methods = data.get("payment_methods", {}).get(email, [])
+        
+        # Verificar se é o único método
+        if len(methods) <= 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Não é possível remover o único método de pagamento"
+            )
+        
+        # Encontrar e remover
+        method = next((m for m in methods if m["id"] == method_id), None)
+        if not method:
+            raise HTTPException(status_code=404, detail="Método de pagamento não encontrado")
+        
+        was_default = method.get("is_default", False)
+        methods.remove(method)
+        
+        # Se era default, definir outro como default
+        if was_default and methods:
+            methods[0]["is_default"] = True
+        
+        data["payment_methods"][email] = methods
+        _save_billing_data(data)
+    
+    return {"success": True, "message": "Método de pagamento removido"}
+
+
+@router.put("/payment-methods/{method_id}/default")
+async def set_default_payment_method(email: str, method_id: str):
+    """Define um método de pagamento como padrão."""
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        methods = data.get("payment_methods", {}).get(email, [])
+        
+        found = False
+        for m in methods:
+            if m["id"] == method_id:
+                m["is_default"] = True
+                found = True
+            else:
+                m["is_default"] = False
+        
+        if not found:
+            raise HTTPException(status_code=404, detail="Método de pagamento não encontrado")
+        
+        data["payment_methods"][email] = methods
+        _save_billing_data(data)
+    
+    return {"success": True, "message": "Método padrão atualizado"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLAN MANAGEMENT - Gerenciamento de Plano
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ChangePlanRequest(BaseModel):
+    new_tier: str = Field(..., description="Novo plano: starter, professional, enterprise")
+    billing_cycle: str = Field(default="monthly", description="monthly ou yearly")
+    prorate: bool = Field(default=True, description="Calcular diferença proporcional")
+
+
+@router.put("/subscription/plan")
+async def change_subscription_plan(email: str, request: ChangePlanRequest):
+    """
+    Altera o plano da assinatura.
+    
+    - Upgrade: Aplicado imediatamente, cobrança proporcional
+    - Downgrade: Aplicado no próximo período de faturamento
+    """
+    if request.new_tier not in PRICING_TIERS:
+        raise HTTPException(status_code=400, detail="Plano inválido")
+    
+    billing_cycle = _normalize_billing_cycle(request.billing_cycle)
+    new_tier_config = PRICING_TIERS[request.new_tier]
+    
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        sub = data.get("subscriptions", {}).get(email)
+        
+        if not sub:
+            raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+        
+        current_tier = sub.get("tier", "starter")
+        current_config = PRICING_TIERS.get(current_tier, PRICING_TIERS["starter"])
+        
+        # Determinar se é upgrade ou downgrade
+        tier_order = {"starter": 1, "professional": 2, "enterprise": 3}
+        is_upgrade = tier_order.get(request.new_tier, 0) > tier_order.get(current_tier, 0)
+        
+        # Calcular valores
+        price_key = f"price_{billing_cycle}"
+        new_price = new_tier_config.get(price_key, new_tier_config["price_monthly"])
+        old_price = current_config.get(price_key, current_config["price_monthly"])
+        
+        prorate_amount = 0
+        if request.prorate and is_upgrade:
+            # Calcular crédito proporcional do plano atual
+            days_remaining = 15  # Simplificado: assumir meio do período
+            daily_rate_old = old_price / 30
+            credit = daily_rate_old * days_remaining
+            
+            daily_rate_new = new_price / 30
+            charge = daily_rate_new * days_remaining
+            
+            prorate_amount = round(charge - credit, 2)
+        
+        # Atualizar assinatura
+        if is_upgrade:
+            sub["tier"] = request.new_tier
+            sub["billing_cycle"] = billing_cycle
+            sub["updated_at"] = datetime.now(UTC).isoformat()
+            effective_date = datetime.now(UTC).isoformat()
+        else:
+            # Downgrade: agendar para próximo período
+            sub["pending_tier"] = request.new_tier
+            sub["pending_billing_cycle"] = billing_cycle
+            effective_date = sub.get("current_period_end", datetime.now(UTC).isoformat())
+        
+        data["subscriptions"][email] = sub
+        _save_billing_data(data)
+    
+    return {
+        "success": True,
+        "is_upgrade": is_upgrade,
+        "previous_tier": current_tier,
+        "new_tier": request.new_tier,
+        "effective_date": effective_date,
+        "prorate_amount": prorate_amount if is_upgrade else 0,
+        "message": (
+            f"Plano alterado para {new_tier_config['name']}. "
+            f"{'Aplicado imediatamente.' if is_upgrade else 'Será aplicado no próximo período.'}"
+        ),
+    }
+
+
+@router.get("/subscription/plans")
+async def get_available_plans(email: str):
+    """Retorna planos disponíveis para o usuário com comparação ao plano atual."""
+    with _BILLING_LOCK:
+        data = _load_billing_data()
+        sub = data.get("subscriptions", {}).get(email, {})
+    
+    current_tier = sub.get("tier", "starter")
+    current_cycle = sub.get("billing_cycle", "monthly")
+    
+    plans = []
+    tier_order = {"starter": 1, "professional": 2, "enterprise": 3}
+    
+    for tier_key, tier_config in PRICING_TIERS.items():
+        is_current = tier_key == current_tier
+        is_upgrade = tier_order.get(tier_key, 0) > tier_order.get(current_tier, 0)
+        is_downgrade = tier_order.get(tier_key, 0) < tier_order.get(current_tier, 0)
+        
+        plans.append({
+            "tier": tier_key,
+            "name": tier_config["name"],
+            "price_monthly": tier_config["price_monthly"],
+            "price_yearly": tier_config["price_yearly"],
+            "currency": tier_config["currency"],
+            "features": tier_config["features"],
+            "is_current": is_current,
+            "is_upgrade": is_upgrade,
+            "is_downgrade": is_downgrade,
+            "savings_yearly": tier_config["price_monthly"] * 12 - tier_config["price_yearly"],
+        })
+    
+    return {
+        "current_tier": current_tier,
+        "current_cycle": current_cycle,
+        "plans": plans,
+    }

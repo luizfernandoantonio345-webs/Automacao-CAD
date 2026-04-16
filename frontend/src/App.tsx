@@ -47,6 +47,9 @@ const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Billing = lazy(() => import("./pages/Billing"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -409,6 +412,22 @@ function AppContent() {
               <Route
                 path="/settings"
                 element={<Profile />}
+              />
+              <Route
+                path="/billing"
+                element={
+                  <SidebarLayout>
+                    <Billing />
+                  </SidebarLayout>
+                }
+              />
+              <Route
+                path="/terms"
+                element={<Terms />}
+              />
+              <Route
+                path="/privacy"
+                element={<Privacy />}
               />
               {/* Redirects para rotas legadas */}
               <Route
