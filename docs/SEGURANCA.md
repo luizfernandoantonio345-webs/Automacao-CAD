@@ -6,14 +6,14 @@ Este documento descreve as medidas de segurança implementadas no sistema.
 
 ### Frontend (automacao-cad-frontend.vercel.app)
 
-| Header | Valor | Proteção |
-|--------|-------|----------|
-| `Content-Security-Policy` | Ver abaixo | XSS, Code Injection |
-| `X-Content-Type-Options` | `nosniff` | MIME-type sniffing |
-| `X-Frame-Options` | `DENY` | Clickjacking |
-| `X-XSS-Protection` | `1; mode=block` | XSS (legacy browsers) |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Vazamento de dados |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Acesso a recursos |
+| Header                    | Valor                                      | Proteção              |
+| ------------------------- | ------------------------------------------ | --------------------- |
+| `Content-Security-Policy` | Ver abaixo                                 | XSS, Code Injection   |
+| `X-Content-Type-Options`  | `nosniff`                                  | MIME-type sniffing    |
+| `X-Frame-Options`         | `DENY`                                     | Clickjacking          |
+| `X-XSS-Protection`        | `1; mode=block`                            | XSS (legacy browsers) |
+| `Referrer-Policy`         | `strict-origin-when-cross-origin`          | Vazamento de dados    |
+| `Permissions-Policy`      | `camera=(), microphone=(), geolocation=()` | Acesso a recursos     |
 
 ### Content-Security-Policy (CSP) Detalhado
 
@@ -29,21 +29,21 @@ base-uri 'self';
 form-action 'self';
 ```
 
-| Diretiva | Significado |
-|----------|-------------|
-| `default-src 'self'` | Por padrão, só carrega recursos do próprio domínio |
-| `script-src 'self' 'wasm-unsafe-eval'` | Scripts apenas do domínio, permite WebAssembly |
-| `style-src 'self' 'unsafe-inline'` | Estilos do domínio + inline (necessário para React) |
-| `connect-src` | APIs permitidas para fetch/WebSocket |
-| `frame-ancestors 'none'` | Não permite ser embutido em iframes |
+| Diretiva                               | Significado                                         |
+| -------------------------------------- | --------------------------------------------------- |
+| `default-src 'self'`                   | Por padrão, só carrega recursos do próprio domínio  |
+| `script-src 'self' 'wasm-unsafe-eval'` | Scripts apenas do domínio, permite WebAssembly      |
+| `style-src 'self' 'unsafe-inline'`     | Estilos do domínio + inline (necessário para React) |
+| `connect-src`                          | APIs permitidas para fetch/WebSocket                |
+| `frame-ancestors 'none'`               | Não permite ser embutido em iframes                 |
 
 ### Backend (automacao-cad-backend.vercel.app)
 
-| Header | Valor | Proteção |
-|--------|-------|----------|
-| `X-Content-Type-Options` | `nosniff` | MIME-type sniffing |
-| `X-Frame-Options` | `DENY` | Clickjacking |
-| `Cache-Control` | `no-store, no-cache, must-revalidate` | Cache de dados sensíveis |
+| Header                   | Valor                                 | Proteção                 |
+| ------------------------ | ------------------------------------- | ------------------------ |
+| `X-Content-Type-Options` | `nosniff`                             | MIME-type sniffing       |
+| `X-Frame-Options`        | `DENY`                                | Clickjacking             |
+| `Cache-Control`          | `no-store, no-cache, must-revalidate` | Cache de dados sensíveis |
 
 ---
 
@@ -58,12 +58,12 @@ form-action 'self';
 
 ### Proteções Implementadas
 
-| Proteção | Status | Descrição |
-|----------|--------|-----------|
-| Rate Limiting | ✅ | 100 req/min por IP |
-| Brute Force | ✅ | Bloqueio após 5 tentativas |
-| CORS | ✅ | Apenas origens permitidas |
-| HTTPS | ✅ | Forçado via Vercel |
+| Proteção      | Status | Descrição                  |
+| ------------- | ------ | -------------------------- |
+| Rate Limiting | ✅     | 100 req/min por IP         |
+| Brute Force   | ✅     | Bloqueio após 5 tentativas |
+| CORS          | ✅     | Apenas origens permitidas  |
+| HTTPS         | ✅     | Forçado via Vercel         |
 
 ---
 
@@ -152,11 +152,11 @@ cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
 
 ### O que é logado
 
-| Evento | Campos | Retenção |
-|--------|--------|----------|
-| Login | user_id, ip, timestamp, success | 90 dias |
-| Alteração de dados | user_id, entity, old_value, new_value | 1 ano |
-| Erros de segurança | ip, path, error_type | 30 dias |
+| Evento             | Campos                                | Retenção |
+| ------------------ | ------------------------------------- | -------- |
+| Login              | user_id, ip, timestamp, success       | 90 dias  |
+| Alteração de dados | user_id, entity, old_value, new_value | 1 ano    |
+| Erros de segurança | ip, path, error_type                  | 30 dias  |
 
 ### O que NÃO é logado
 
@@ -168,13 +168,13 @@ cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
 
 ## Variáveis de Ambiente Sensíveis
 
-| Variável | Descrição | Onde Definir |
-|----------|-----------|--------------|
-| `JWT_SECRET` | Chave de assinatura JWT | Vercel Env Vars |
-| `DATABASE_URL` | Conexão PostgreSQL | Vercel Env Vars |
-| `OPENAI_API_KEY` | API da OpenAI | Vercel Env Vars |
-| `ANTHROPIC_API_KEY` | API da Anthropic | Vercel Env Vars |
-| `STRIPE_SECRET_KEY` | Chave do Stripe | Vercel Env Vars |
+| Variável            | Descrição               | Onde Definir    |
+| ------------------- | ----------------------- | --------------- |
+| `JWT_SECRET`        | Chave de assinatura JWT | Vercel Env Vars |
+| `DATABASE_URL`      | Conexão PostgreSQL      | Vercel Env Vars |
+| `OPENAI_API_KEY`    | API da OpenAI           | Vercel Env Vars |
+| `ANTHROPIC_API_KEY` | API da Anthropic        | Vercel Env Vars |
+| `STRIPE_SECRET_KEY` | Chave do Stripe         | Vercel Env Vars |
 
 ### Rotação de Secrets
 
@@ -226,4 +226,4 @@ Responderemos em até 48 horas úteis.
 
 ---
 
-*Documento atualizado: Abril 2026*
+_Documento atualizado: Abril 2026_

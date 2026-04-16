@@ -11,7 +11,7 @@
 # =============================================================================
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$DatabaseUrl
 )
 
@@ -60,7 +60,8 @@ $DatabaseUrl = $DatabaseUrl -replace "^postgres://", "postgresql://"
 if (-not $DatabaseUrl.Contains("sslmode=")) {
     if ($DatabaseUrl.Contains("?")) {
         $DatabaseUrl = "$DatabaseUrl&sslmode=require"
-    } else {
+    }
+    else {
         $DatabaseUrl = "$DatabaseUrl?sslmode=require"
     }
 }
@@ -78,7 +79,8 @@ Write-Host "Ativando ambiente virtual..." -ForegroundColor Cyan
 if (Test-Path ".\.venv\Scripts\Activate.ps1") {
     & ".\.venv\Scripts\Activate.ps1"
     Write-Host "[OK] Ambiente virtual ativado" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "[!] Ambiente virtual nao encontrado, continuando..." -ForegroundColor Yellow
 }
 
@@ -113,7 +115,8 @@ Write-Host "Testando conexao com PostgreSQL..." -ForegroundColor Cyan
 $result = python $testScriptPath
 if ($LASTEXITCODE -eq 0) {
     Write-Host "[OK] $result" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "ERRO: Falha na conexao!" -ForegroundColor Red
     Write-Host $result -ForegroundColor Red
     Write-Host ""
@@ -131,10 +134,12 @@ try {
     alembic upgrade head
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[OK] Migrations concluidas!" -ForegroundColor Green
-    } else {
+    }
+    else {
         throw "Alembic retornou erro"
     }
-} catch {
+}
+catch {
     Write-Host "ERRO: Falha nas migrations!" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
@@ -199,6 +204,7 @@ Write-Host ""
 try {
     $DatabaseUrl | Set-Clipboard
     Write-Host "[OK] DATABASE_URL copiada para a area de transferencia!" -ForegroundColor Green
-} catch {
+}
+catch {
     # Ignorar erro de clipboard
 }

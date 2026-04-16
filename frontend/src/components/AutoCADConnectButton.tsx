@@ -386,11 +386,26 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
               border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
             }}
           >
-            <Typography variant="caption" sx={{ fontWeight: 700, color: theme.palette.warning.dark, display: "block", mb: 0.5 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: theme.palette.warning.dark,
+                display: "block",
+                mb: 0.5,
+              }}
+            >
               Windows SmartScreen ou Antivirus bloqueou?
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.5 }}>
-              Se aparecer "Windows protegeu seu PC": clique em <b>"Mais informacoes"</b> e depois em <b>"Executar assim mesmo"</b>. O arquivo e seguro e o codigo e aberto no GitHub.
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", lineHeight: 1.5 }}
+            >
+              Se aparecer "Windows protegeu seu PC": clique em{" "}
+              <b>"Mais informacoes"</b> e depois em{" "}
+              <b>"Executar assim mesmo"</b>. O arquivo e seguro e o codigo e
+              aberto no GitHub.
             </Typography>
           </Box>
 
@@ -407,10 +422,19 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
               "&:hover": { bgcolor: alpha(theme.palette.common.black, 0.04) },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Terminal size={15} color={theme.palette.text.secondary} />
-                <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary" }}>
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, color: "text.secondary" }}
+                >
                   Modo avançado - usar linha de comando (CMD)
                 </Typography>
               </Box>
@@ -426,8 +450,13 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
 
           <Collapse in={advancedOpen}>
             <Box sx={{ p: 1.5, pt: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
-                Abra o <b>Prompt de Comando (CMD)</b> como Administrador e cole o comando abaixo.
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 1.5 }}
+              >
+                Abra o <b>Prompt de Comando (CMD)</b> como Administrador e cole
+                o comando abaixo.
               </Typography>
               <Box
                 sx={{
@@ -453,7 +482,11 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
                 >
                   {PS_ADVANCED}
                 </Box>
-                <IconButton onClick={handleCopyAdvanced} size="small" sx={{ flexShrink: 0, mt: 0.2 }}>
+                <IconButton
+                  onClick={handleCopyAdvanced}
+                  size="small"
+                  sx={{ flexShrink: 0, mt: 0.2 }}
+                >
                   {copied ? (
                     <CheckCheck size={16} color={theme.palette.success.main} />
                   ) : (
@@ -463,7 +496,12 @@ export const AutoCADConnectButton: React.FC<AutoCADConnectButtonProps> = () => {
               </Box>
               <Typography
                 variant="caption"
-                sx={{ display: "block", mt: 1, color: theme.palette.warning.main, fontWeight: 600 }}
+                sx={{
+                  display: "block",
+                  mt: 1,
+                  color: theme.palette.warning.main,
+                  fontWeight: 600,
+                }}
               >
                 Use apenas se o botão de download não funcionar.
               </Typography>

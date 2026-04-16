@@ -44,6 +44,9 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 const RolesManager = lazy(() => import("./pages/RolesManager"));
 const SystemMonitor = lazy(() => import("./pages/SystemMonitor"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Profile = lazy(() => import("./pages/Profile"));
 type User = { email: string; empresa: string; limite: number; usado: number };
 type LicenseCache = { licenseKey: string; machineId: string };
 
@@ -266,6 +269,9 @@ function AppContent() {
           <Suspense fallback={fallback}>
             <Routes>
               <Route path="/" element={<Login />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/planos" element={<Pricing />} />
               <Route path="/checkout" element={<Checkout />} />
@@ -395,6 +401,14 @@ function AppContent() {
                     </FeatureGate>
                   </SidebarLayout>
                 }
+              />
+              <Route
+                path="/profile"
+                element={<Profile />}
+              />
+              <Route
+                path="/settings"
+                element={<Profile />}
               />
               {/* Redirects para rotas legadas */}
               <Route

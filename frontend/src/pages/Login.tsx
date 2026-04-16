@@ -441,6 +441,23 @@ const Login = () => {
                   }}
                   whileFocus={{ scale: 1.01 }}
                 />
+                {mode === "login" && (
+                  <div style={{ textAlign: "right", marginTop: "8px" }}>
+                    <a
+                      href="/forgot-password"
+                      style={{
+                        color: "#00A1FF",
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        opacity: 0.8,
+                      }}
+                      onMouseOver={(e) => (e.currentTarget.style.opacity = "1")}
+                      onMouseOut={(e) => (e.currentTarget.style.opacity = "0.8")}
+                    >
+                      Esqueceu a senha?
+                    </a>
+                  </div>
+                )}
               </div>
 
               {mode === "signup" && (

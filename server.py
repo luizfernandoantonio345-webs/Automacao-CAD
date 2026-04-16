@@ -109,6 +109,12 @@ except ImportError as e:
     billing_router = None
 
 try:
+    from backend.routes_auth import router as auth_router
+except ImportError as e:
+    _log.warning(f"Auth router not available: {e}")
+    auth_router = None
+
+try:
     from backend.routes_analytics import router as analytics_router
 except ImportError as e:
     _log.warning(f"Analytics router not available: {e}")
@@ -588,6 +594,11 @@ if license_router:
 if billing_router:
     app.include_router(billing_router)
     logger.info("Billing & Monetization routes carregados")
+
+# Include Advanced Auth routes (Password Reset, 2FA, Profile)
+if auth_router:
+    app.include_router(auth_router)
+    logger.info("Advanced Auth routes carregados (password reset, 2FA, profile)")
 
 # Include Analytics routes (Enterprise KPIs)
 if analytics_router:

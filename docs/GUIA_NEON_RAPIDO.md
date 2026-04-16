@@ -3,11 +3,13 @@
 ## Passo 1: Obter Connection String do Neon
 
 ### Se você JÁ TEM conta no Neon:
+
 1. Acesse: https://console.neon.tech
 2. Clique no seu projeto
 3. Em **Connection Details**, copie a string completa
 
 ### Se você NÃO TEM conta:
+
 1. Acesse: https://neon.tech
 2. Clique **Sign Up** (use GitHub para login rápido)
 3. Clique **Create Project**
@@ -20,12 +22,14 @@
 ## Passo 2: Executar o Setup (escolha UMA opção)
 
 ### Opção A: Script Python (recomendado)
+
 ```powershell
 cd "C:\Users\Sueli\Desktop\Automação CAD"
 python scripts/complete_neon_setup.py "SUA_CONNECTION_STRING_AQUI"
 ```
 
 ### Opção B: Script PowerShell
+
 ```powershell
 cd "C:\Users\Sueli\Desktop\Automação CAD"
 .\scripts\setup_neon.ps1
@@ -33,6 +37,7 @@ cd "C:\Users\Sueli\Desktop\Automação CAD"
 ```
 
 ### Opção C: Manual
+
 ```powershell
 cd "C:\Users\Sueli\Desktop\Automação CAD"
 
@@ -67,6 +72,7 @@ alembic upgrade head
 Acesse: https://automacao-cad-backend.vercel.app/health
 
 Você deve ver:
+
 ```json
 {
   "database": {
@@ -87,13 +93,16 @@ Seu banco de dados PostgreSQL está configurado. Os dados agora persistem mesmo 
 ## Problemas Comuns
 
 ### "psycopg2 not found"
+
 ```powershell
 pip install psycopg2-binary
 ```
 
 ### "Connection refused"
+
 - Verifique se a Connection String está correta
 - Verifique se `?sslmode=require` está no final da URL
 
 ### "Permission denied"
+
 - Verifique se o usuário da URL tem permissões no banco

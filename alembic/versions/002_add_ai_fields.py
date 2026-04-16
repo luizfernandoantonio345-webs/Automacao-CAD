@@ -21,8 +21,12 @@ def upgrade():
     conn = op.get_bind()
     dialect = conn.dialect.name
     
-    # Verificar se as colunas já existem (idempotência)
+    # Verificar se a tabela e colunas já existem (idempotência)
     inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+    if 'draft_feedback' not in tables:
+        print("⚠️ Tabela 'draft_feedback' não existe, pulando migração 002")
+        return
     columns = {col['name'] for col in inspector.get_columns('draft_feedback')}
     
     if 'ai_response' not in columns:

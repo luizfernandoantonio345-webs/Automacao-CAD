@@ -4,11 +4,11 @@ Este guia explica como configurar monitoramento e alertas para o sistema em prod
 
 ## Endpoints de Health Check
 
-| Endpoint | Descrição | Uso |
-|----------|-----------|-----|
-| `/health` | Status completo (banco, Redis, Celery, AutoCAD, LLM) | Monitoramento detalhado |
-| `/healthz` | Health check simples para load balancers | Kubernetes, Vercel |
-| `/api/bridge/health` | Status de conexão do agente PowerShell | Frontend polling |
+| Endpoint             | Descrição                                            | Uso                     |
+| -------------------- | ---------------------------------------------------- | ----------------------- |
+| `/health`            | Status completo (banco, Redis, Celery, AutoCAD, LLM) | Monitoramento detalhado |
+| `/healthz`           | Health check simples para load balancers             | Kubernetes, Vercel      |
+| `/api/bridge/health` | Status de conexão do agente PowerShell               | Frontend polling        |
 
 ### Exemplo de Resposta `/health`
 
@@ -49,11 +49,11 @@ Este guia explica como configurar monitoramento e alertas para o sistema em prod
 
 ### Passo 2: Configurar Alertas de Deploy
 
-| Evento | Ação Recomendada |
-|--------|------------------|
-| Deployment Failed | ✅ Ativar email + Slack |
-| Deployment Succeeded | ℹ️ Opcional |
-| Domain Expires Soon | ✅ Ativar email |
+| Evento               | Ação Recomendada        |
+| -------------------- | ----------------------- |
+| Deployment Failed    | ✅ Ativar email + Slack |
+| Deployment Succeeded | ℹ️ Opcional             |
+| Domain Expires Soon  | ✅ Ativar email         |
 
 ### Passo 3: Configurar Webhooks
 
@@ -62,11 +62,7 @@ Para alertas avançados, configure webhooks:
 ```json
 {
   "url": "https://seu-servidor.com/webhooks/vercel",
-  "events": [
-    "deployment.created",
-    "deployment.error",
-    "deployment.ready"
-  ]
+  "events": ["deployment.created", "deployment.error", "deployment.ready"]
 }
 ```
 
@@ -125,12 +121,12 @@ Write-Host ""
 while ($true) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $health = Test-Health
-    
+
     if ($health.status -eq "healthy") {
         Write-Host "[$timestamp] ✅ HEALTHY - DB: $($health.services.database.type)" -ForegroundColor Green
     } elseif ($health.status -eq "degraded") {
         Write-Host "[$timestamp] ⚠️ DEGRADED" -ForegroundColor Yellow
-        
+
         # Verificar serviços
         if (-not $health.services.database.ok) {
             Write-Host "  └─ ❌ Database: $($health.services.database.error)" -ForegroundColor Red
@@ -141,12 +137,13 @@ while ($true) {
     } else {
         Write-Host "[$timestamp] ❌ OFFLINE ou ERRO" -ForegroundColor Red
     }
-    
+
     Start-Sleep -Seconds $IntervalSeconds
 }
 ```
 
 **Uso:**
+
 ```powershell
 .\monitor_health.ps1 -IntervalSeconds 30
 ```
@@ -175,7 +172,7 @@ param(
 
 function Send-TelegramAlert {
     param([string]$Message)
-    
+
     $url = "https://api.telegram.org/bot$BotToken/sendMessage"
     $body = @{
         chat_id = $ChatId
@@ -191,17 +188,17 @@ while ($true) {
     try {
         $health = Invoke-RestMethod -Uri "$BackendUrl/health" -TimeoutSec 10
         $currentStatus = $health.status
-        
+
         # Alertar se mudou de healthy para outro estado
         if ($lastStatus -eq "healthy" -and $currentStatus -ne "healthy") {
             Send-TelegramAlert "🔴 *ALERTA* - Engenharia CAD está $currentStatus`n`nVerifique: $BackendUrl/health"
         }
-        
+
         # Alertar se voltou ao normal
         if ($lastStatus -ne "healthy" -and $currentStatus -eq "healthy") {
             Send-TelegramAlert "✅ *RECUPERADO* - Engenharia CAD voltou ao normal"
         }
-        
+
         $lastStatus = $currentStatus
     } catch {
         if ($lastStatus -ne "offline") {
@@ -209,7 +206,7 @@ while ($true) {
             $lastStatus = "offline"
         }
     }
-    
+
     Start-Sleep -Seconds 60
 }
 ```
@@ -218,13 +215,13 @@ while ($true) {
 
 ## Métricas Recomendadas
 
-| Métrica | Threshold | Ação |
-|---------|-----------|------|
-| Response Time `/healthz` | > 2s | Investigar latência |
-| Uptime | < 99.5% | Investigar falhas |
-| Error Rate (5xx) | > 1% | Revisar logs |
-| Database Connection | Falha | Verificar PostgreSQL |
-| Agent Heartbeat | > 60s sem | Verificar PowerShell |
+| Métrica                  | Threshold | Ação                 |
+| ------------------------ | --------- | -------------------- |
+| Response Time `/healthz` | > 2s      | Investigar latência  |
+| Uptime                   | < 99.5%   | Investigar falhas    |
+| Error Rate (5xx)         | > 1%      | Revisar logs         |
+| Database Connection      | Falha     | Verificar PostgreSQL |
+| Agent Heartbeat          | > 60s sem | Verificar PowerShell |
 
 ---
 
@@ -258,4 +255,4 @@ vercel logs automacao-cad-backend --follow
 
 ---
 
-*Documento atualizado: Abril 2026*
+_Documento atualizado: Abril 2026_
