@@ -7,7 +7,8 @@ import {
   useLocation,
 } from "react-router-dom";
 import axios from "axios";
-import Login from "./pages/Login";
+// Use redesigned V2 pages
+import Login from "./pages/LoginV2";
 import { SidebarLayout } from "./components/SidebarLayout";
 import License from "./components/License";
 import { ApiService } from "./services/api";
@@ -27,7 +28,8 @@ import {
 } from "./middleware/AIOrchestrator";
 
 // Lazy-loaded pages for code splitting
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+// Use redesigned V2 Dashboard
+const Dashboard = lazy(() => import("./pages/DashboardV2"));
 const DataIngestion = lazy(() => import("./pages/DataIngestion"));
 const QualityGate = lazy(() => import("./pages/QualityGate"));
 const FinalReport = lazy(() => import("./pages/FinalReport"));
