@@ -41,7 +41,7 @@ tiktoken>=0.7,<1.0
 # Security & OWASP
 python-jose[cryptography]>=3.3,<4.0
 passlib[bcrypt]>=1.7,<2.0
-argon2-cffi>=23.0,<24.0
+argon2-cffi>=23.0,<26.0
 defusedxml>=0.7,<1.0
 pyotp>=2.9,<3.0
 
