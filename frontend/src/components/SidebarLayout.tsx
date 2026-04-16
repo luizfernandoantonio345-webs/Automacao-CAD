@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaChartLine,
@@ -16,6 +16,7 @@ import {
   FaTimes,
   FaUserTie,
   FaClipboardList,
+  FaCreditCard,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -39,6 +40,7 @@ const NAV_ITEMS: NavEntry[] = [
   { path: "/chatcad", label: "ChatCAD (IA)", icon: <FaRobot /> },
   { path: "/ai-dashboard", label: "Central de IAs", icon: <FaBrain /> },
   { path: "/admin-panel", label: "Auditoria", icon: <FaClipboardList /> },
+  { path: "/billing", label: "Faturamento", icon: <FaCreditCard /> },
   { path: "/roles-manager", label: "Gerenciar Funções", icon: <FaUserTie /> },
   {
     path: "/system-monitor",
@@ -68,6 +70,59 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   const { license } = useLicense();
   const demo = isDemoMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+
+  // Keyboard navigation: Escape closes sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && sidebarOpen) {
+        setSidebarOpen(false);
+        hamburgerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarOpen]);
+
+  // Focus trap when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen && sidebarRef.current) {
+      const focusableElements = sidebarRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      const handleTabKey = (e: KeyboardEvent) => {
+        if (e.key !== "Tab") return;
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
+      };
+
+      document.addEventListener("keydown", handleTabKey);
+      firstElement?.focus();
+      return () => document.removeEventListener("keydown", handleTabKey);
+    }
+  }, [sidebarOpen]);
+
+  // Handle nav item keyboard activation
+  const handleNavKeyDown = useCallback((e: React.KeyboardEvent, path: string) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navigate(path);
+      setSidebarOpen(false);
+    }
+  }, [navigate]);
 
   const tierLabel = demo
     ? "Demo"
@@ -214,6 +269,32 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   return (
     <div style={sidebarStyles.container}>
       <style>{`
+        /* Focus indicators for accessibility */
+        .sl-sidebar [role="menuitem"]:focus,
+        .sl-sidebar [role="button"]:focus {
+          outline: 2px solid ${theme.accentPrimary};
+          outline-offset: 2px;
+        }
+        .sl-hamburger:focus {
+          outline: 2px solid ${theme.accentPrimary};
+          outline-offset: 2px;
+        }
+        /* Skip to content link for screen readers */
+        .skip-link {
+          position: absolute;
+          top: -40px;
+          left: 0;
+          background: ${theme.accentPrimary};
+          color: white;
+          padding: 8px 16px;
+          z-index: 9999;
+          font-weight: 600;
+          border-radius: 0 0 8px 0;
+          text-decoration: none;
+        }
+        .skip-link:focus {
+          top: 0;
+        }
         @media (max-width: 900px) {
           .sl-hamburger {
             display: flex !important;
@@ -258,14 +339,22 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
         }
       `}</style>
 
+      {/* Skip to main content link for screen readers */}
+      <a href="#main-content" className="skip-link">
+        Pular para conteúdo principal
+      </a>
+
       {/* Hamburger button (mobile only) */}
       <button
+        ref={hamburgerRef}
         className="sl-hamburger"
         style={sidebarStyles.hamburger}
         onClick={() => setSidebarOpen((o) => !o)}
-        aria-label="Abrir menu"
+        aria-label={sidebarOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
+        aria-expanded={sidebarOpen}
+        aria-controls="main-sidebar"
       >
-        {sidebarOpen ? <FaTimes /> : <FaBars />}
+        {sidebarOpen ? <FaTimes aria-hidden="true" /> : <FaBars aria-hidden="true" />}
       </button>
 
       {/* Overlay (mobile only, when sidebar open) */}
@@ -274,13 +363,18 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
           className="sl-overlay"
           style={sidebarStyles.overlay}
           onClick={closeSidebar}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
+        id="main-sidebar"
         className={`sl-sidebar${sidebarOpen ? " open" : ""}`}
         style={sidebarStyles.sidebar as React.CSSProperties}
+        role="navigation"
+        aria-label="Menu principal"
       >
         <div style={sidebarStyles.brand}>
           ENGENHARIA <span style={{ color: theme.accentPrimary }}>CAD</span>
@@ -320,15 +414,19 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
         )}
 
-        <nav style={sidebarStyles.nav as React.CSSProperties}>
+        <nav style={sidebarStyles.nav as React.CSSProperties} role="menubar" aria-label="Navegação principal">
           {NAV_ITEMS.map((item) => (
             <div
               key={item.path}
+              role="menuitem"
+              tabIndex={0}
+              aria-current={location.pathname === item.path ? "page" : undefined}
               style={getNavStyle(item.path)}
               onClick={() => {
                 navigate(item.path);
                 closeSidebar();
               }}
+              onKeyDown={(e) => handleNavKeyDown(e, item.path)}
               onMouseEnter={(e) => {
                 if (location.pathname !== item.path) {
                   e.currentTarget.style.backgroundColor =
@@ -343,7 +441,7 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
                 }
               }}
             >
-              {item.icon} {item.label}
+              <span aria-hidden="true">{item.icon}</span> {item.label}
             </div>
           ))}
         </nav>
@@ -389,8 +487,16 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
             )}
           </div>
           <div
+            role="button"
+            tabIndex={0}
             style={sidebarStyles.logoutBtn}
             onClick={handleLogout}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleLogout();
+              }
+            }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = `${theme.danger}15`;
               e.currentTarget.style.color = theme.danger;
@@ -399,14 +505,21 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
               e.currentTarget.style.backgroundColor = "transparent";
               e.currentTarget.style.color = theme.textTertiary;
             }}
+            aria-label="Sair da conta"
           >
-            <FaSignOutAlt /> Sair
+            <FaSignOutAlt aria-hidden="true" /> Sair
           </div>
         </div>
       </aside>
 
       {/* Área de Trabalho */}
-      <main className="sl-main" style={sidebarStyles.main}>
+      <main 
+        id="main-content"
+        className="sl-main" 
+        style={sidebarStyles.main}
+        role="main"
+        aria-label="Conteúdo principal"
+      >
         {children}
       </main>
     </div>
