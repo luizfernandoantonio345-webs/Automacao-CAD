@@ -8,6 +8,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
     "eject": "react-scripts eject",
     "electron": "concurrently \"npm:start\" \"wait-on http://localhost:3000 && .\\node_modules\\electron\\dist\\electron.exe .\"",
     "pack": "electron-builder --dir",
@@ -30,6 +34,7 @@
     "sweetalert2": "^11.7.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@tailwindcss/postcss": "^4.2.2",
     "autoprefixer": "^10.4.27",
     "concurrently": "^8.2.0",
