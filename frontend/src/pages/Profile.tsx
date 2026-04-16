@@ -21,7 +21,7 @@ import {
 } from "react-icons/fa";
 import { api } from "../services/api";
 import { useToast } from "../context/ToastContext";
-import SidebarLayout from "../components/SidebarLayout";
+import { SidebarLayout } from "../components/SidebarLayout";
 
 interface UserProfile {
   email: string;
@@ -34,7 +34,7 @@ interface UserProfile {
 }
 
 const Profile: React.FC = () => {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,7 @@ const Profile: React.FC = () => {
       setNome(res.data.nome || "");
       setTelefone(res.data.telefone || "");
     } catch (err) {
-      showToast("Erro ao carregar perfil", "error");
+      addToast("error", "Erro", "Erro ao carregar perfil");
     } finally {
       setLoading(false);
     }
@@ -80,10 +80,10 @@ const Profile: React.FC = () => {
     setSaving(true);
     try {
       await api.put("/auth/me", { empresa, nome, telefone });
-      showToast("Perfil atualizado com sucesso!", "success");
+      addToast("success", "Sucesso", "Perfil atualizado com sucesso!");
       loadProfile();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Erro ao atualizar perfil", "error");
+      addToast("error", "Erro", err.response?.data?.detail || "Erro ao atualizar perfil");
     } finally {
       setSaving(false);
     }
@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
-      showToast("As senhas não coincidem", "error");
+      addToast("error", "Erro", "As senhas não coincidem");
       return;
     }
     setSaving(true);
@@ -101,12 +101,12 @@ const Profile: React.FC = () => {
         current_password: currentPassword,
         new_password: newPassword,
       });
-      showToast("Senha alterada com sucesso!", "success");
+      addToast("success", "Sucesso", "Senha alterada com sucesso!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Erro ao alterar senha", "error");
+      addToast("error", "Erro", err.response?.data?.detail || "Erro ao alterar senha");
     } finally {
       setSaving(false);
     }
@@ -120,22 +120,22 @@ const Profile: React.FC = () => {
       setBackupCodes(res.data.backup_codes);
       setShow2FASetup(true);
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Erro ao ativar 2FA", "error");
+      addToast("error", "Erro", err.response?.data?.detail || "Erro ao ativar 2FA");
     }
   };
 
   const handleConfirm2FA = async () => {
     if (verifyCode.length !== 6) {
-      showToast("Digite o código de 6 dígitos", "error");
+      addToast("error", "Erro", "Digite o código de 6 dígitos");
       return;
     }
     try {
       await api.post("/auth/confirm-2fa", { code: verifyCode });
-      showToast("2FA ativado com sucesso!", "success");
+      addToast("success", "Sucesso", "2FA ativado com sucesso!");
       setShow2FASetup(false);
       loadProfile();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Código inválido", "error");
+      addToast("error", "Erro", err.response?.data?.detail || "Código inválido");
     }
   };
 
@@ -144,16 +144,16 @@ const Profile: React.FC = () => {
     if (!code) return;
     try {
       await api.delete("/auth/disable-2fa", { data: { code } });
-      showToast("2FA desativado", "success");
+      addToast("success", "Sucesso", "2FA desativado");
       loadProfile();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || "Código inválido", "error");
+      addToast("error", "Erro", err.response?.data?.detail || "Código inválido");
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    showToast("Copiado!", "success");
+    addToast("success", "Copiado", "Copiado para a área de transferência");
   };
 
   if (loading) {
@@ -271,12 +271,12 @@ const Profile: React.FC = () => {
                       {profile?.tier}
                     </span>
                     {profile?.email_verified ? (
-                      <span style={{ padding: "4px 10px", background: "rgba(16, 185, 129, 0.15)", borderRadius: "20px", color: "#10B981", fontSize: "12px", fontWeight: 600 }}>
-                        <FaCheckCircle style={{ marginRight: "4px" }} /> Email verificado
+                      <span style={{ padding: "4px 10px", background: "rgba(16, 185, 129, 0.15)", borderRadius: "20px", color: "#10B981", fontSize: "12px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <FaCheckCircle /> Email verificado
                       </span>
                     ) : (
-                      <span style={{ padding: "4px 10px", background: "rgba(245, 158, 11, 0.15)", borderRadius: "20px", color: "#f59e0b", fontSize: "12px", fontWeight: 600 }}>
-                        <FaExclamationTriangle style={{ marginRight: "4px" }} /> Email não verificado
+                      <span style={{ padding: "4px 10px", background: "rgba(245, 158, 11, 0.15)", borderRadius: "20px", color: "#f59e0b", fontSize: "12px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <FaExclamationTriangle /> Email não verificado
                       </span>
                     )}
                   </div>
@@ -714,7 +714,7 @@ const Profile: React.FC = () => {
                 onClick={() => {
                   if (window.confirm("Tem certeza que deseja excluir sua conta? Esta ação é IRREVERSÍVEL.")) {
                     // TODO: Implement account deletion
-                    showToast("Função de exclusão será implementada em breve", "info");
+                    addToast("info", "Em breve", "Função de exclusão será implementada em breve");
                   }
                 }}
                 style={{

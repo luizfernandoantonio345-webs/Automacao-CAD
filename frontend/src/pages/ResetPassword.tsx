@@ -89,7 +89,9 @@ const ResetPassword: React.FC = () => {
             textAlign: "center",
           }}
         >
-          <FaTimesCircle style={{ fontSize: "48px", color: "#ef4444", marginBottom: "16px" }} />
+          <div style={{ marginBottom: "16px" }}>
+            <FaTimesCircle size={48} color="#ef4444" />
+          </div>
           <h2 style={{ color: "#fff", fontSize: "20px", marginBottom: "12px" }}>
             Link Inválido
           </h2>
@@ -152,7 +154,7 @@ const ResetPassword: React.FC = () => {
                   margin: "0 auto 16px",
                 }}
               >
-                <FaLock style={{ fontSize: "28px", color: "white" }} />
+                <FaLock size={28} color="white" />
               </div>
               <h1 style={{ color: "#fff", fontSize: "24px", fontWeight: 700, margin: 0 }}>
                 Nova Senha
@@ -349,7 +351,7 @@ const ResetPassword: React.FC = () => {
                 margin: "0 auto 24px",
               }}
             >
-              <FaCheckCircle style={{ fontSize: "36px", color: "#10B981" }} />
+              <FaCheckCircle size={36} color="#10B981" />
             </div>
             <h2 style={{ color: "#fff", fontSize: "22px", fontWeight: 700, margin: 0 }}>
               Senha Atualizada!

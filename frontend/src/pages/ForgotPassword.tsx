@@ -88,7 +88,7 @@ const ForgotPassword: React.FC = () => {
                   margin: "0 auto 16px",
                 }}
               >
-                <FaEnvelope style={{ fontSize: "28px", color: "white" }} />
+                <FaEnvelope size={28} color="white" />
               </div>
               <h1 style={{ color: "#fff", fontSize: "24px", fontWeight: 700, margin: 0 }}>
                 Esqueceu a Senha?
@@ -200,7 +200,7 @@ const ForgotPassword: React.FC = () => {
                 margin: "0 auto 24px",
               }}
             >
-              <FaCheckCircle style={{ fontSize: "36px", color: "#10B981" }} />
+              <FaCheckCircle size={36} color="#10B981" />
             </div>
             <h2 style={{ color: "#fff", fontSize: "22px", fontWeight: 700, margin: 0 }}>
               Email Enviado!
