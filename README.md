@@ -1,4 +1,4 @@
-# Engenharia CAD v1.0 🚀
+# Engenharia CAD v5.0 🚀
 
 Plataforma de automação CAD industrial com integração direta com AutoCAD/GstarCAD, utilizando Python, FastAPI e controle via AutoLISP.
 
@@ -185,4 +185,4 @@ Automacao-CAD/
 
 ## 📜 Licença
 
-Projeto proprietário — Engenharia CAD v1.0 Gold.
+Projeto proprietário — Engenharia CAD v5.0 Gold.
