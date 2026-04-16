@@ -639,6 +639,7 @@ def create_watchdog_middleware(watchdog_instance: AIWatchdog):
     # Inclui: auth, health, monitoramento, e operações core do CAD.
     _EXEMPT_ENDPOINTS = frozenset({
         "/login", "/auth/register", "/auth/demo", "/auth/me",
+        "/auth/csrf-token", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email",
         "/health", "/system", "/ai/health", "/ai/diagnostics",
         "/telemetry/test",
         # Endpoints core de produção — nunca bloquear
@@ -652,6 +653,7 @@ def create_watchdog_middleware(watchdog_instance: AIWatchdog):
         "/api/autocad/",
         "/api/cad/",
         "/api/license/",
+        "/auth/",
         "/sse/",
     )
 

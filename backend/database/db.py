@@ -204,7 +204,13 @@ CREATE TABLE IF NOT EXISTS users (
     limite      INTEGER DEFAULT 100,
     usado       INTEGER DEFAULT 0,
     created_at  REAL NOT NULL,
-    last_login  REAL
+    last_login  REAL,
+    nome        TEXT DEFAULT '',
+    telefone    TEXT DEFAULT '',
+    email_verified INTEGER DEFAULT 0,
+    totp_secret TEXT,
+    backup_codes TEXT DEFAULT '[]',
+    two_factor_enabled INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -335,6 +341,15 @@ _PG_COMPAT_ALTERS = [
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS usado INTEGER DEFAULT 0",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS empresa TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login DOUBLE PRECISION",
+    # Profile fields (v5.0)
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS nome TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS telefone TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE",
+    # 2FA fields (v5.0)
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS backup_codes TEXT DEFAULT '[]'",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE",
+    # Projects compatibility
     "ALTER TABLE projects ADD COLUMN IF NOT EXISTS piping_spec TEXT DEFAULT '{}'",
     "ALTER TABLE projects ADD COLUMN IF NOT EXISTS completed_at DOUBLE PRECISION",
     "ALTER TABLE uploads ADD COLUMN IF NOT EXISTS row_count INTEGER DEFAULT 0",
