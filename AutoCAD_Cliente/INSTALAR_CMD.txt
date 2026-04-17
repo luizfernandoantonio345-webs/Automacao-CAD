@@ -1,0 +1,18 @@
+:: ============================================================================
+:: ENGENHARIA CAD - INSTALACAO RAPIDA (Cole este comando no CMD)
+:: ============================================================================
+::
+:: OPCAO 1 - Instalar e iniciar automaticamente:
+::   powershell -c "iwr 'https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/INSTALAR_SILENCIOSO.bat' -OutFile $env:TEMP\i.bat; cmd /c $env:TEMP\i.bat /START /DESKTOP"
+::
+:: OPCAO 2 - Apenas instalar (sem iniciar):
+::   powershell -c "iwr 'https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/INSTALAR_SILENCIOSO.bat' -OutFile $env:TEMP\i.bat; cmd /c $env:TEMP\i.bat /DESKTOP"
+::
+:: OPCAO 3 - Instalacao silenciosa total:
+::   powershell -c "iwr 'https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/INSTALAR_SILENCIOSO.bat' -OutFile $env:TEMP\i.bat; cmd /c $env:TEMP\i.bat /START /DESKTOP /QUIET"
+::
+:: ============================================================================
+:: Ou copie e cole a linha abaixo direto no CMD (Prompt de Comando):
+:: ============================================================================
+
+@powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $d='%USERPROFILE%\EngCAD-Agente'; md $d -Force|Out-Null; $wc=New-Object Net.WebClient; $wc.Encoding=[Text.Encoding]::UTF8; try{$c=$wc.DownloadString('https://automacao-cad-backend.vercel.app/api/agent/download')}catch{$c=$wc.DownloadString('https://raw.githubusercontent.com/luizfernandoantonio345-webs/Automacao-CAD/main/AutoCAD_Cliente/SINCRONIZADOR.ps1')}; [IO.File]::WriteAllText(\"$d\SINCRONIZADOR.ps1\",$c,[Text.Encoding]::UTF8); Write-Host 'Instalado em:' $d -ForegroundColor Green; Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"$d\SINCRONIZADOR.ps1\""
