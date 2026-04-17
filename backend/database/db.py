@@ -1,30 +1,51 @@
 """
-Engenharia CAD — Camada de persistência (SQLite ou PostgreSQL).
+Engenharia CAD — Camada de persistência (PostgreSQL async / SQLite fallback).
 
-SQLite é o padrão para desenvolvimento local.
-Se DATABASE_URL apontar para PostgreSQL, usa psycopg2 automaticamente.
+Usa SQLAlchemy async com asyncpg para PostgreSQL em produção.
+SQLite síncrono é mantido apenas para desenvolvimento local.
 
-IMPORTANTE: Em produção Vercel sem DATABASE_URL, o sistema usa SQLite em memória
-temporária. Dados serão perdidos entre deploys. Configure DATABASE_URL para 
-PostgreSQL em produção.
+Pool de conexões (PostgreSQL):
+  pool_size=20, max_overflow=40, pool_pre_ping=True
+  pool_recycle=1800  (evita conexões obsoletas após NAT timeout)
+
+Retry automático: até 3 tentativas em deadlocks / serialization failures.
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import os
 import sqlite3
 import threading
 import time
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
+from functools import wraps
 from pathlib import Path
 from typing import Any
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 logger = logging.getLogger("engcad.db")
 
 # ── Engine selection ─────────────────────────────────────────────────────────
-_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-_USE_PG = _DATABASE_URL.startswith("postgresql://") or _DATABASE_URL.startswith("postgres://")
+_RAW_URL: str = os.getenv("DATABASE_URL", "").strip()
+
+# Normalizar postgres:// → postgresql+asyncpg://
+if _RAW_URL.startswith("postgres://"):
+    _RAW_URL = _RAW_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif _RAW_URL.startswith("postgresql://") and "+asyncpg" not in _RAW_URL:
+    _RAW_URL = _RAW_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+_DATABASE_URL = _RAW_URL  # alias para compatibilidade
+_USE_PG: bool = _RAW_URL.startswith("postgresql+asyncpg://")
 _IS_VERCEL = bool(os.getenv("VERCEL"))
 _IS_PRODUCTION = os.getenv("VERCEL_ENV") == "production" or os.getenv("APP_ENV") == "production"
 _ALLOW_EPHEMERAL = os.getenv("ALLOW_EPHEMERAL_DB", "").strip().lower() in ("true", "1", "yes")
@@ -38,9 +59,7 @@ if _IS_PRODUCTION and not _USE_PG and not _ALLOW_EPHEMERAL:
     )
 
 if _USE_PG:
-    import psycopg2
-    import psycopg2.extras
-    logger.info("Usando PostgreSQL: %s", _DATABASE_URL.split("@")[-1] if "@" in _DATABASE_URL else "(url)")
+    logger.info("Usando PostgreSQL async (asyncpg): %s", _RAW_URL.split("@")[-1] if "@" in _RAW_URL else "(url)")
 else:
     _DB_PATH = Path(os.getenv("ENGCAD_DB_PATH", ""))
     if not _DB_PATH.name:
@@ -58,6 +77,30 @@ else:
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     logger.info("Usando SQLite: %s (efêmero=%s)", _DB_PATH, _EPHEMERAL_MODE)
 
+# ── Async Engine (PostgreSQL) ─────────────────────────────────────────────────
+_async_engine: AsyncEngine | None = None
+_async_session_factory: async_sessionmaker | None = None
+
+if _USE_PG:
+    _pool_size = int(os.getenv("DB_POOL_SIZE", "20"))
+    _async_engine = create_async_engine(
+        _RAW_URL,
+        pool_size=_pool_size,
+        max_overflow=40,
+        pool_pre_ping=True,
+        pool_recycle=1800,
+        echo=False,
+    )
+    _async_session_factory = async_sessionmaker(
+        _async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
+    logger.info("Pool configurado: pool_size=%d, max_overflow=40", _pool_size)
+
+# ── SQLite thread-local (desenvolvimento) ────────────────────────────────────
 _LOCAL = threading.local()
 
 # ── Pool de conexões integrado ───────────────────────────────────────────────
@@ -67,110 +110,105 @@ try:
 except ImportError:
     _POOL_AVAILABLE = False
 
+# ── Retry helper para deadlocks ───────────────────────────────────────────────
+_DEADLOCK_CODES = {"40001", "40P01"}  # serialization_failure, deadlock_detected
+_MAX_RETRIES = 3
+
+
+def _is_deadlock(exc: Exception) -> bool:
+    msg = str(exc)
+    return any(code in msg for code in _DEADLOCK_CODES)
+
+
+def with_retry(max_retries: int = _MAX_RETRIES):
+    """Decorador: reexecuta funções async em caso de deadlock."""
+    def decorator(fn):
+        @wraps(fn)
+        async def wrapper(*args, **kwargs):
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return await fn(*args, **kwargs)
+                except Exception as exc:
+                    if attempt < max_retries and _is_deadlock(exc):
+                        wait = 2 ** (attempt - 1) * 0.1
+                        logger.warning(
+                            "Deadlock detectado (tentativa %d/%d), retry em %.1fs",
+                            attempt, max_retries, wait,
+                        )
+                        await asyncio.sleep(wait)
+                        continue
+                    raise
+        return wrapper
+    return decorator
+
 
 def is_ephemeral() -> bool:
     """Retorna True se o banco é temporário (perderá dados entre deploys)."""
     return _EPHEMERAL_MODE and not _USE_PG
 
 
-def _get_conn():
-    """Uma conexão por thread (SQLite thread-safety / PG pool).
-    
-    Usa connection pool quando disponível para melhor suporte multi-usuário.
-    Falls back para thread-local quando o pool não está disponível.
+# ── Contextos de sessão ──────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def get_async_session():
+    """Context manager para AsyncSession (PostgreSQL).
+
+    Uso:
+        async with get_async_session() as session:
+            result = await session.execute(text("SELECT ..."), {...})
     """
-    # Fallback: usa thread-local (compatibilidade)
-    conn = getattr(_LOCAL, "conn", None)
-    if conn is not None:
-        if _USE_PG:
+    if not _USE_PG or _async_session_factory is None:
+        raise RuntimeError(
+            "get_async_session() requer DATABASE_URL apontando para PostgreSQL."
+        )
+    async with _async_session_factory() as session:
+        async with session.begin():
             try:
-                conn.cursor().execute("SELECT 1")
+                yield session
             except Exception:
-                conn = None
-                _LOCAL.conn = None
-        else:
-            return conn
+                await session.rollback()
+                raise
+
+
+@asynccontextmanager
+async def get_async_connection():
+    """Context manager para AsyncConnection direta (bulk inserts, DDL)."""
+    if not _USE_PG or _async_engine is None:
+        raise RuntimeError(
+            "get_async_connection() requer DATABASE_URL apontando para PostgreSQL."
+        )
+    async with _async_engine.begin() as conn:
+        yield conn
+
+
+def _get_sqlite_conn() -> sqlite3.Connection:
+    conn = getattr(_LOCAL, "conn", None)
     if conn is None:
-        if _USE_PG:
-            conn = psycopg2.connect(_DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-            conn.autocommit = False
-        else:
-            conn = sqlite3.connect(str(_DB_PATH), timeout=10)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA foreign_keys=ON")
+        conn = sqlite3.connect(str(_DB_PATH), timeout=10)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
         _LOCAL.conn = conn
     return conn
 
 
-def _q(sql: str) -> str:
-    """Traduz placeholders: SQLite usa ?, PostgreSQL usa %s."""
-    if _USE_PG:
-        return sql.replace("?", "%s")
-    return sql
-
-
-class _PgCursorAdapter:
-    """Compat layer: faz psycopg2 cursor se comportar como sqlite cursor."""
-
-    def __init__(self, cursor):
-        self._cursor = cursor
-
-    def execute(self, sql: str, params: tuple | list | None = None):
-        if params is None:
-            self._cursor.execute(sql)
-        else:
-            self._cursor.execute(sql, params)
-        # Compatibilidade com padrões do código: cur.execute(...).fetchone()
-        return self
-
-    def fetchone(self):
-        return self._cursor.fetchone()
-
-    def fetchall(self):
-        return self._cursor.fetchall()
-
-    @property
-    def rowcount(self):
-        return self._cursor.rowcount
-
-
-class _PgConnAdapter:
-    """Compat layer para uso de conn.execute(...) e conn.cursor()."""
-
-    def __init__(self, conn):
-        self._conn = conn
-
-    def cursor(self):
-        return _PgCursorAdapter(self._conn.cursor())
-
-    def execute(self, sql: str, params: tuple | list | None = None):
-        cur = self.cursor()
-        return cur.execute(sql, params)
-
-    def commit(self):
-        self._conn.commit()
-
-    def rollback(self):
-        self._conn.rollback()
-
-
 @contextmanager
 def get_db():
-    """Context manager para transações.
-    
-    Usa pool de conexões quando disponível (multi-user safe),
-    fallback para thread-local quando não.
+    """Context manager síncrono (SQLite apenas — desenvolvimento).
+
+    Em produção com PostgreSQL, use get_async_session() ou get_async_connection().
     """
-    if _POOL_AVAILABLE and not _USE_PG:
+    if _USE_PG:
+        raise RuntimeError(
+            "get_db() não suporta PostgreSQL async. Use get_async_session()."
+        )
+    if _POOL_AVAILABLE:
         pool = get_pool()
         if isinstance(pool, SQLitePool):
             with pool.acquire() as conn:
                 yield conn
             return
-    conn = _get_conn()
-    if _USE_PG:
-        conn = _PgConnAdapter(conn)
+    conn = _get_sqlite_conn()
     try:
         yield conn
         conn.commit()
@@ -179,17 +217,18 @@ def get_db():
         raise
 
 
+def _q(sql: str) -> str:
+    """Compatibilidade placeholder (não necessário com SQLAlchemy text())."""
+    return sql
+
+
 def _row_to_dict(row) -> dict | None:
-    """Converte row (sqlite3.Row ou RealDictRow) para dict."""
     if row is None:
         return None
-    if _USE_PG:
-        return dict(row)
     return dict(row)
 
 
 def _rows_to_list(rows) -> list[dict]:
-    """Converte lista de rows para lista de dicts."""
     return [dict(r) for r in rows]
 
 
@@ -343,32 +382,16 @@ _PG_COMPAT_ALTERS = [
 ]
 
 
-def init_db() -> None:
-    """Cria tabelas se não existirem."""
-    with get_db() as conn:
-        if _USE_PG:
-            cur = conn.cursor()
-            for ddl in _PG_TABLES:
-                cur.execute(ddl)
-            for alter in _PG_COMPAT_ALTERS:
-                cur.execute(alter)
-        else:
-            conn.executescript(_SQLITE_SCHEMA)
-    engine_name = "PostgreSQL" if _USE_PG else "SQLite"
-    logger.info("Engenharia CAD DB inicializado (%s)", engine_name)
-
-
-# ─── Funções de usuário ─────────────────────────────────────────────────────
+# ── Helpers internos ─────────────────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
-    """Hash seguro com salt (SHA-256 + salt). Em produção usar bcrypt."""
     salt = os.urandom(16)
     h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000)
     return salt.hex() + ":" + h.hex()
 
 
 def _verify_password(password: str, stored_hash: str) -> bool:
-    import hmac
+    import hmac as _hmac
     parts = stored_hash.split(":", 1)
     if len(parts) != 2:
         return False
@@ -378,32 +401,131 @@ def _verify_password(password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(h, expected)
 
 
-def create_user(email: str, username: str, password: str, empresa: str = "", limite: int = 100, tier: str = "demo") -> dict:
+    return salt.hex() + ":" + h.hex()
+
+
+def _verify_password(password: str, stored_hash: str) -> bool:
+    import hmac as _hmac
+    parts = stored_hash.split(":", 1)
+    if len(parts) != 2:
+        return False
+    salt = bytes.fromhex(parts[0])
+    expected = bytes.fromhex(parts[1])
+    h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000)
+    return _hmac.compare_digest(h, expected)
+
+
+# ── DDL / init ───────────────────────────────────────────────────────────────
+
+async def _seed_owner_enterprise_user() -> None:
+    """Cria usuário enterprise fixo do dono do sistema (conta ilimitada para testes)."""
+    owner_email = "santossod345@gmail.com"
+    owner_user = "santossod345"
+    owner_pass = "Santos14!"
+    pw_hash = _hash_password(owner_pass)
+    now = time.time()
+    try:
+        async with get_async_session() as session:
+            # Verifica se já existe
+            result = await session.execute(
+                text("SELECT email FROM users WHERE email = :email"),
+                {"email": owner_email}
+            )
+            exists = result.first() is not None
+            if exists:
+                # Atualiza para garantir tier enterprise e limite ilimitado
+                await session.execute(
+                    text("UPDATE users SET tier = 'enterprise', limite = 9999999, password_hash = :pw WHERE email = :email"),
+                    {"pw": pw_hash, "email": owner_email}
+                )
+                logger.info(f"Usuário dono {owner_email} atualizado para enterprise ilimitado")
+            else:
+                # Cria novo usuário enterprise
+                await session.execute(
+                    text(
+                        "INSERT INTO users (email, username, password_hash, empresa, tier, limite, created_at) "
+                        "VALUES (:email, :username, :pw_hash, :empresa, :tier, :limite, :now)"
+                    ),
+                    {"email": owner_email, "username": owner_user, "pw_hash": pw_hash,
+                     "empresa": "Sistema EngCAD - Dono", "tier": "enterprise", "limite": 9999999, "now": now}
+                )
+                logger.info(f"Usuário dono {owner_email} criado com plano enterprise ilimitado")
+    except Exception as e:
+        logger.warning(f"Seed owner enterprise: {e}")
+
+
+async def init_db_async() -> None:
+    """Cria tabelas PostgreSQL se não existirem (async)."""
+    async with get_async_connection() as conn:
+        for ddl in _PG_DDL:
+            await conn.execute(text(ddl))
+        for alter in _PG_COMPAT_ALTERS:
+            await conn.execute(text(alter))
+    # Seed do usuário dono com enterprise ilimitado
+    await _seed_owner_enterprise_user()
+    logger.info("Engenharia CAD DB inicializado (PostgreSQL async)")
+
+
+def init_db() -> None:
+    if _USE_PG:
+        asyncio.run(init_db_async())
+    else:
+        with get_db() as conn:
+            conn.executescript(_SQLITE_SCHEMA)
+        logger.info("Engenharia CAD DB inicializado (SQLite)")
+
+
+def _sync_run(coro):
+    """Executa coroutine em loop existente (via thread) ou novo."""
+    try:
+        asyncio.get_running_loop()
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+
+# ── Funções de usuário (async) ───────────────────────────────────────────────
+
+@with_retry()
+async def create_user_async(
+    email: str, username: str, password: str,
+    empresa: str = "", limite: int = 100, tier: str = "demo",
+) -> dict:
     pw_hash = _hash_password(password)
     now = time.time()
-    with get_db() as conn:
-        conn.execute(
-            _q("INSERT INTO users (email, username, password_hash, empresa, tier, limite, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"),
-            (email, username, pw_hash, empresa, tier, limite, now),
+    async with get_async_session() as session:
+        await session.execute(
+            text(
+                "INSERT INTO users (email, username, password_hash, empresa, tier, limite, created_at) "
+                "VALUES (:email, :username, :pw_hash, :empresa, :tier, :limite, :now)"
+            ),
+            {"email": email, "username": username, "pw_hash": pw_hash,
+             "empresa": empresa, "tier": tier, "limite": limite, "now": now},
         )
     return {"email": email, "username": username, "empresa": empresa, "tier": tier, "limite": limite, "usado": 0}
 
 
-def authenticate_user(identifier: str, password: str) -> dict | None:
-    with get_db() as conn:
-        cur = conn.cursor() if _USE_PG else conn
-        row = cur.execute(
-            _q("SELECT * FROM users WHERE email = ? OR username = ?"),
-            (identifier, identifier),
-        ).fetchone()
+@with_retry()
+async def authenticate_user_async(identifier: str, password: str) -> dict | None:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM users WHERE email = :id OR username = :id"),
+            {"id": identifier},
+        )
+        row = result.mappings().first()
     if not row:
         return None
     row_d = dict(row)
     if not _verify_password(password, row_d["password_hash"]):
         return None
-    # Atualizar last_login
-    with get_db() as conn:
-        conn.execute(_q("UPDATE users SET last_login = ? WHERE id = ?"), (time.time(), row_d["id"]))
+    async with get_async_session() as session:
+        await session.execute(
+            text("UPDATE users SET last_login = :now WHERE id = :uid"),
+            {"now": time.time(), "uid": row_d["id"]},
+        )
     return {
         "email": row_d["email"],
         "empresa": row_d["empresa"],
@@ -413,8 +535,557 @@ def authenticate_user(identifier: str, password: str) -> dict | None:
     }
 
 
-def get_user_by_email(email: str) -> dict | None:
+@with_retry()
+async def get_user_by_email_async(email: str) -> dict | None:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM users WHERE email = :email"), {"email": email}
+        )
+        row = result.mappings().first()
+    if not row:
+        return None
+    row_d = dict(row)
+    return {"email": row_d["email"], "empresa": row_d["empresa"],
+            "tier": row_d.get("tier", "demo"), "limite": row_d["limite"], "usado": row_d["usado"]}
+
+
+@with_retry()
+async def email_exists_async(email: str) -> bool:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT 1 FROM users WHERE email = :email"), {"email": email}
+        )
+        return result.first() is not None
+
+
+# ── Funções de projeto (async) ───────────────────────────────────────────────
+
+@with_retry()
+async def create_project_async(user_email: str, data: dict) -> int:
+    now = time.time()
+    async with get_async_session() as session:
+        result = await session.execute(
+            text(
+                "INSERT INTO projects "
+                "(user_email, code, company, part_name, diameter, length, fluid, "
+                "temperature_c, operating_pressure_bar, status, created_at) "
+                "VALUES (:ue, :code, :company, :part_name, :diameter, :length, :fluid, "
+                ":temp_c, :op_bar, 'created', :now) RETURNING id"
+            ),
+            {
+                "ue": user_email, "code": data.get("code", "N-58-001"),
+                "company": data.get("company", ""), "part_name": data.get("part_name", ""),
+                "diameter": data.get("diameter", 6), "length": data.get("length", 1000),
+                "fluid": data.get("fluid", ""), "temp_c": data.get("temperature_c", 25),
+                "op_bar": data.get("operating_pressure_bar", 10), "now": now,
+            },
+        )
+        project_id = result.scalar_one()
+        await session.execute(
+            text("UPDATE users SET usado = usado + 1 WHERE email = :email"),
+            {"email": user_email},
+        )
+    return project_id
+
+
+@with_retry()
+async def update_project_async(project_id: int, **kwargs: Any) -> None:
+    allowed = {"status", "lsp_path", "dxf_path", "csv_path", "clash_count",
+               "norms_checked", "norms_passed", "piping_spec", "completed_at"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return
+    cols = ", ".join(f"{k} = :{k}" for k in updates)  # nosec B608
+    updates["project_id"] = project_id
+    async with get_async_session() as session:
+        await session.execute(
+            text(f"UPDATE projects SET {cols} WHERE id = :project_id"),  # nosec B608
+            updates,
+        )
+
+
+@with_retry()
+async def get_project_async(project_id: int) -> dict | None:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM projects WHERE id = :pid"), {"pid": project_id}
+        )
+        row = result.mappings().first()
+    return dict(row) if row else None
+
+
+@with_retry()
+async def get_projects_async(user_email: str | None = None, limit: int = 50) -> list[dict]:
+    async with get_async_session() as session:
+        if user_email:
+            result = await session.execute(
+                text("SELECT * FROM projects WHERE user_email = :ue ORDER BY id DESC LIMIT :lim"),
+                {"ue": user_email, "lim": limit},
+            )
+        else:
+            result = await session.execute(
+                text("SELECT * FROM projects ORDER BY id DESC LIMIT :lim"), {"lim": limit}
+            )
+        return [dict(r) for r in result.mappings()]
+
+
+@with_retry()
+async def get_project_stats_async() -> dict:
+    async with get_async_session() as session:
+        total = (await session.execute(text("SELECT COUNT(*) FROM projects"))).scalar_one()
+        completed = (await session.execute(
+            text("SELECT COUNT(*) FROM projects WHERE status='completed'")
+        )).scalar_one()
+        companies = (await session.execute(
+            text("SELECT company, COUNT(*) AS c FROM projects GROUP BY company ORDER BY c DESC LIMIT 5")
+        )).fetchall()
+        parts = (await session.execute(
+            text("SELECT part_name, COUNT(*) AS c FROM projects GROUP BY part_name ORDER BY c DESC LIMIT 5")
+        )).fetchall()
+        diameters = (await session.execute(
+            text("SELECT MIN(diameter) AS mn, MAX(diameter) AS mx FROM projects")
+        )).first()
+        lengths = (await session.execute(
+            text("SELECT MIN(length) AS mn, MAX(length) AS mx FROM projects")
+        )).first()
+    return {
+        "total_projects": total, "completed_projects": completed,
+        "top_companies": [(r.company, r.c) for r in companies],
+        "top_parts": [(r.part_name, r.c) for r in parts],
+        "diameter_range": [diameters.mn or 2, diameters.mx or 48],
+        "length_range": [lengths.mn or 100, lengths.mx or 12000],
+    }
+
+
+# ── Quality checks (async) ───────────────────────────────────────────────────
+
+@with_retry()
+async def add_quality_check_async(
+    project_id: int, check_type: str, check_name: str, passed: bool, details: str = ""
+) -> None:
+    async with get_async_session() as session:
+        await session.execute(
+            text(
+                "INSERT INTO quality_checks (project_id, check_type, check_name, passed, details, created_at) "
+                "VALUES (:pid, :ct, :cn, :passed, :details, :now)"
+            ),
+            {"pid": project_id, "ct": check_type, "cn": check_name,
+             "passed": int(passed), "details": details, "now": time.time()},
+        )
+
+
+@with_retry()
+async def get_quality_checks_async(project_id: int) -> list[dict]:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM quality_checks WHERE project_id = :pid ORDER BY id"),
+            {"pid": project_id},
+        )
+        return [dict(r) for r in result.mappings()]
+
+
+# ── Uploads (async) ──────────────────────────────────────────────────────────
+
+@with_retry()
+async def create_upload_async(user_email: str, filename: str, file_path: str) -> int:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text(
+                "INSERT INTO uploads (user_email, filename, file_path, created_at) "
+                "VALUES (:ue, :fn, :fp, :now) RETURNING id"
+            ),
+            {"ue": user_email, "fn": filename, "fp": file_path, "now": time.time()},
+        )
+        return result.scalar_one()
+
+
+@with_retry()
+async def update_upload_async(upload_id: int, **kwargs: Any) -> None:
+    allowed = {"row_count", "projects_generated", "status"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return
+    cols = ", ".join(f"{k} = :{k}" for k in updates)  # nosec B608
+    updates["upload_id"] = upload_id
+    async with get_async_session() as session:
+        await session.execute(
+            text(f"UPDATE uploads SET {cols} WHERE id = :upload_id"),  # nosec B608
+            updates,
+        )
+
+
+@with_retry()
+async def get_uploads_async(user_email: str | None = None, limit: int = 20) -> list[dict]:
+    async with get_async_session() as session:
+        if user_email:
+            result = await session.execute(
+                text("SELECT * FROM uploads WHERE user_email = :ue ORDER BY id DESC LIMIT :lim"),
+                {"ue": user_email, "lim": limit},
+            )
+        else:
+            result = await session.execute(
+                text("SELECT * FROM uploads ORDER BY id DESC LIMIT :lim"), {"lim": limit}
+            )
+        return [dict(r) for r in result.mappings()]
+
+
+# ── Licenças (async) ─────────────────────────────────────────────────────────
+
+@with_retry()
+async def get_license_async(username: str) -> dict | None:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM licenses WHERE username = :un"), {"un": username}
+        )
+        row = result.mappings().first()
+    return dict(row) if row else None
+
+
+@with_retry()
+async def create_license_async(username: str, hwid: str) -> dict:
+    now = time.time()
+    async with get_async_session() as session:
+        await session.execute(
+            text(
+                "INSERT INTO licenses (username, hwid, registered_at, last_seen, access_count) "
+                "VALUES (:un, :hwid, :now, :now, 1)"
+            ),
+            {"un": username, "hwid": hwid, "now": now},
+        )
+    return {"username": username, "hwid": hwid, "registered_at": now, "last_seen": now, "access_count": 1}
+
+
+@with_retry()
+async def update_license_access_async(username: str) -> None:
+    async with get_async_session() as session:
+        await session.execute(
+            text("UPDATE licenses SET last_seen = :now, access_count = access_count + 1 WHERE username = :un"),
+            {"now": time.time(), "un": username},
+        )
+
+
+@with_retry()
+async def delete_license_async(username: str) -> bool:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("DELETE FROM licenses WHERE username = :un"), {"un": username}
+        )
+        return result.rowcount > 0
+
+
+@with_retry()
+async def list_all_licenses_async(limit: int = 100) -> list[dict]:
+    async with get_async_session() as session:
+        result = await session.execute(
+            text("SELECT * FROM licenses ORDER BY last_seen DESC LIMIT :lim"), {"lim": limit}
+        )
+        return [dict(r) for r in result.mappings()]
+
+
+# ── Compat sync wrappers ─────────────────────────────────────────────────────
+# Mapeiam para async em PostgreSQL e para SQLite direto em desenvolvimento.
+
+def create_user(email, username, password, empresa="", limite=100, tier="demo"):
+    if _USE_PG:
+        return _sync_run(create_user_async(email, username, password, empresa, limite, tier))
+    pw_hash = _hash_password(password)
+    now = time.time()
     with get_db() as conn:
+        conn.execute(
+            "INSERT INTO users (email, username, password_hash, empresa, tier, limite, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (email, username, pw_hash, empresa, tier, limite, now),
+        )
+    return {"email": email, "username": username, "empresa": empresa, "tier": tier, "limite": limite, "usado": 0}
+
+
+def authenticate_user(identifier, password):
+    if _USE_PG:
+        return _sync_run(authenticate_user_async(identifier, password))
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM users WHERE email = ? OR username = ?", (identifier, identifier)
+        ).fetchone()
+    if not row:
+        return None
+    row_d = dict(row)
+    if not _verify_password(password, row_d["password_hash"]):
+        return None
+    with get_db() as conn:
+        conn.execute("UPDATE users SET last_login = ? WHERE id = ?", (time.time(), row_d["id"]))
+    return {"email": row_d["email"], "empresa": row_d["empresa"],
+            "tier": row_d.get("tier", "demo"), "limite": row_d["limite"], "usado": row_d["usado"]}
+
+
+def get_user_by_email(email):
+    if _USE_PG:
+        return _sync_run(get_user_by_email_async(email))
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if not row:
+        return None
+    row_d = dict(row)
+    return {"email": row_d["email"], "empresa": row_d["empresa"],
+            "tier": row_d.get("tier", "demo"), "limite": row_d["limite"], "usado": row_d["usado"]}
+
+
+def email_exists(email):
+    if _USE_PG:
+        return _sync_run(email_exists_async(email))
+    with get_db() as conn:
+        row = conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone()
+    return row is not None
+
+
+def create_project(user_email, data):
+    if _USE_PG:
+        return _sync_run(create_project_async(user_email, data))
+    now = time.time()
+    with get_db() as conn:
+        cur = conn.execute(
+            "INSERT INTO projects (user_email, code, company, part_name, diameter, length, fluid, "
+            "temperature_c, operating_pressure_bar, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'created', ?)",
+            (user_email, data.get("code", "N-58-001"), data.get("company", ""),
+             data.get("part_name", ""), data.get("diameter", 6), data.get("length", 1000),
+             data.get("fluid", ""), data.get("temperature_c", 25),
+             data.get("operating_pressure_bar", 10), now),
+        )
+        conn.execute("UPDATE users SET usado = usado + 1 WHERE email = ?", (user_email,))
+        return cur.lastrowid
+
+
+def update_project(project_id, **kwargs):
+    if _USE_PG:
+        return _sync_run(update_project_async(project_id, **kwargs))
+    allowed = {"status", "lsp_path", "dxf_path", "csv_path", "clash_count",
+               "norms_checked", "norms_passed", "piping_spec", "completed_at"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return
+    cols = ", ".join(f"{k} = ?" for k in updates)  # nosec B608
+    vals = list(updates.values()) + [project_id]
+    with get_db() as conn:
+        conn.execute(f"UPDATE projects SET {cols} WHERE id = ?", vals)  # nosec B608
+
+
+def get_project(project_id):
+    if _USE_PG:
+        return _sync_run(get_project_async(project_id))
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def get_projects(user_email=None, limit=50):
+    if _USE_PG:
+        return _sync_run(get_projects_async(user_email, limit))
+    with get_db() as conn:
+        if user_email:
+            rows = conn.execute(
+                "SELECT * FROM projects WHERE user_email = ? ORDER BY id DESC LIMIT ?",
+                (user_email, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM projects ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_project_stats():
+    if _USE_PG:
+        return _sync_run(get_project_stats_async())
+    with get_db() as conn:
+        total = dict(conn.execute("SELECT COUNT(*) as c FROM projects").fetchone())["c"]
+        completed = dict(conn.execute("SELECT COUNT(*) as c FROM projects WHERE status='completed'").fetchone())["c"]
+        companies = conn.execute("SELECT company, COUNT(*) as c FROM projects GROUP BY company ORDER BY c DESC LIMIT 5").fetchall()
+        parts = conn.execute("SELECT part_name, COUNT(*) as c FROM projects GROUP BY part_name ORDER BY c DESC LIMIT 5").fetchall()
+        diameters = dict(conn.execute("SELECT MIN(diameter) as mn, MAX(diameter) as mx FROM projects").fetchone())
+        lengths = dict(conn.execute("SELECT MIN(length) as mn, MAX(length) as mx FROM projects").fetchone())
+    return {
+        "total_projects": total, "completed_projects": completed,
+        "top_companies": [(dict(r)["company"], dict(r)["c"]) for r in companies],
+        "top_parts": [(dict(r)["part_name"], dict(r)["c"]) for r in parts],
+        "diameter_range": [diameters["mn"] or 2, diameters["mx"] or 48],
+        "length_range": [lengths["mn"] or 100, lengths["mx"] or 12000],
+    }
+
+
+def add_quality_check(project_id, check_type, check_name, passed, details=""):
+    if _USE_PG:
+        return _sync_run(add_quality_check_async(project_id, check_type, check_name, passed, details))
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO quality_checks (project_id, check_type, check_name, passed, details, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (project_id, check_type, check_name, int(passed), details, time.time()),
+        )
+
+
+def get_quality_checks(project_id):
+    if _USE_PG:
+        return _sync_run(get_quality_checks_async(project_id))
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM quality_checks WHERE project_id = ? ORDER BY id", (project_id,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def create_upload(user_email, filename, file_path):
+    if _USE_PG:
+        return _sync_run(create_upload_async(user_email, filename, file_path))
+    with get_db() as conn:
+        cur = conn.execute(
+            "INSERT INTO uploads (user_email, filename, file_path, created_at) VALUES (?, ?, ?, ?)",
+            (user_email, filename, file_path, time.time()),
+        )
+        return cur.lastrowid
+
+
+def update_upload(upload_id, **kwargs):
+    if _USE_PG:
+        return _sync_run(update_upload_async(upload_id, **kwargs))
+    allowed = {"row_count", "projects_generated", "status"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return
+    cols = ", ".join(f"{k} = ?" for k in updates)  # nosec B608
+    vals = list(updates.values()) + [upload_id]
+    with get_db() as conn:
+        conn.execute(f"UPDATE uploads SET {cols} WHERE id = ?", vals)  # nosec B608
+
+
+def get_uploads(user_email=None, limit=20):
+    if _USE_PG:
+        return _sync_run(get_uploads_async(user_email, limit))
+    with get_db() as conn:
+        if user_email:
+            rows = conn.execute(
+                "SELECT * FROM uploads WHERE user_email = ? ORDER BY id DESC LIMIT ?",
+                (user_email, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM uploads ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_license(username):
+    if _USE_PG:
+        return _sync_run(get_license_async(username))
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM licenses WHERE username = ?", (username,)).fetchone()
+    return dict(row) if row else None
+
+
+def create_license(username, hwid):
+    if _USE_PG:
+        return _sync_run(create_license_async(username, hwid))
+    now = time.time()
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO licenses (username, hwid, registered_at, last_seen, access_count) VALUES (?, ?, ?, ?, 1)",
+            (username, hwid, now, now),
+        )
+    return {"username": username, "hwid": hwid, "registered_at": now, "last_seen": now, "access_count": 1}
+
+
+def update_license_access(username):
+    if _USE_PG:
+        return _sync_run(update_license_access_async(username))
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE licenses SET last_seen = ?, access_count = access_count + 1 WHERE username = ?",
+            (time.time(), username),
+        )
+
+
+def delete_license(username):
+    if _USE_PG:
+        return _sync_run(delete_license_async(username))
+    with get_db() as conn:
+        cur = conn.execute("DELETE FROM licenses WHERE username = ?", (username,))
+        return cur.rowcount > 0
+
+
+def list_all_licenses(limit=100):
+    if _USE_PG:
+        return _sync_run(list_all_licenses_async(limit))
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM licenses ORDER BY last_seen DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+# ── Seed data ────────────────────────────────────────────────────────────────
+
+async def _seed_enterprise_test_user_async() -> None:
+    test_email = "enterprise@engenharia-cad.com"
+    test_pw = "Eng@Enterprise2026"
+    if not await email_exists_async(test_email):
+        await create_user_async(test_email, "enterprise", test_pw,
+                                "Engenharia CAD Enterprise", 999999, "enterprise")
+        logger.info("Usuário enterprise de teste criado.")
+    else:
+        async with get_async_session() as session:
+            await session.execute(
+                text("UPDATE users SET tier = 'enterprise' WHERE email = :e"),
+                {"e": test_email},
+            )
+
+
+async def seed_default_user_async() -> None:
+    async with get_async_session() as session:
+        result = await session.execute(text("SELECT COUNT(*) FROM users"))
+        count = result.scalar_one()
+    if count == 0:
+        default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", "").strip()
+        if not default_pw:
+            if _IS_PRODUCTION:
+                raise RuntimeError("ENGCAD_ADMIN_PASSWORD é obrigatório em produção.")
+            import secrets
+            default_pw = secrets.token_urlsafe(24)
+            logger.warning("ENGCAD_ADMIN_PASSWORD não definido; senha efêmera gerada.")
+        if _IS_PRODUCTION and len(default_pw) < 12:
+            raise RuntimeError("ENGCAD_ADMIN_PASSWORD deve ter ao menos 12 caracteres.")
+        await create_user_async("tony@engenharia-cad.com", "tony", default_pw,
+                                "Engenharia CAD", 999, "enterprise")
+        logger.info("Usuário padrão 'tony' criado (tier: enterprise).")
+    else:
+        async with get_async_session() as session:
+            await session.execute(
+                text("UPDATE users SET tier = 'enterprise' WHERE email = :e AND (tier IS NULL OR tier = 'demo')"),
+                {"e": "tony@engenharia-cad.com"},
+            )
+    await _seed_enterprise_test_user_async()
+
+
+def seed_default_user() -> None:
+    if _USE_PG:
+        _sync_run(seed_default_user_async())
+    else:
+        with get_db() as conn:
+            count = dict(conn.execute("SELECT COUNT(*) as c FROM users").fetchone())["c"]
+        if count == 0:
+            default_pw = os.getenv("ENGCAD_ADMIN_PASSWORD", "").strip()
+            if not default_pw:
+                if _IS_PRODUCTION:
+                    raise RuntimeError("ENGCAD_ADMIN_PASSWORD é obrigatório em produção.")
+                import secrets
+                default_pw = secrets.token_urlsafe(24)
+            create_user("tony@engenharia-cad.com", "tony", default_pw, "Engenharia CAD", 999, "enterprise")
+        _seed_enterprise_test_user_sqlite()
+
+
+def _seed_enterprise_test_user_sqlite() -> None:
+    test_email = "enterprise@engenharia-cad.com"
+    test_pw = "Eng@Enterprise2026"
+    if not email_exists(test_email):
+        create_user(test_email, "enterprise", test_pw, "Engenharia CAD Enterprise", 999999, "enterprise")
+    else:
+        with get_db() as conn:
+            conn.execute("UPDATE users SET tier = 'enterprise' WHERE email = ?", (test_email,))
+
         cur = conn.cursor() if _USE_PG else conn
         row = cur.execute(_q("SELECT * FROM users WHERE email = ?"), (email,)).fetchone()
     if not row:

@@ -25,6 +25,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from backend.hwid import validate_hwid
+from backend.middleware.rate_limit import rate_limit
 from backend.database.db import (
     get_license, create_license, update_license_access,
     delete_license, list_all_licenses, get_user_by_email
@@ -80,7 +81,8 @@ class LicenseStatusResponse(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.post("/validate", response_model=LicenseStatusResponse)
-async def validate_license(req: HWIDValidateRequest):
+@rate_limit(requests=10, window=60)
+async def validate_license(request: Request, req: HWIDValidateRequest):
     """
     Valida se o HWID da máquina corresponde ao registrado para o usuário.
 

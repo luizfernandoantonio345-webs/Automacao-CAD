@@ -1,12 +1,12 @@
 /**
  * ProfileV2 Page — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Luxurious profile settings page with tabbed navigation.
  * Includes account settings, security (2FA), notifications, and plan info.
  */
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   User,
   Mail,
@@ -31,9 +31,14 @@ import {
   Globe,
   Moon,
   Sun,
-} from 'lucide-react';
-import { colors, radius, shadows, spacing, blur } from '../design/tokens';
-import { fontFamily, fontSize, fontWeight, textStyles } from '../design/typography';
+} from "lucide-react";
+import { colors, radius, shadows, spacing, blur } from "../design/tokens";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  textStyles,
+} from "../design/typography";
 import {
   Button,
   Card,
@@ -48,8 +53,8 @@ import {
   Avatar,
   Select,
   BottomTabBar,
-} from '../components/ui';
-import { api } from '../services/api';
+} from "../components/ui";
+import { api } from "../services/api";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -130,7 +135,7 @@ interface FormRowProps {
 const FormRow: React.FC<FormRowProps> = ({ children, columns = 2 }) => (
   <div
     style={{
-      display: 'grid',
+      display: "grid",
       gridTemplateColumns: `repeat(${columns}, 1fr)`,
       gap: spacing[4],
       marginBottom: spacing[4],
@@ -151,15 +156,15 @@ interface AccountTabProps {
 }
 
 const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
-  const [nome, setNome] = useState(profile?.nome || '');
-  const [empresa, setEmpresa] = useState(profile?.empresa || '');
-  const [telefone, setTelefone] = useState(profile?.telefone || '');
+  const [nome, setNome] = useState(profile?.nome || "");
+  const [empresa, setEmpresa] = useState(profile?.empresa || "");
+  const [telefone, setTelefone] = useState(profile?.telefone || "");
 
   useEffect(() => {
     if (profile) {
-      setNome(profile.nome || '');
-      setEmpresa(profile.empresa || '');
-      setTelefone(profile.telefone || '');
+      setNome(profile.nome || "");
+      setEmpresa(profile.empresa || "");
+      setTelefone(profile.telefone || "");
     }
   }, [profile]);
 
@@ -170,8 +175,8 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
 
   const styles = {
     avatarSection: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[5],
       marginBottom: spacing[8],
       padding: spacing[5],
@@ -193,8 +198,8 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
       fontFamily: fontFamily.sans,
       fontSize: fontSize.sm,
       color: colors.text.secondary,
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[2],
     },
     form: {
@@ -210,17 +215,19 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
       {/* Avatar Section */}
       <div style={styles.avatarSection}>
         <Avatar
-          name={nome || profile?.email || 'User'}
+          name={nome || profile?.email || "User"}
           size="2xl"
           status="online"
         />
         <div style={styles.avatarInfo}>
-          <h3 style={styles.avatarName}>{nome || 'Seu Nome'}</h3>
+          <h3 style={styles.avatarName}>{nome || "Seu Nome"}</h3>
           <p style={styles.avatarEmail}>
             <Mail size={14} />
             {profile?.email}
             {profile?.email_verified && (
-              <Badge variant="success" size="sm">Verificado</Badge>
+              <Badge variant="success" size="sm">
+                Verificado
+              </Badge>
             )}
           </p>
         </div>
@@ -231,7 +238,10 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
 
       {/* Profile Form */}
       <form onSubmit={handleSubmit} style={styles.form}>
-        <Section title="Informações Pessoais" description="Atualize seus dados de perfil">
+        <Section
+          title="Informações Pessoais"
+          description="Atualize seus dados de perfil"
+        >
           <FormRow>
             <Input
               label="Nome Completo"
@@ -243,7 +253,7 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
             <Input
               label="Email"
               type="email"
-              value={profile?.email || ''}
+              value={profile?.email || ""}
               disabled
               leftIcon={<Mail size={18} />}
             />
@@ -266,7 +276,13 @@ const AccountTab: React.FC<AccountTabProps> = ({ profile, onSave, saving }) => {
           </FormRow>
         </Section>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing[3] }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: spacing[3],
+          }}
+        >
           <Button type="button" variant="ghost">
             Cancelar
           </Button>
@@ -294,10 +310,14 @@ interface SecurityTabProps {
   saving: boolean;
 }
 
-const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, saving }) => {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const SecurityTab: React.FC<SecurityTabProps> = ({
+  profile,
+  onChangePassword,
+  saving,
+}) => {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -321,28 +341,28 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
       borderRadius: radius.xl,
       border: `1px solid ${profile?.two_factor_enabled ? colors.success.DEFAULT : colors.border.subtle}`,
       padding: spacing[6],
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: spacing[4],
     },
     twoFactorInfo: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[4],
     },
     twoFactorIcon: {
-      width: '48px',
-      height: '48px',
+      width: "48px",
+      height: "48px",
       borderRadius: radius.lg,
-      backgroundColor: profile?.two_factor_enabled 
-        ? colors.success.soft 
+      backgroundColor: profile?.two_factor_enabled
+        ? colors.success.soft
         : colors.dark.elevated,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: profile?.two_factor_enabled 
-        ? colors.success.DEFAULT 
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: profile?.two_factor_enabled
+        ? colors.success.DEFAULT
         : colors.text.tertiary,
     },
     twoFactorText: {
@@ -361,14 +381,14 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
       color: colors.text.secondary,
     },
     dangerZone: {
-      backgroundColor: 'rgba(239, 68, 68, 0.05)',
+      backgroundColor: "rgba(239, 68, 68, 0.05)",
       borderRadius: radius.xl,
       border: `1px solid ${colors.danger.DEFAULT}20`,
       padding: spacing[6],
     },
     dangerHeader: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
       marginBottom: spacing[4],
     },
@@ -390,11 +410,14 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
     <motion.div initial="hidden" animate="visible" variants={fadeIn}>
       {/* Change Password */}
       <form onSubmit={handleSubmit} style={styles.card}>
-        <Section title="Alterar Senha" description="Recomendamos uma senha forte com pelo menos 12 caracteres">
+        <Section
+          title="Alterar Senha"
+          description="Recomendamos uma senha forte com pelo menos 12 caracteres"
+        >
           <FormRow columns={1}>
             <Input
               label="Senha Atual"
-              type={showCurrentPassword ? 'text' : 'password'}
+              type={showCurrentPassword ? "text" : "password"}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               leftIcon={<Lock size={18} />}
@@ -402,14 +425,18 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: 'pointer',
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
                     color: colors.text.tertiary,
                   }}
                 >
-                  {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showCurrentPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </button>
               }
             />
@@ -417,7 +444,7 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
           <FormRow>
             <Input
               label="Nova Senha"
-              type={showNewPassword ? 'text' : 'password'}
+              type={showNewPassword ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               leftIcon={<Key size={18} />}
@@ -428,15 +455,23 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               leftIcon={<Key size={18} />}
-              error={confirmPassword && newPassword !== confirmPassword ? 'As senhas não coincidem' : undefined}
+              error={
+                confirmPassword && newPassword !== confirmPassword
+                  ? "As senhas não coincidem"
+                  : undefined
+              }
             />
           </FormRow>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <Button
               type="submit"
               variant="primary"
               loading={saving}
-              disabled={!currentPassword || !newPassword || newPassword !== confirmPassword}
+              disabled={
+                !currentPassword ||
+                !newPassword ||
+                newPassword !== confirmPassword
+              }
             >
               Atualizar Senha
             </Button>
@@ -454,60 +489,81 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
             <h4 style={styles.twoFactorTitle}>
               Autenticação de Dois Fatores (2FA)
               {profile?.two_factor_enabled && (
-                <Badge variant="success" size="sm" style={{ marginLeft: spacing[2] }}>
+                <Badge
+                  variant="success"
+                  size="sm"
+                  style={{ marginLeft: spacing[2] }}
+                >
                   Ativo
                 </Badge>
               )}
             </h4>
             <p style={styles.twoFactorDesc}>
               {profile?.two_factor_enabled
-                ? 'Sua conta está protegida com autenticação de dois fatores.'
-                : 'Adicione uma camada extra de segurança à sua conta.'}
+                ? "Sua conta está protegida com autenticação de dois fatores."
+                : "Adicione uma camada extra de segurança à sua conta."}
             </p>
           </div>
         </div>
         <Button
-          variant={profile?.two_factor_enabled ? 'outline' : 'primary'}
-          leftIcon={profile?.two_factor_enabled ? <Shield size={18} /> : <QrCode size={18} />}
+          variant={profile?.two_factor_enabled ? "outline" : "primary"}
+          leftIcon={
+            profile?.two_factor_enabled ? (
+              <Shield size={18} />
+            ) : (
+              <QrCode size={18} />
+            )
+          }
         >
-          {profile?.two_factor_enabled ? 'Gerenciar 2FA' : 'Configurar 2FA'}
+          {profile?.two_factor_enabled ? "Gerenciar 2FA" : "Configurar 2FA"}
         </Button>
       </div>
 
       {/* Sessions */}
       <div style={{ ...styles.card, marginTop: spacing[6] }}>
-        <Section title="Sessões Ativas" description="Gerencie os dispositivos conectados à sua conta">
+        <Section
+          title="Sessões Ativas"
+          description="Gerencie os dispositivos conectados à sua conta"
+        >
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
               padding: spacing[4],
               backgroundColor: colors.dark.elevated,
               borderRadius: radius.lg,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: spacing[3] }}
+            >
               <Globe size={20} style={{ color: colors.primary.DEFAULT }} />
               <div>
-                <p style={{ 
-                  fontFamily: fontFamily.sans, 
-                  fontSize: fontSize.sm, 
-                  fontWeight: fontWeight.medium,
-                  color: colors.text.primary,
-                }}>
+                <p
+                  style={{
+                    fontFamily: fontFamily.sans,
+                    fontSize: fontSize.sm,
+                    fontWeight: fontWeight.medium,
+                    color: colors.text.primary,
+                  }}
+                >
                   Sessão Atual • Windows
                 </p>
-                <p style={{ 
-                  fontFamily: fontFamily.sans, 
-                  fontSize: fontSize.xs, 
-                  color: colors.text.tertiary,
-                }}>
+                <p
+                  style={{
+                    fontFamily: fontFamily.sans,
+                    fontSize: fontSize.xs,
+                    color: colors.text.tertiary,
+                  }}
+                >
                   Último acesso: Agora
                 </p>
               </div>
             </div>
-            <Badge variant="success" size="sm">Ativa</Badge>
+            <Badge variant="success" size="sm">
+              Ativa
+            </Badge>
           </div>
         </Section>
       </div>
@@ -519,9 +575,10 @@ const SecurityTab: React.FC<SecurityTabProps> = ({ profile, onChangePassword, sa
           <h3 style={styles.dangerTitle}>Zona de Perigo</h3>
         </div>
         <p style={styles.dangerText}>
-          Ações irreversíveis que afetam permanentemente sua conta. Tenha certeza antes de prosseguir.
+          Ações irreversíveis que afetam permanentemente sua conta. Tenha
+          certeza antes de prosseguir.
         </p>
-        <div style={{ display: 'flex', gap: spacing[3] }}>
+        <div style={{ display: "flex", gap: spacing[3] }}>
           <Button variant="outline" size="sm" leftIcon={<LogOut size={16} />}>
             Sair de Todos os Dispositivos
           </Button>
@@ -543,13 +600,25 @@ interface PlanTabProps {
 }
 
 const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
-  const tierConfig: Record<string, { name: string; color: string; badge: string }> = {
-    starter: { name: 'Starter', color: colors.success.DEFAULT, badge: 'Basic' },
-    professional: { name: 'Professional', color: colors.primary.DEFAULT, badge: 'Pro' },
-    enterprise: { name: 'Enterprise', color: colors.gold.DEFAULT, badge: 'Premium' },
+  const tierConfig: Record<
+    string,
+    { name: string; color: string; badge: string }
+  > = {
+    starter: { name: "Starter", color: colors.success.DEFAULT, badge: "Basic" },
+    professional: {
+      name: "Professional",
+      color: colors.primary.DEFAULT,
+      badge: "Pro",
+    },
+    enterprise: {
+      name: "Enterprise",
+      color: colors.gold.DEFAULT,
+      badge: "Premium",
+    },
   };
 
-  const currentTier = tierConfig[profile?.tier || 'starter'] || tierConfig.starter;
+  const currentTier =
+    tierConfig[profile?.tier || "starter"] || tierConfig.starter;
 
   const styles = {
     planCard: {
@@ -558,36 +627,36 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
       border: `1px solid ${currentTier.color}`,
       padding: spacing[6],
       marginBottom: spacing[6],
-      position: 'relative' as const,
-      overflow: 'hidden',
+      position: "relative" as const,
+      overflow: "hidden",
     },
     planGlow: {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       top: 0,
       left: 0,
       right: 0,
-      height: '3px',
+      height: "3px",
       background: `linear-gradient(90deg, transparent, ${currentTier.color}, transparent)`,
     },
     planHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
       marginBottom: spacing[4],
     },
     planInfo: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
     },
     planIcon: {
-      width: '48px',
-      height: '48px',
+      width: "48px",
+      height: "48px",
       borderRadius: radius.lg,
       backgroundColor: `${currentTier.color}15`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       color: currentTier.color,
     },
     planName: {
@@ -602,8 +671,8 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
       color: colors.text.secondary,
     },
     usageSection: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
       gap: spacing[4],
       marginTop: spacing[6],
     },
@@ -611,11 +680,11 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
       padding: spacing[4],
       backgroundColor: colors.dark.elevated,
       borderRadius: radius.lg,
-      textAlign: 'center' as const,
+      textAlign: "center" as const,
     },
     usageValue: {
       fontFamily: fontFamily.display,
-      fontSize: fontSize['2xl'],
+      fontSize: fontSize["2xl"],
       fontWeight: fontWeight.bold,
       color: colors.text.primary,
     },
@@ -642,8 +711,8 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
               <p style={styles.planBadge}>Plano atual</p>
             </div>
           </div>
-          <Badge 
-            variant={profile?.tier === 'enterprise' ? 'gold' : 'primary'} 
+          <Badge
+            variant={profile?.tier === "enterprise" ? "gold" : "primary"}
             size="md"
           >
             {currentTier.badge}
@@ -665,24 +734,31 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
           </div>
         </div>
 
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginTop: spacing[6],
-          paddingTop: spacing[4],
-          borderTop: `1px solid ${colors.border.subtle}`,
-        }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: spacing[6],
+            paddingTop: spacing[4],
+            borderTop: `1px solid ${colors.border.subtle}`,
+          }}
+        >
           <div>
-            <p style={{ 
-              fontFamily: fontFamily.sans, 
-              fontSize: fontSize.sm,
-              color: colors.text.secondary,
-            }}>
-              Próxima cobrança: <strong style={{ color: colors.text.primary }}>15 de Janeiro, 2025</strong>
+            <p
+              style={{
+                fontFamily: fontFamily.sans,
+                fontSize: fontSize.sm,
+                color: colors.text.secondary,
+              }}
+            >
+              Próxima cobrança:{" "}
+              <strong style={{ color: colors.text.primary }}>
+                15 de Janeiro, 2025
+              </strong>
             </p>
           </div>
-          <div style={{ display: 'flex', gap: spacing[3] }}>
+          <div style={{ display: "flex", gap: spacing[3] }}>
             <Button variant="outline" size="sm">
               Ver Faturas
             </Button>
@@ -694,46 +770,55 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
       </div>
 
       {/* Payment Method */}
-      <Section title="Método de Pagamento" description="Gerencie suas formas de pagamento">
+      <Section
+        title="Método de Pagamento"
+        description="Gerencie suas formas de pagamento"
+      >
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
             padding: spacing[4],
             backgroundColor: colors.dark.surface,
             borderRadius: radius.lg,
             border: `1px solid ${colors.border.subtle}`,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing[3] }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: spacing[3] }}
+          >
             <div
               style={{
-                width: '48px',
-                height: '32px',
-                backgroundColor: '#1A1F2E',
+                width: "48px",
+                height: "32px",
+                backgroundColor: "#1A1F2E",
                 borderRadius: radius.md,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <CreditCard size={20} style={{ color: colors.primary.DEFAULT }} />
             </div>
             <div>
-              <p style={{ 
-                fontFamily: fontFamily.sans, 
-                fontSize: fontSize.sm, 
-                fontWeight: fontWeight.medium,
-                color: colors.text.primary,
-              }}>
+              <p
+                style={{
+                  fontFamily: fontFamily.sans,
+                  fontSize: fontSize.sm,
+                  fontWeight: fontWeight.medium,
+                  color: colors.text.primary,
+                }}
+              >
                 •••• •••• •••• 4242
               </p>
-              <p style={{ 
-                fontFamily: fontFamily.sans, 
-                fontSize: fontSize.xs, 
-                color: colors.text.tertiary,
-              }}>
+              <p
+                style={{
+                  fontFamily: fontFamily.sans,
+                  fontSize: fontSize.xs,
+                  color: colors.text.tertiary,
+                }}
+              >
                 Expira 12/26
               </p>
             </div>
@@ -752,7 +837,7 @@ const PlanTab: React.FC<PlanTabProps> = ({ profile }) => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const ProfileV2: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('account');
+  const [activeTab, setActiveTab] = useState("account");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -763,17 +848,17 @@ const ProfileV2: React.FC = () => {
 
   const loadProfile = async () => {
     try {
-      const res = await api.get('/auth/me');
+      const res = await api.get("/auth/me");
       setProfile(res.data);
     } catch (err) {
-      console.error('Error loading profile:', err);
+      console.error("Error loading profile:", err);
       // For demo, set mock data
       setProfile({
-        email: 'usuario@empresa.com.br',
-        nome: 'João Silva',
-        empresa: 'Engenharia CAD Ltda',
-        telefone: '(11) 99999-9999',
-        tier: 'professional',
+        email: "usuario@empresa.com.br",
+        nome: "João Silva",
+        empresa: "Engenharia CAD Ltda",
+        telefone: "(11) 99999-9999",
+        tier: "professional",
         email_verified: true,
         two_factor_enabled: false,
       });
@@ -785,10 +870,10 @@ const ProfileV2: React.FC = () => {
   const handleSaveProfile = async (data: Partial<UserProfile>) => {
     setSaving(true);
     try {
-      await api.put('/auth/me', data);
+      await api.put("/auth/me", data);
       setProfile((prev) => (prev ? { ...prev, ...data } : prev));
     } catch (err) {
-      console.error('Error saving profile:', err);
+      console.error("Error saving profile:", err);
     } finally {
       setSaving(false);
     }
@@ -797,9 +882,12 @@ const ProfileV2: React.FC = () => {
   const handleChangePassword = async (current: string, newPass: string) => {
     setSaving(true);
     try {
-      await api.put('/auth/me/password', { current_password: current, new_password: newPass });
+      await api.put("/auth/me/password", {
+        current_password: current,
+        new_password: newPass,
+      });
     } catch (err) {
-      console.error('Error changing password:', err);
+      console.error("Error changing password:", err);
     } finally {
       setSaving(false);
     }
@@ -807,14 +895,14 @@ const ProfileV2: React.FC = () => {
 
   const styles = {
     page: {
-      minHeight: '100vh',
+      minHeight: "100vh",
       backgroundColor: colors.dark.base,
-      paddingBottom: '100px',
+      paddingBottom: "100px",
     },
 
     container: {
-      maxWidth: '900px',
-      margin: '0 auto',
+      maxWidth: "900px",
+      margin: "0 auto",
       padding: `${spacing[8]} ${spacing[4]}`,
     },
 
@@ -867,16 +955,16 @@ const ProfileV2: React.FC = () => {
           </div>
 
           <TabsContent value="account">
-            <AccountTab 
-              profile={profile} 
-              onSave={handleSaveProfile} 
-              saving={saving} 
+            <AccountTab
+              profile={profile}
+              onSave={handleSaveProfile}
+              saving={saving}
             />
           </TabsContent>
 
           <TabsContent value="security">
-            <SecurityTab 
-              profile={profile} 
+            <SecurityTab
+              profile={profile}
               onChangePassword={handleChangePassword}
               saving={saving}
             />

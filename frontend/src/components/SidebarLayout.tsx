@@ -88,9 +88,10 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   // Focus trap when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen && sidebarRef.current) {
-      const focusableElements = sidebarRef.current.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
+      const focusableElements =
+        sidebarRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -116,13 +117,16 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
   }, [sidebarOpen]);
 
   // Handle nav item keyboard activation
-  const handleNavKeyDown = useCallback((e: React.KeyboardEvent, path: string) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      navigate(path);
-      setSidebarOpen(false);
-    }
-  }, [navigate]);
+  const handleNavKeyDown = useCallback(
+    (e: React.KeyboardEvent, path: string) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        navigate(path);
+        setSidebarOpen(false);
+      }
+    },
+    [navigate],
+  );
 
   const tierLabel = demo
     ? "Demo"
@@ -350,11 +354,17 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
         className="sl-hamburger"
         style={sidebarStyles.hamburger}
         onClick={() => setSidebarOpen((o) => !o)}
-        aria-label={sidebarOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
+        aria-label={
+          sidebarOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"
+        }
         aria-expanded={sidebarOpen}
         aria-controls="main-sidebar"
       >
-        {sidebarOpen ? <FaTimes aria-hidden="true" /> : <FaBars aria-hidden="true" />}
+        {sidebarOpen ? (
+          <FaTimes aria-hidden="true" />
+        ) : (
+          <FaBars aria-hidden="true" />
+        )}
       </button>
 
       {/* Overlay (mobile only, when sidebar open) */}
@@ -414,13 +424,19 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
           </div>
         )}
 
-        <nav style={sidebarStyles.nav as React.CSSProperties} role="menubar" aria-label="Navegação principal">
+        <nav
+          style={sidebarStyles.nav as React.CSSProperties}
+          role="menubar"
+          aria-label="Navegação principal"
+        >
           {NAV_ITEMS.map((item) => (
             <div
               key={item.path}
               role="menuitem"
               tabIndex={0}
-              aria-current={location.pathname === item.path ? "page" : undefined}
+              aria-current={
+                location.pathname === item.path ? "page" : undefined
+              }
               style={getNavStyle(item.path)}
               onClick={() => {
                 navigate(item.path);
@@ -513,9 +529,9 @@ export const SidebarLayout: React.FC<{ children: React.ReactNode }> = ({
       </aside>
 
       {/* Área de Trabalho */}
-      <main 
+      <main
         id="main-content"
-        className="sl-main" 
+        className="sl-main"
         style={sidebarStyles.main}
         role="main"
         aria-label="Conteúdo principal"

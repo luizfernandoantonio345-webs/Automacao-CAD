@@ -225,7 +225,7 @@ const DataIngestion = () => {
                   color: theme.background,
                 }}
                 onClick={() =>
-                  navigate(`/quality-gate?project=${result.project_ids![0]}`)
+                  navigate(`/quality?project=${result.project_ids![0]}`)
                 }
               >
                 <FaCheckCircle /> VER QUALIDADE
@@ -321,7 +321,7 @@ const DataIngestion = () => {
                       <span
                         key={id}
                         style={ig.idBadge}
-                        onClick={() => navigate(`/quality-gate?project=${id}`)}
+                        onClick={() => navigate(`/quality?project=${id}`)}
                       >
                         #{id}
                       </span>

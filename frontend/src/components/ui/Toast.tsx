@@ -1,38 +1,38 @@
 /**
  * Toast Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Elegant toast notifications with auto-dismiss and stacking.
- * 
+ *
  * @usage
  * // Wrap app with ToastProvider
  * <ToastProvider>
  *   <App />
  * </ToastProvider>
- * 
+ *
  * // Use hook to show toasts
  * const { toast } = useToast();
  * toast.success('Saved successfully!');
  * toast.error('Something went wrong');
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Info, 
-  X 
-} from 'lucide-react';
-import { colors, radius, shadows, spacing, zIndex } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
+import React, { createContext, useContext, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
+import { colors, radius, shadows, spacing, zIndex } from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
-export type ToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
+export type ToastType = "success" | "error" | "warning" | "info";
+export type ToastPosition =
+  | "top-right"
+  | "top-left"
+  | "top-center"
+  | "bottom-right"
+  | "bottom-left"
+  | "bottom-center";
 
 export interface ToastItem {
   id: string;
@@ -53,7 +53,7 @@ export interface ToastProps {
 
 interface ToastContextValue {
   toasts: ToastItem[];
-  addToast: (toast: Omit<ToastItem, 'id'>) => string;
+  addToast: (toast: Omit<ToastItem, "id">) => string;
   removeToast: (id: string) => void;
   toast: {
     success: (title: string, description?: string) => string;
@@ -72,7 +72,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
 };
@@ -109,12 +109,16 @@ const typeConfig = {
 };
 
 const positionStyles: Record<ToastPosition, React.CSSProperties> = {
-  'top-right': { top: spacing[4], right: spacing[4] },
-  'top-left': { top: spacing[4], left: spacing[4] },
-  'top-center': { top: spacing[4], left: '50%', transform: 'translateX(-50%)' },
-  'bottom-right': { bottom: spacing[4], right: spacing[4] },
-  'bottom-left': { bottom: spacing[4], left: spacing[4] },
-  'bottom-center': { bottom: spacing[4], left: '50%', transform: 'translateX(-50%)' },
+  "top-right": { top: spacing[4], right: spacing[4] },
+  "top-left": { top: spacing[4], left: spacing[4] },
+  "top-center": { top: spacing[4], left: "50%", transform: "translateX(-50%)" },
+  "bottom-right": { bottom: spacing[4], right: spacing[4] },
+  "bottom-left": { bottom: spacing[4], left: spacing[4] },
+  "bottom-center": {
+    bottom: spacing[4],
+    left: "50%",
+    transform: "translateX(-50%)",
+  },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -122,22 +126,22 @@ const positionStyles: Record<ToastPosition, React.CSSProperties> = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const toastVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     y: -20,
     scale: 0.95,
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      type: 'spring',
+      type: "spring",
       stiffness: 400,
       damping: 25,
     },
   },
-  exit: { 
+  exit: {
     opacity: 0,
     x: 100,
     scale: 0.95,
@@ -157,8 +161,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
 
   const styles = {
     toast: {
-      display: 'flex',
-      alignItems: 'flex-start',
+      display: "flex",
+      alignItems: "flex-start",
       gap: spacing[3],
       padding: spacing[4],
       backgroundColor: colors.dark.elevated,
@@ -166,16 +170,16 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       border: `1px solid ${colors.border.subtle}`,
       borderLeft: `4px solid ${config.border}`,
       boxShadow: shadows.lg,
-      minWidth: '320px',
-      maxWidth: '420px',
+      minWidth: "320px",
+      maxWidth: "420px",
     },
 
     iconWrapper: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '24px',
-      height: '24px',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "24px",
+      height: "24px",
       borderRadius: radius.full,
       backgroundColor: config.background,
       flexShrink: 0,
@@ -209,18 +213,18 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
     },
 
     closeButton: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '24px',
-      height: '24px',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "24px",
+      height: "24px",
       padding: 0,
-      border: 'none',
-      background: 'none',
+      border: "none",
+      background: "none",
       color: colors.text.tertiary,
-      cursor: 'pointer',
+      cursor: "pointer",
       borderRadius: radius.sm,
-      transition: 'all 150ms ease-out',
+      transition: "all 150ms ease-out",
       flexShrink: 0,
     },
 
@@ -231,18 +235,18 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       fontSize: fontSize.sm,
       fontWeight: fontWeight.medium,
       color: config.color,
-      backgroundColor: 'transparent',
+      backgroundColor: "transparent",
       border: `1px solid ${config.color}`,
       borderRadius: radius.md,
-      cursor: 'pointer',
-      transition: 'all 150ms ease-out',
+      cursor: "pointer",
+      transition: "all 150ms ease-out",
     },
 
     progressBar: {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       bottom: 0,
       left: 0,
-      height: '3px',
+      height: "3px",
       backgroundColor: config.color,
       borderRadius: `0 0 0 ${radius.lg}`,
     },
@@ -250,7 +254,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
 
   return (
     <motion.div
-      style={{ ...styles.toast, position: 'relative', overflow: 'hidden' }}
+      style={{ ...styles.toast, position: "relative", overflow: "hidden" }}
       variants={toastVariants}
       initial="hidden"
       animate="visible"
@@ -287,7 +291,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       <motion.button
         style={styles.closeButton}
         onClick={() => onDismiss(toast.id)}
-        whileHover={{ 
+        whileHover={{
           backgroundColor: colors.dark.subtle,
           color: colors.text.primary,
         }}
@@ -301,9 +305,9 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
       {toast.duration && toast.duration > 0 && (
         <motion.div
           style={styles.progressBar}
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: toast.duration / 1000, ease: 'linear' }}
+          initial={{ width: "100%" }}
+          animate={{ width: "0%" }}
+          transition={{ duration: toast.duration / 1000, ease: "linear" }}
         />
       )}
     </motion.div>
@@ -321,57 +325,61 @@ interface ToastProviderProps {
 }
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({
-  position = 'top-right',
+  position = "top-right",
   maxToasts = 5,
   children,
 }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const generateId = () =>
+    `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const addToast = useCallback((toast: Omit<ToastItem, 'id'>) => {
-    const id = generateId();
-    const duration = toast.duration ?? 5000;
+  const addToast = useCallback(
+    (toast: Omit<ToastItem, "id">) => {
+      const id = generateId();
+      const duration = toast.duration ?? 5000;
 
-    setToasts(prev => {
-      const newToasts = [...prev, { ...toast, id, duration }];
-      // Limit number of toasts
-      return newToasts.slice(-maxToasts);
-    });
+      setToasts((prev) => {
+        const newToasts = [...prev, { ...toast, id, duration }];
+        // Limit number of toasts
+        return newToasts.slice(-maxToasts);
+      });
 
-    // Auto dismiss
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
+      // Auto dismiss
+      if (duration > 0) {
+        setTimeout(() => {
+          removeToast(id);
+        }, duration);
+      }
 
-    return id;
-  }, [maxToasts]);
+      return id;
+    },
+    [maxToasts],
+  );
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   // Shorthand methods
   const toast = {
-    success: (title: string, description?: string) => 
-      addToast({ type: 'success', title, description }),
-    error: (title: string, description?: string) => 
-      addToast({ type: 'error', title, description }),
-    warning: (title: string, description?: string) => 
-      addToast({ type: 'warning', title, description }),
-    info: (title: string, description?: string) => 
-      addToast({ type: 'info', title, description }),
+    success: (title: string, description?: string) =>
+      addToast({ type: "success", title, description }),
+    error: (title: string, description?: string) =>
+      addToast({ type: "error", title, description }),
+    warning: (title: string, description?: string) =>
+      addToast({ type: "warning", title, description }),
+    info: (title: string, description?: string) =>
+      addToast({ type: "info", title, description }),
   };
 
   const containerStyles: React.CSSProperties = {
-    position: 'fixed',
-    display: 'flex',
-    flexDirection: position.startsWith('bottom') ? 'column-reverse' : 'column',
+    position: "fixed",
+    display: "flex",
+    flexDirection: position.startsWith("bottom") ? "column-reverse" : "column",
     gap: spacing[3],
     zIndex: zIndex.toast,
-    pointerEvents: 'none',
+    pointerEvents: "none",
     ...positionStyles[position],
   };
 
@@ -380,8 +388,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
       {children}
       <div style={containerStyles}>
         <AnimatePresence mode="popLayout">
-          {toasts.map(t => (
-            <div key={t.id} style={{ pointerEvents: 'auto' }}>
+          {toasts.map((t) => (
+            <div key={t.id} style={{ pointerEvents: "auto" }}>
               <Toast toast={t} onDismiss={removeToast} />
             </div>
           ))}

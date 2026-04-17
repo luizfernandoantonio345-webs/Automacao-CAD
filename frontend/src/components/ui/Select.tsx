@@ -1,8 +1,8 @@
 /**
  * Select Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Custom styled dropdown select with search, icons, and animations.
- * 
+ *
  * @usage
  * <Select
  *   options={[{ value: 'opt1', label: 'Option 1' }]}
@@ -12,11 +12,11 @@
  * />
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, Search, X } from 'lucide-react';
-import { colors, radius, shadows, spacing, zIndex } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, Check, Search, X } from "lucide-react";
+import { colors, radius, shadows, spacing, zIndex } from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -42,8 +42,8 @@ export interface SelectProps {
   searchable?: boolean;
   clearable?: boolean;
   multiple?: boolean;
-  variant?: 'default' | 'filled' | 'glass';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "default" | "filled" | "glass";
+  size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   className?: string;
 }
@@ -54,19 +54,19 @@ export interface SelectProps {
 
 const sizeConfig = {
   sm: {
-    height: '36px',
+    height: "36px",
     padding: `0 ${spacing[3]}`,
     fontSize: fontSize.sm,
     iconSize: 16,
   },
   md: {
-    height: '44px',
+    height: "44px",
     padding: `0 ${spacing[4]}`,
     fontSize: fontSize.base,
     iconSize: 18,
   },
   lg: {
-    height: '52px',
+    height: "52px",
     padding: `0 ${spacing[5]}`,
     fontSize: fontSize.lg,
     iconSize: 20,
@@ -78,23 +78,23 @@ const sizeConfig = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const dropdownVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     y: -8,
     scale: 0.98,
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      type: 'spring',
+      type: "spring",
       stiffness: 500,
       damping: 30,
     },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     y: -8,
     scale: 0.98,
     transition: { duration: 0.1 },
@@ -114,7 +114,7 @@ export const Select: React.FC<SelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'Selecione...',
+  placeholder = "Selecione...",
   label,
   helperText,
   error,
@@ -122,43 +122,53 @@ export const Select: React.FC<SelectProps> = ({
   searchable = false,
   clearable = false,
   multiple = false,
-  variant = 'default',
-  size = 'md',
+  variant = "default",
+  size = "md",
   fullWidth = false,
-  className = '',
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const config = sizeConfig[size];
 
   // Get selected options
-  const selectedValues = multiple 
-    ? (Array.isArray(value) ? value : []) 
-    : (value ? [value] : []);
+  const selectedValues = multiple
+    ? Array.isArray(value)
+      ? value
+      : []
+    : value
+      ? [value]
+      : [];
 
-  const selectedOptions = options.filter(opt => selectedValues.includes(opt.value));
+  const selectedOptions = options.filter((opt) =>
+    selectedValues.includes(opt.value),
+  );
 
   // Filter options based on search
   const filteredOptions = searchQuery
-    ? options.filter(opt => 
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opt.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ? options.filter(
+        (opt) =>
+          opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          opt.description?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : options;
 
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
-        setSearchQuery('');
+        setSearchQuery("");
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Focus search input when opened
@@ -169,60 +179,66 @@ export const Select: React.FC<SelectProps> = ({
   }, [isOpen, searchable]);
 
   // Handle keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (disabled) return;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (disabled) return;
 
-    switch (e.key) {
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        if (!isOpen) {
-          setIsOpen(true);
-        } else if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
-          handleSelect(filteredOptions[highlightedIndex].value);
-        }
-        break;
-      case 'Escape':
-        setIsOpen(false);
-        setSearchQuery('');
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        if (!isOpen) {
-          setIsOpen(true);
-        } else {
-          setHighlightedIndex(prev => 
-            prev < filteredOptions.length - 1 ? prev + 1 : 0
+      switch (e.key) {
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (!isOpen) {
+            setIsOpen(true);
+          } else if (
+            highlightedIndex >= 0 &&
+            filteredOptions[highlightedIndex]
+          ) {
+            handleSelect(filteredOptions[highlightedIndex].value);
+          }
+          break;
+        case "Escape":
+          setIsOpen(false);
+          setSearchQuery("");
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          if (!isOpen) {
+            setIsOpen(true);
+          } else {
+            setHighlightedIndex((prev) =>
+              prev < filteredOptions.length - 1 ? prev + 1 : 0,
+            );
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setHighlightedIndex((prev) =>
+            prev > 0 ? prev - 1 : filteredOptions.length - 1,
           );
-        }
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredOptions.length - 1
-        );
-        break;
-    }
-  }, [disabled, isOpen, highlightedIndex, filteredOptions]);
+          break;
+      }
+    },
+    [disabled, isOpen, highlightedIndex, filteredOptions],
+  );
 
   // Handle option selection
   const handleSelect = (optValue: string) => {
     if (multiple) {
       const newValue = selectedValues.includes(optValue)
-        ? selectedValues.filter(v => v !== optValue)
+        ? selectedValues.filter((v) => v !== optValue)
         : [...selectedValues, optValue];
       onChange(newValue);
     } else {
       onChange(optValue);
       setIsOpen(false);
-      setSearchQuery('');
+      setSearchQuery("");
     }
   };
 
   // Clear selection
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange(multiple ? [] : '');
+    onChange(multiple ? [] : "");
   };
 
   // Variant styles
@@ -233,16 +249,16 @@ export const Select: React.FC<SelectProps> = ({
     };
 
     switch (variant) {
-      case 'filled':
+      case "filled":
         return {
           ...base,
           backgroundColor: colors.dark.elevated,
         };
-      case 'glass':
+      case "glass":
         return {
           ...base,
-          backgroundColor: 'rgba(255, 255, 255, 0.03)',
-          backdropFilter: 'blur(12px)',
+          backgroundColor: "rgba(255, 255, 255, 0.03)",
+          backdropFilter: "blur(12px)",
         };
       default:
         return base;
@@ -250,21 +266,22 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   // Display text
-  const displayText = selectedOptions.length > 0
-    ? multiple
-      ? selectedOptions.map(o => o.label).join(', ')
-      : selectedOptions[0].label
-    : placeholder;
+  const displayText =
+    selectedOptions.length > 0
+      ? multiple
+        ? selectedOptions.map((o) => o.label).join(", ")
+        : selectedOptions[0].label
+      : placeholder;
 
   const styles = {
     container: {
-      position: 'relative' as const,
-      width: fullWidth ? '100%' : 'auto',
-      minWidth: '200px',
+      position: "relative" as const,
+      width: fullWidth ? "100%" : "auto",
+      minWidth: "200px",
     },
 
     label: {
-      display: 'block',
+      display: "block",
       fontFamily: fontFamily.sans,
       fontSize: fontSize.sm,
       fontWeight: fontWeight.medium,
@@ -273,21 +290,22 @@ export const Select: React.FC<SelectProps> = ({
     },
 
     trigger: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: spacing[2],
-      width: '100%',
+      width: "100%",
       height: config.height,
       padding: config.padding,
       fontFamily: fontFamily.sans,
       fontSize: config.fontSize,
-      color: selectedOptions.length > 0 ? colors.text.primary : colors.text.tertiary,
+      color:
+        selectedOptions.length > 0 ? colors.text.primary : colors.text.tertiary,
       borderRadius: radius.md,
-      cursor: disabled ? 'not-allowed' : 'pointer',
+      cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.5 : 1,
-      transition: 'all 150ms ease-out',
-      outline: 'none',
+      transition: "all 150ms ease-out",
+      outline: "none",
       ...getVariantStyles(),
     },
 
@@ -297,8 +315,8 @@ export const Select: React.FC<SelectProps> = ({
     },
 
     dropdown: {
-      position: 'absolute' as const,
-      top: '100%',
+      position: "absolute" as const,
+      top: "100%",
       left: 0,
       right: 0,
       marginTop: spacing[1],
@@ -307,8 +325,8 @@ export const Select: React.FC<SelectProps> = ({
       borderRadius: radius.lg,
       boxShadow: shadows.lg,
       zIndex: zIndex.dropdown,
-      overflow: 'hidden',
-      maxHeight: '300px',
+      overflow: "hidden",
+      maxHeight: "300px",
     },
 
     searchContainer: {
@@ -317,7 +335,7 @@ export const Select: React.FC<SelectProps> = ({
     },
 
     searchInput: {
-      width: '100%',
+      width: "100%",
       padding: `${spacing[2]} ${spacing[3]}`,
       paddingLeft: spacing[9],
       fontFamily: fontFamily.sans,
@@ -326,34 +344,34 @@ export const Select: React.FC<SelectProps> = ({
       backgroundColor: colors.dark.surface,
       border: `1px solid ${colors.border.subtle}`,
       borderRadius: radius.md,
-      outline: 'none',
+      outline: "none",
     },
 
     searchIcon: {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       left: spacing[5],
-      top: '50%',
-      transform: 'translateY(-50%)',
+      top: "50%",
+      transform: "translateY(-50%)",
       color: colors.text.tertiary,
     },
 
     optionsList: {
-      overflowY: 'auto' as const,
-      maxHeight: '250px',
+      overflowY: "auto" as const,
+      maxHeight: "250px",
       padding: spacing[1],
     },
 
     option: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
       padding: `${spacing[3]} ${spacing[4]}`,
       fontFamily: fontFamily.sans,
       fontSize: config.fontSize,
       color: colors.text.primary,
       borderRadius: radius.md,
-      cursor: 'pointer',
-      transition: 'all 100ms ease-out',
+      cursor: "pointer",
+      transition: "all 100ms ease-out",
     },
 
     optionSelected: {
@@ -366,14 +384,14 @@ export const Select: React.FC<SelectProps> = ({
 
     optionDisabled: {
       opacity: 0.5,
-      cursor: 'not-allowed',
+      cursor: "not-allowed",
     },
 
     optionContent: {
       flex: 1,
-      display: 'flex',
-      flexDirection: 'column' as const,
-      gap: '2px',
+      display: "flex",
+      flexDirection: "column" as const,
+      gap: "2px",
     },
 
     optionLabel: {
@@ -391,14 +409,14 @@ export const Select: React.FC<SelectProps> = ({
     },
 
     clearButton: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       padding: spacing[1],
       color: colors.text.tertiary,
       borderRadius: radius.sm,
-      cursor: 'pointer',
-      transition: 'all 100ms ease-out',
+      cursor: "pointer",
+      transition: "all 100ms ease-out",
     },
 
     helperText: {
@@ -409,8 +427,8 @@ export const Select: React.FC<SelectProps> = ({
     },
 
     icons: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[1],
     },
   };
@@ -435,12 +453,14 @@ export const Select: React.FC<SelectProps> = ({
         aria-disabled={disabled}
         whileHover={!disabled ? { borderColor: colors.border.default } : {}}
       >
-        <span style={{ 
-          overflow: 'hidden', 
-          textOverflow: 'ellipsis', 
-          whiteSpace: 'nowrap',
-          flex: 1,
-        }}>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+          }}
+        >
           {displayText}
         </span>
 
@@ -450,7 +470,10 @@ export const Select: React.FC<SelectProps> = ({
             <motion.div
               style={styles.clearButton}
               onClick={handleClear}
-              whileHover={{ color: colors.text.primary, backgroundColor: colors.dark.subtle }}
+              whileHover={{
+                color: colors.text.primary,
+                backgroundColor: colors.dark.subtle,
+              }}
             >
               <X size={config.iconSize - 2} />
             </motion.div>
@@ -479,7 +502,7 @@ export const Select: React.FC<SelectProps> = ({
           >
             {/* Search Input */}
             {searchable && (
-              <div style={{ ...styles.searchContainer, position: 'relative' }}>
+              <div style={{ ...styles.searchContainer, position: "relative" }}>
                 <Search size={16} style={styles.searchIcon} />
                 <input
                   ref={searchInputRef}
@@ -495,12 +518,14 @@ export const Select: React.FC<SelectProps> = ({
             {/* Options List */}
             <div style={styles.optionsList} role="listbox">
               {filteredOptions.length === 0 ? (
-                <div style={{ 
-                  padding: spacing[4], 
-                  textAlign: 'center', 
-                  color: colors.text.tertiary,
-                  fontSize: fontSize.sm,
-                }}>
+                <div
+                  style={{
+                    padding: spacing[4],
+                    textAlign: "center",
+                    color: colors.text.tertiary,
+                    fontSize: fontSize.sm,
+                  }}
+                >
                   Nenhuma opção encontrada
                 </div>
               ) : (
@@ -517,19 +542,29 @@ export const Select: React.FC<SelectProps> = ({
                         ...(isHighlighted ? styles.optionHighlighted : {}),
                         ...(option.disabled ? styles.optionDisabled : {}),
                       }}
-                      onClick={() => !option.disabled && handleSelect(option.value)}
+                      onClick={() =>
+                        !option.disabled && handleSelect(option.value)
+                      }
                       onMouseEnter={() => setHighlightedIndex(index)}
                       variants={itemVariants}
-                      whileHover={!option.disabled ? { 
-                        backgroundColor: isSelected ? colors.primary.soft : colors.dark.subtle 
-                      } : {}}
+                      whileHover={
+                        !option.disabled
+                          ? {
+                              backgroundColor: isSelected
+                                ? colors.primary.soft
+                                : colors.dark.subtle,
+                            }
+                          : {}
+                      }
                       role="option"
                       aria-selected={isSelected}
                       aria-disabled={option.disabled}
                     >
                       {/* Icon */}
                       {option.icon && (
-                        <span style={{ color: colors.text.tertiary, flexShrink: 0 }}>
+                        <span
+                          style={{ color: colors.text.tertiary, flexShrink: 0 }}
+                        >
                           {option.icon}
                         </span>
                       )}
@@ -538,13 +573,18 @@ export const Select: React.FC<SelectProps> = ({
                       <div style={styles.optionContent}>
                         <span style={styles.optionLabel}>{option.label}</span>
                         {option.description && (
-                          <span style={styles.optionDescription}>{option.description}</span>
+                          <span style={styles.optionDescription}>
+                            {option.description}
+                          </span>
                         )}
                       </div>
 
                       {/* Check Icon */}
                       {isSelected && (
-                        <Check size={config.iconSize} style={styles.checkIcon} />
+                        <Check
+                          size={config.iconSize}
+                          style={styles.checkIcon}
+                        />
                       )}
                     </motion.div>
                   );

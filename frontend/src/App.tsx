@@ -314,6 +314,14 @@ function AppContent() {
                 }
               />
               <Route
+                path="/quality-gate"
+                element={<Navigate to="/quality" replace />}
+              />
+              <Route
+                path="/quality-gate/:rest"
+                element={<Navigate to="/quality" replace />}
+              />
+              <Route
                 path="/final-report"
                 element={
                   <SidebarLayout>
@@ -407,14 +415,8 @@ function AppContent() {
                   </SidebarLayout>
                 }
               />
-              <Route
-                path="/profile"
-                element={<Profile />}
-              />
-              <Route
-                path="/settings"
-                element={<Profile />}
-              />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Profile />} />
               <Route
                 path="/billing"
                 element={
@@ -423,14 +425,8 @@ function AppContent() {
                   </SidebarLayout>
                 }
               />
-              <Route
-                path="/terms"
-                element={<Terms />}
-              />
-              <Route
-                path="/privacy"
-                element={<Privacy />}
-              />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               {/* Redirects para rotas legadas */}
               <Route
                 path="/autocad-control"

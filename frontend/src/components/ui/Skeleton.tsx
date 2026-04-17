@@ -1,8 +1,8 @@
 /**
  * Skeleton Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Elegant loading placeholder with shimmer animation.
- * 
+ *
  * @usage
  * <Skeleton width="100%" height="20px" />
  * <Skeleton variant="circle" size="48px" />
@@ -10,21 +10,21 @@
  * <SkeletonCard />
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { colors, radius, spacing } from '../../design/tokens';
+import React from "react";
+import { motion } from "framer-motion";
+import { colors, radius, spacing } from "../../design/tokens";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export interface SkeletonProps {
-  variant?: 'rectangle' | 'circle' | 'text' | 'rounded';
+  variant?: "rectangle" | "circle" | "text" | "rounded";
   width?: string | number;
   height?: string | number;
   size?: string | number; // For circle variant
   lines?: number; // For text variant
-  animation?: 'pulse' | 'shimmer' | 'none';
+  animation?: "pulse" | "shimmer" | "none";
   className?: string;
 }
 
@@ -45,8 +45,8 @@ export interface SkeletonListProps {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const shimmerKeyframes = {
-  '0%': { backgroundPosition: '200% 0' },
-  '100%': { backgroundPosition: '-200% 0' },
+  "0%": { backgroundPosition: "200% 0" },
+  "100%": { backgroundPosition: "-200% 0" },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -61,7 +61,7 @@ const baseStyle: React.CSSProperties = {
     ${colors.dark.elevated} 50%,
     ${colors.dark.subtle} 100%
   )`,
-  backgroundSize: '200% 100%',
+  backgroundSize: "200% 100%",
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -69,40 +69,40 @@ const baseStyle: React.CSSProperties = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export const Skeleton: React.FC<SkeletonProps> = ({
-  variant = 'rectangle',
+  variant = "rectangle",
   width,
   height,
   size,
   lines = 1,
-  animation = 'shimmer',
-  className = '',
+  animation = "shimmer",
+  className = "",
 }) => {
   // Get variant-specific styles
   const getVariantStyles = (): React.CSSProperties => {
     switch (variant) {
-      case 'circle':
-        const circleSize = size || '48px';
+      case "circle":
+        const circleSize = size || "48px";
         return {
           width: circleSize,
           height: circleSize,
           borderRadius: radius.full,
         };
-      case 'text':
+      case "text":
         return {
-          width: '100%',
-          height: '14px',
+          width: "100%",
+          height: "14px",
           borderRadius: radius.sm,
         };
-      case 'rounded':
+      case "rounded":
         return {
-          width: width || '100%',
-          height: height || '20px',
+          width: width || "100%",
+          height: height || "20px",
           borderRadius: radius.lg,
         };
       default:
         return {
-          width: width || '100%',
-          height: height || '20px',
+          width: width || "100%",
+          height: height || "20px",
           borderRadius: radius.md,
         };
     }
@@ -111,15 +111,15 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   // Animation config
   const getAnimationProps = () => {
     switch (animation) {
-      case 'pulse':
+      case "pulse":
         return {
           animate: { opacity: [1, 0.5, 1] },
-          transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+          transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
         };
-      case 'shimmer':
+      case "shimmer":
         return {
-          animate: { backgroundPosition: ['200% 0', '-200% 0'] },
-          transition: { duration: 1.5, repeat: Infinity, ease: 'linear' },
+          animate: { backgroundPosition: ["200% 0", "-200% 0"] },
+          transition: { duration: 1.5, repeat: Infinity, ease: "linear" },
         };
       default:
         return {};
@@ -129,19 +129,22 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   const style: React.CSSProperties = {
     ...baseStyle,
     ...getVariantStyles(),
-    display: 'block',
+    display: "block",
   };
 
   // Multiple lines for text variant
-  if (variant === 'text' && lines > 1) {
+  if (variant === "text" && lines > 1) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[2] }} className={className}>
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: spacing[2] }}
+        className={className}
+      >
         {Array.from({ length: lines }).map((_, index) => (
           <motion.div
             key={index}
             style={{
               ...style,
-              width: index === lines - 1 ? '70%' : '100%', // Last line shorter
+              width: index === lines - 1 ? "70%" : "100%", // Last line shorter
             }}
             {...getAnimationProps()}
           />
@@ -151,11 +154,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   }
 
   return (
-    <motion.div
-      style={style}
-      className={className}
-      {...getAnimationProps()}
-    />
+    <motion.div style={style} className={className} {...getAnimationProps()} />
   );
 };
 
@@ -166,32 +165,30 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 export const SkeletonCard: React.FC<SkeletonCardProps> = ({
   hasImage = true,
   lines = 3,
-  className = '',
+  className = "",
 }) => {
   const styles = {
     card: {
       backgroundColor: colors.dark.elevated,
       borderRadius: radius.lg,
       border: `1px solid ${colors.border.subtle}`,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     image: {
-      width: '100%',
-      height: '160px',
+      width: "100%",
+      height: "160px",
     },
     content: {
       padding: spacing[4],
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
       gap: spacing[3],
     },
   };
 
   return (
     <div style={styles.card} className={className}>
-      {hasImage && (
-        <Skeleton variant="rectangle" width="100%" height="160px" />
-      )}
+      {hasImage && <Skeleton variant="rectangle" width="100%" height="160px" />}
       <div style={styles.content}>
         <Skeleton variant="text" width="60%" height="20px" />
         <Skeleton variant="text" lines={lines} />
@@ -207,17 +204,17 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({
 export const SkeletonList: React.FC<SkeletonListProps> = ({
   items = 5,
   hasAvatar = true,
-  className = '',
+  className = "",
 }) => {
   const styles = {
     list: {
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
       gap: spacing[3],
     },
     item: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
       padding: spacing[4],
       backgroundColor: colors.dark.elevated,
@@ -226,8 +223,8 @@ export const SkeletonList: React.FC<SkeletonListProps> = ({
     },
     content: {
       flex: 1,
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
       gap: spacing[2],
     },
   };
@@ -260,17 +257,17 @@ interface SkeletonTableProps {
 export const SkeletonTable: React.FC<SkeletonTableProps> = ({
   rows = 5,
   columns = 4,
-  className = '',
+  className = "",
 }) => {
   const styles = {
     table: {
-      width: '100%',
+      width: "100%",
       borderRadius: radius.lg,
       border: `1px solid ${colors.border.subtle}`,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     header: {
-      display: 'grid',
+      display: "grid",
       gridTemplateColumns: `repeat(${columns}, 1fr)`,
       gap: spacing[4],
       padding: spacing[4],
@@ -278,11 +275,11 @@ export const SkeletonTable: React.FC<SkeletonTableProps> = ({
       borderBottom: `1px solid ${colors.border.subtle}`,
     },
     body: {
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
     },
     row: {
-      display: 'grid',
+      display: "grid",
       gridTemplateColumns: `repeat(${columns}, 1fr)`,
       gap: spacing[4],
       padding: spacing[4],
@@ -298,22 +295,23 @@ export const SkeletonTable: React.FC<SkeletonTableProps> = ({
           <Skeleton key={i} width="80%" height="14px" />
         ))}
       </div>
-      
+
       {/* Body */}
       <div style={styles.body}>
         {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div 
-            key={rowIndex} 
+          <div
+            key={rowIndex}
             style={{
               ...styles.row,
-              borderBottom: rowIndex === rows - 1 ? 'none' : styles.row.borderBottom,
+              borderBottom:
+                rowIndex === rows - 1 ? "none" : styles.row.borderBottom,
             }}
           >
             {Array.from({ length: columns }).map((_, colIndex) => (
-              <Skeleton 
-                key={colIndex} 
-                width={colIndex === 0 ? '60%' : '90%'} 
-                height="14px" 
+              <Skeleton
+                key={colIndex}
+                width={colIndex === 0 ? "60%" : "90%"}
+                height="14px"
               />
             ))}
           </div>
@@ -327,22 +325,30 @@ export const SkeletonTable: React.FC<SkeletonTableProps> = ({
 // SKELETON DASHBOARD KPI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const SkeletonKPI: React.FC<{ className?: string }> = ({ className }) => {
+export const SkeletonKPI: React.FC<{ className?: string }> = ({
+  className,
+}) => {
   const styles = {
     card: {
       padding: spacing[5],
       backgroundColor: colors.dark.elevated,
       borderRadius: radius.xl,
       border: `1px solid ${colors.border.subtle}`,
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
       gap: spacing[3],
     },
   };
 
   return (
     <div style={styles.card} className={className}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Skeleton width="50%" height="14px" />
         <Skeleton variant="circle" size="40px" />
       </div>

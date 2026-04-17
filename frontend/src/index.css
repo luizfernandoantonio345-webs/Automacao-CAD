@@ -1,6 +1,6 @@
 ﻿/* Enterprise Fonts — Satoshi (display) + Inter (UI) + JetBrains Mono (code) */
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -9,47 +9,51 @@
 /* === CSS CUSTOM PROPERTIES — Design Tokens === */
 :root {
   /* Backgrounds */
-  --color-base: #080B12;
-  --color-surface: #0D1321;
-  --color-elevated: #141B2D;
-  --color-subtle: #1A2438;
-  
+  --color-base: #080b12;
+  --color-surface: #0d1321;
+  --color-elevated: #141b2d;
+  --color-subtle: #1a2438;
+
   /* Primary — Tech Blue */
-  --color-primary: #00A1FF;
-  --color-primary-hover: #33B8FF;
+  --color-primary: #00a1ff;
+  --color-primary-hover: #33b8ff;
   --color-primary-glow: rgba(0, 161, 255, 0.4);
   --color-primary-soft: rgba(0, 161, 255, 0.12);
-  
+
   /* Secondary — Indigo */
-  --color-secondary: #6366F1;
-  --color-secondary-hover: #818CF8;
+  --color-secondary: #6366f1;
+  --color-secondary-hover: #818cf8;
   --color-secondary-glow: rgba(99, 102, 241, 0.4);
   --color-secondary-soft: rgba(99, 102, 241, 0.12);
-  
+
   /* Gold — Premium */
-  --color-gold: #D4AF37;
+  --color-gold: #d4af37;
   --color-gold-glow: rgba(212, 175, 55, 0.4);
-  
+
   /* Semantic */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
   /* Text */
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-text-tertiary: #64748B;
-  
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+
   /* Borders */
   --color-border-subtle: rgba(255, 255, 255, 0.06);
-  --color-border-default: rgba(255, 255, 255, 0.10);
+  --color-border-default: rgba(255, 255, 255, 0.1);
   --color-border-strong: rgba(255, 255, 255, 0.16);
-  
+
   /* Typography */
-  --font-display: 'Satoshi', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, Consolas, monospace;
-  
+  --font-display:
+    "Satoshi", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "Fira Code", "SF Mono", Monaco, Consolas, monospace;
+
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -57,7 +61,7 @@
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
-  
+
   /* Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -65,13 +69,17 @@
   --radius-xl: 16px;
   --radius-2xl: 24px;
   --radius-full: 9999px;
-  
+
   /* Shadows */
-  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 0 0 1px rgba(0, 161, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
-  --shadow-glow-primary: 0 0 20px rgba(0, 161, 255, 0.3), 0 0 40px rgba(0, 161, 255, 0.1);
-  --shadow-glow-secondary: 0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1);
-  
+  --shadow-card:
+    0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover:
+    0 0 0 1px rgba(0, 161, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-glow-primary:
+    0 0 20px rgba(0, 161, 255, 0.3), 0 0 40px rgba(0, 161, 255, 0.1);
+  --shadow-glow-secondary:
+    0 0 20px rgba(99, 102, 241, 0.3), 0 0 40px rgba(99, 102, 241, 0.1);
+
   /* Transitions */
   --transition-fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,10 +88,15 @@
 }
 
 /* === GLOBAL RESETS & RESPONSIVE === */
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body {
-  margin: 0; 
+html,
+body {
+  margin: 0;
   padding: 0;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -92,33 +105,62 @@ html, body {
   color: var(--color-text-primary);
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0d1117; }
-::-webkit-scrollbar-thumb { background: #1e2d3d; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #00A1FF50; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e2d3d;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00a1ff50;
+}
 
 @media (max-width: 900px) {
-  .login-left { display: none !important; }
-  .login-right { width: 100% !important; border-left: none !important; }
-  .sidebar-desktop { display: none !important; }
-  .plans-grid { grid-template-columns: 1fr !important; }
+  .login-left {
+    display: none !important;
+  }
+  .login-right {
+    width: 100% !important;
+    border-left: none !important;
+  }
+  .sidebar-desktop {
+    display: none !important;
+  }
+  .plans-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 640px) {
-  .pricing-title { font-size: 28px !important; }
-  .chat-starter-grid { grid-template-columns: 1fr !important; }
-  .dashboard-grid { grid-template-columns: 1fr !important; }
+  .pricing-title {
+    font-size: 28px !important;
+  }
+  .chat-starter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 10px rgba(0,161,255,0.3); }
-  50% { box-shadow: 0 0 25px rgba(0,161,255,0.6); }
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(0, 161, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 161, 255, 0.6);
+  }
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #00A1FF, #10B981);
+  background: linear-gradient(135deg, #00a1ff, #10b981);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-

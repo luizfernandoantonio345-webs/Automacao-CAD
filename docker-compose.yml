@@ -7,6 +7,28 @@
 version: "3.9"
 
 services:
+  # ✓ PostgreSQL 16: Banco de dados relacional (porta 5432)
+  postgres:
+    image: postgres:16-alpine
+    container_name: cad-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:?Set DB_USER in .env}
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
+      POSTGRES_DB: ${DB_NAME:-engcad}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${DB_USER:-engcad} -d ${DB_NAME:-engcad}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cad-network
+    restart: unless-stopped
+
   # ✓ RabbitMQ: Message Broker distribuído (porta 5672)
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
@@ -144,6 +166,7 @@ services:
     # Acesso: http://localhost:3000 (user: admin, pass: definida em GRAFANA_ADMIN_PASS)
 
 volumes:
+  postgres_data:
   rabbitmq_data:
   redis_data:
   prometheus_data:

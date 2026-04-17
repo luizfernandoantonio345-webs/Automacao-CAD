@@ -1,0 +1,90 @@
+# k8s/backend-deployment.yaml
+# kubectl apply -f k8s/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engcad-backend
+  labels:
+    app: engcad-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: engcad-backend
+  template:
+    metadata:
+      labels:
+        app: engcad-backend
+    spec:
+      containers:
+        - name: backend
+          image: engcad/backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: engcad-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: engcad-secrets
+                  key: redis-url
+            - name: JARVIS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: engcad-secrets
+                  key: jarvis-secret
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engcad-backend-svc
+spec:
+  selector:
+    app: engcad-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: engcad-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: engcad-backend
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

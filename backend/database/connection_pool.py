@@ -295,9 +295,11 @@ def get_pool() -> AsyncPGPool | SQLitePool:
             if _IS_VERCEL:
                 db_path = "/tmp/engcad.db"
             else:
+                custom_db_path = os.getenv("ENGCAD_DB_PATH", "").strip()
                 db_path = str(
-                    Path(os.getenv("ENGCAD_DB_PATH", ""))
-                    or Path(__file__).resolve().parents[2] / "data" / "engcad.db"
+                    Path(custom_db_path)
+                    if custom_db_path
+                    else Path(__file__).resolve().parents[2] / "data" / "engcad.db"
                 )
             sqlite_max = int(os.getenv("DB_POOL_MAX", "10"))
             _pool_instance = SQLitePool(db_path=db_path, max_connections=sqlite_max)

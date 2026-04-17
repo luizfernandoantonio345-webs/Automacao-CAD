@@ -72,10 +72,7 @@ const FinalReport = () => {
             Nenhum projeto selecionado. Vá ao painel de auditoria e selecione um
             projeto.
           </p>
-          <button
-            style={f.finalizeBtn}
-            onClick={() => navigate("/quality-gate")}
-          >
+          <button style={f.finalizeBtn} onClick={() => navigate("/quality")}>
             IR PARA AUDITORIA
           </button>
         </div>
@@ -211,7 +208,7 @@ const FinalReport = () => {
         <div style={f.footerButtons}>
           <button
             style={f.historyBtn}
-            onClick={() => navigate("/quality-gate?project=" + project.id)}
+            onClick={() => navigate("/quality?project=" + project.id)}
           >
             <FaHistory /> VOLTAR À AUDITORIA
           </button>

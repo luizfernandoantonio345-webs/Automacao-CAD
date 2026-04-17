@@ -1,0 +1,309 @@
+# =============================================================================
+# docker-compose.prod.yml — EngCAD Production Stack
+# PostgreSQL 16 + Redis Cluster 3 nodes + 8 Celery workers + Nginx + Certbot
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: "3.9"
+
+x-worker-common: &worker-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &worker-env
+    DATABASE_URL: "postgresql+asyncpg://${DB_USER}:${DB_PASS}@postgres-primary:5432/${DB_NAME}"
+    CELERY_BROKER_URL: "amqp://${RABBITMQ_USER:-cad_user}:${RABBITMQ_PASS}@rabbitmq:5672/cad_vhost"
+    CELERY_RESULT_BACKEND: "redis://:${REDIS_PASS}@redis-1:6379/0"
+    REDIS_URL: "redis://:${REDIS_PASS}@redis-1:6379/1"
+    JOBS_REDIS_URL: "redis://:${REDIS_PASS}@redis-1:6379/1"
+    PYTHONUNBUFFERED: "1"
+  depends_on:
+    postgres-primary:
+      condition: service_healthy
+    redis-1:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  volumes:
+    - ./data:/app/data
+    - ./logs:/app/logs
+  networks:
+    - cad-network
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 512M
+
+services:
+  # ──────────────────────────────────────────────────────────────
+  # PostgreSQL 16 – Primary
+  # ──────────────────────────────────────────────────────────────
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: cad-pg-primary
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME:-engcad}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME:-engcad}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cad-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+
+  # PostgreSQL 16 – Read Replica (streaming replication via pg_basebackup)
+  postgres-replica:
+    image: postgres:16-alpine
+    container_name: cad-pg-replica
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME:-engcad}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+          pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U ${DB_USER} -Fp -Xs -P -R
+        fi
+        postgres
+      "
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────────
+  # Redis Cluster – 3 nodes (standalone mode, use Sentinel for HA)
+  # ──────────────────────────────────────────────────────────────
+  redis-1:
+    image: redis:7-alpine
+    container_name: cad-redis-1
+    command: redis-server --requirepass ${REDIS_PASS} --port 6379 --save 60 1000
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_1_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  redis-2:
+    image: redis:7-alpine
+    container_name: cad-redis-2
+    command: redis-server --requirepass ${REDIS_PASS} --port 6380 --save 60 1000
+    volumes:
+      - redis_2_data:/data
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  redis-3:
+    image: redis:7-alpine
+    container_name: cad-redis-3
+    command: redis-server --requirepass ${REDIS_PASS} --port 6381 --save 60 1000
+    volumes:
+      - redis_3_data:/data
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────────
+  # RabbitMQ
+  # ──────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: cad-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cad_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: /cad_vhost
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────────
+  # Celery Workers (8 instances)
+  # ──────────────────────────────────────────────────────────────
+  worker-1:
+    <<: *worker-common
+    container_name: cad-worker-1
+    command: celery -A celery_app worker --loglevel=info --concurrency=4 --queues=default,high
+    environment: { <<: *worker-env }
+
+  worker-2:
+    <<: *worker-common
+    container_name: cad-worker-2
+    command: celery -A celery_app worker --loglevel=info --concurrency=4 --queues=default,high
+    environment: { <<: *worker-env }
+
+  worker-3:
+    <<: *worker-common
+    container_name: cad-worker-3
+    command: celery -A celery_app worker --loglevel=info --concurrency=4 --queues=default
+    environment: { <<: *worker-env }
+
+  worker-4:
+    <<: *worker-common
+    container_name: cad-worker-4
+    command: celery -A celery_app worker --loglevel=info --concurrency=4 --queues=default
+    environment: { <<: *worker-env }
+
+  worker-5:
+    <<: *worker-common
+    container_name: cad-worker-5
+    command: celery -A celery_app worker --loglevel=info --concurrency=2 --queues=low
+    environment: { <<: *worker-env }
+
+  worker-6:
+    <<: *worker-common
+    container_name: cad-worker-6
+    command: celery -A celery_app worker --loglevel=info --concurrency=2 --queues=low
+    environment: { <<: *worker-env }
+
+  worker-beat:
+    <<: *worker-common
+    container_name: cad-worker-beat
+    command: celery -A celery_app beat --loglevel=info
+    environment: { <<: *worker-env }
+
+  flower:
+    image: mher/flower:2.0.1
+    container_name: cad-flower
+    environment:
+      CELERY_BROKER_URL: "amqp://${RABBITMQ_USER:-cad_user}:${RABBITMQ_PASS}@rabbitmq:5672/cad_vhost"
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────────
+  # FastAPI backend
+  # ──────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cad-backend
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${DB_USER}:${DB_PASS}@postgres-primary:5432/${DB_NAME}"
+      REDIS_URL: "redis://:${REDIS_PASS}@redis-1:6379/1"
+      JARVIS_SECRET: ${JARVIS_SECRET}
+      APP_ENV: production
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - cad-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+
+  # ──────────────────────────────────────────────────────────────
+  # Nginx reverse proxy + Certbot TLS
+  # ──────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: cad-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: cad-certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: >
+      /bin/sh -c "trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet;
+          sleep 12h & wait $${!};
+        done"
+
+  # ──────────────────────────────────────────────────────────────
+  # Prometheus + Grafana
+  # ──────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cad-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cad-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS:-changeme}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - cad-network
+    restart: unless-stopped
+
+volumes:
+  postgres_primary_data:
+  postgres_replica_data:
+  redis_1_data:
+  redis_2_data:
+  redis_3_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+  certbot_www:
+  certbot_conf:
+
+networks:
+  cad-network:
+    driver: bridge

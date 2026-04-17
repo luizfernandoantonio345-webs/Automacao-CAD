@@ -1,17 +1,18 @@
 """
 Engenharia CAD — Alembic environment configuration.
 
-Este arquivo configura o Alembic para usar a variável de ambiente DATABASE_URL
-quando disponível, permitindo fácil migração entre SQLite e PostgreSQL.
+Suporta tanto PostgreSQL async (asyncpg) quanto SQLite (desenvolvimento).
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from alembic import context
 
@@ -30,34 +31,31 @@ target_metadata = None
 
 
 def get_url() -> str:
-    """
-    Obtém a URL do banco de dados.
-    
-    Prioridade:
-    1. Variável de ambiente DATABASE_URL (produção)
-    2. Variável de ambiente POSTGRES_URL (alternativa)
-    3. Configuração do alembic.ini (desenvolvimento)
-    """
-    # Verificar variáveis de ambiente (produção)
     url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
-    
     if url:
         # Normalizar postgres:// para postgresql:// (algumas plataformas usam postgres://)
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
+        # Para Alembic sync (offline/online síncrono), remover +asyncpg
+        url = url.replace("+asyncpg", "")
         return url
-    
-    # Fallback para configuração do alembic.ini
     return config.get_main_option("sqlalchemy.url", "sqlite:///data/engcad.db")
 
 
+def get_async_url() -> str:
+    url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+    if url:
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+    fallback = config.get_main_option("sqlalchemy.url", "sqlite:///data/engcad.db")
+    # SQLite não usa asyncpg
+    return fallback
+
+
 def run_migrations_offline() -> None:
-    """
-    Executa migrations em modo 'offline'.
-    
-    Neste modo, apenas o SQL é gerado, sem conexão real ao banco.
-    Útil para revisão de scripts antes de aplicar.
-    """
     url = get_url()
     context.configure(
         url=url,
@@ -65,35 +63,42 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
+def do_run_migrations(connection) -> None:
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations() -> None:
+    """Executa migrations usando engine async (PostgreSQL+asyncpg)."""
+    connectable = create_async_engine(get_async_url(), poolclass=pool.NullPool)
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
+    await connectable.dispose()
+
+
 def run_migrations_online() -> None:
-    """
-    Executa migrations em modo 'online'.
-    
-    Conecta ao banco de dados e aplica as migrations.
-    """
-    # Sobrescrever URL com valor dinâmico
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_url()
-    
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
+    async_url = get_async_url()
+    if async_url.startswith("postgresql+asyncpg://"):
+        # Usar engine async para PostgreSQL
+        asyncio.run(run_async_migrations())
+    else:
+        # SQLite: usar engine síncrono
+        configuration = config.get_section(config.config_ini_section, {})
+        configuration["sqlalchemy.url"] = get_url()
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
         )
-
-        with context.begin_transaction():
-            context.run_migrations()
+        with connectable.connect() as connection:
+            context.configure(connection=connection, target_metadata=target_metadata)
+            with context.begin_transaction():
+                context.run_migrations()
 
 
 if context.is_offline_mode():

@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { FiBarChart2, FiAlertCircle, FiArrowUpCircle } from "react-icons/fi";
-import axios from "axios";
+import { api } from "../services/api";
 
 interface QuotaData {
   tier: string;
@@ -38,11 +38,7 @@ const QuotaCard: React.FC = () => {
   const fetchQuotas = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/billing/quotas", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-        },
-      });
+      const response = await api.get("/api/billing/quotas");
       setQuotas(response.data);
       setError(null);
     } catch (err: any) {

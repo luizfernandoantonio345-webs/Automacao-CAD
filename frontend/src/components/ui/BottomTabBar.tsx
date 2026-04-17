@@ -1,9 +1,9 @@
 /**
  * BottomTabBar Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Mobile-first bottom navigation bar with 4-5 main tabs.
  * Fixed at bottom on mobile, hidden on desktop.
- * 
+ *
  * @usage
  * <BottomTabBar
  *   items={[
@@ -14,12 +14,20 @@
  * />
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { colors, radius, shadows, spacing, zIndex, blur, breakpoints } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
-import { tapScale } from '../../design/animations';
+import React from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  colors,
+  radius,
+  shadows,
+  spacing,
+  zIndex,
+  blur,
+  breakpoints,
+} from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
+import { tapScale } from "../../design/animations";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -40,7 +48,6 @@ export interface BottomTabBarProps {
   hideOnDesktop?: boolean;
 }
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -53,12 +60,16 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Determine active tab from current route if not provided
-  const currentActiveId = activeId || items.find(item => 
-    location.pathname === item.path || 
-    (item.path !== '/' && location.pathname.startsWith(item.path))
-  )?.id || items[0]?.id;
+  const currentActiveId =
+    activeId ||
+    items.find(
+      (item) =>
+        location.pathname === item.path ||
+        (item.path !== "/" && location.pathname.startsWith(item.path)),
+    )?.id ||
+    items[0]?.id;
 
   const handleTabClick = (item: TabItem) => {
     if (onTabChange) {
@@ -69,55 +80,55 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   // Safe area padding for iOS devices
-  const safeAreaBottom = 'env(safe-area-inset-bottom, 0px)';
+  const safeAreaBottom = "env(safe-area-inset-bottom, 0px)";
 
   const containerStyles: React.CSSProperties = {
-    position: 'fixed',
+    position: "fixed",
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: zIndex.docked,
-    
+
     // Glass effect
-    background: 'rgba(8, 11, 18, 0.85)',
+    background: "rgba(8, 11, 18, 0.85)",
     backdropFilter: `blur(${blur.lg})`,
     WebkitBackdropFilter: `blur(${blur.lg})`,
-    
+
     // Border & shadow
     borderTop: `1px solid ${colors.border.subtle}`,
-    boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
-    
+    boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.3)",
+
     // Safe area padding
     paddingBottom: safeAreaBottom,
   };
 
   const innerContainerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    height: '64px',
-    maxWidth: '600px',
-    margin: '0 auto',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-around",
+    height: "64px",
+    maxWidth: "600px",
+    margin: "0 auto",
     padding: `0 ${spacing[2]}`,
   };
 
   return (
     <>
       {/* Spacer to prevent content from being hidden behind the bar */}
-      <div 
-        style={{ 
-          height: '64px',
+      <div
+        style={{
+          height: "64px",
           paddingBottom: safeAreaBottom,
-        }} 
+        }}
         aria-hidden="true"
         className="bottom-tab-spacer"
       />
-      
+
       <nav
         role="navigation"
         aria-label="Main navigation"
         style={containerStyles}
-        className={hideOnDesktop ? 'bottom-tab-bar-mobile' : ''}
+        className={hideOnDesktop ? "bottom-tab-bar-mobile" : ""}
       >
         <div style={innerContainerStyles}>
           {items.map((item) => (
@@ -130,7 +141,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
           ))}
         </div>
       </nav>
-      
+
       {/* CSS for hiding on desktop */}
       {hideOnDesktop && (
         <style>{`
@@ -146,7 +157,6 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   );
 };
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TAB BUTTON
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -159,74 +169,74 @@ interface TabButtonProps {
 
 const TabButton: React.FC<TabButtonProps> = ({ item, isActive, onClick }) => {
   const buttonStyles: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '4px',
-    
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "4px",
+
     // Size
     flex: 1,
-    maxWidth: '80px',
-    height: '56px',
-    padding: '8px 12px',
-    
+    maxWidth: "80px",
+    height: "56px",
+    padding: "8px 12px",
+
     // Reset
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    cursor: 'pointer',
-    
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    cursor: "pointer",
+
     // Transitions
-    transition: 'all 200ms ease-out',
-    
+    transition: "all 200ms ease-out",
+
     // Touch target
-    WebkitTapHighlightColor: 'transparent',
+    WebkitTapHighlightColor: "transparent",
   };
 
   const iconWrapperStyles: React.CSSProperties = {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '44px',
-    height: '28px',
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "44px",
+    height: "28px",
     borderRadius: radius.full,
-    background: isActive ? colors.primary.soft : 'transparent',
-    transition: 'all 200ms ease-out',
+    background: isActive ? colors.primary.soft : "transparent",
+    transition: "all 200ms ease-out",
   };
 
   const iconStyles: React.CSSProperties = {
-    width: '22px',
-    height: '22px',
+    width: "22px",
+    height: "22px",
     color: isActive ? colors.primary.DEFAULT : colors.text.tertiary,
-    transition: 'color 200ms ease-out',
+    transition: "color 200ms ease-out",
   };
 
   const labelStyles: React.CSSProperties = {
     fontFamily: fontFamily.sans,
-    fontSize: '11px',
+    fontSize: "11px",
     fontWeight: isActive ? fontWeight.semibold : fontWeight.medium,
     color: isActive ? colors.primary.DEFAULT : colors.text.tertiary,
-    transition: 'all 200ms ease-out',
-    whiteSpace: 'nowrap',
+    transition: "all 200ms ease-out",
+    whiteSpace: "nowrap",
   };
 
   const badgeStyles: React.CSSProperties = {
-    position: 'absolute',
-    top: '-2px',
-    right: '4px',
-    minWidth: '16px',
-    height: '16px',
-    padding: '0 4px',
+    position: "absolute",
+    top: "-2px",
+    right: "4px",
+    minWidth: "16px",
+    height: "16px",
+    padding: "0 4px",
     borderRadius: radius.full,
     background: colors.danger.DEFAULT,
-    color: '#FFFFFF',
-    fontSize: '10px',
+    color: "#FFFFFF",
+    fontSize: "10px",
     fontWeight: fontWeight.bold,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
   return (
@@ -235,7 +245,7 @@ const TabButton: React.FC<TabButtonProps> = ({ item, isActive, onClick }) => {
       onClick={onClick}
       whileTap={tapScale}
       aria-label={item.label}
-      aria-current={isActive ? 'page' : undefined}
+      aria-current={isActive ? "page" : undefined}
     >
       <div style={iconWrapperStyles}>
         {/* Active indicator pill */}
@@ -243,38 +253,36 @@ const TabButton: React.FC<TabButtonProps> = ({ item, isActive, onClick }) => {
           <motion.div
             layoutId="activeTab"
             style={{
-              position: 'absolute',
+              position: "absolute",
               inset: 0,
               borderRadius: radius.full,
               background: colors.primary.soft,
             }}
             transition={{
-              type: 'spring',
+              type: "spring",
               stiffness: 500,
               damping: 35,
             }}
           />
         )}
-        
-        <span style={iconStyles}>
-          {item.icon}
-        </span>
-        
+
+        <span style={iconStyles}>{item.icon}</span>
+
         {/* Badge */}
         {item.badge !== undefined && (
           <span style={badgeStyles}>
-            {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
+            {typeof item.badge === "number" && item.badge > 99
+              ? "99+"
+              : item.badge}
           </span>
         )}
       </div>
-      
-      <span style={labelStyles}>
-        {item.label}
-      </span>
+
+      <span style={labelStyles}>{item.label}</span>
     </motion.button>
   );
 };
 
-BottomTabBar.displayName = 'BottomTabBar';
+BottomTabBar.displayName = "BottomTabBar";
 
 export default BottomTabBar;

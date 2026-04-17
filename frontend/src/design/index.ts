@@ -1,35 +1,35 @@
 /**
  * Design System — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Central export for all design tokens, typography, and animations.
- * 
+ *
  * @usage import { tokens, typography, animations } from '@/design';
  */
 
 // Core tokens
-export * from './tokens';
-export { default as tokens } from './tokens';
+export * from "./tokens";
+export { default as tokens } from "./tokens";
 
 // Typography
-export * from './typography';
-export { default as typography } from './typography';
+export * from "./typography";
+export { default as typography } from "./typography";
 
 // Animations
-export * from './animations';
-export { default as animations } from './animations';
+export * from "./animations";
+export { default as animations } from "./animations";
 
 // Re-export commonly used items at top level for convenience
-export { 
-  colors, 
-  spacing, 
-  radius, 
-  shadows, 
-  zIndex, 
-  breakpoints, 
-  media, 
+export {
+  colors,
+  spacing,
+  radius,
+  shadows,
+  zIndex,
+  breakpoints,
+  media,
   transitions,
   blur,
-} from './tokens';
+} from "./tokens";
 
 export {
   fontFamily,
@@ -42,7 +42,7 @@ export {
   googleFontsUrl,
   satoshiFontUrl,
   fontImports,
-} from './typography';
+} from "./typography";
 
 export {
   duration,
@@ -72,4 +72,4 @@ export {
   pageTransition,
   createStagger,
   createSlide,
-} from './animations';
+} from "./animations";

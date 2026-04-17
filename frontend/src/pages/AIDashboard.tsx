@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 import {
   FaBrain,
   FaRobot,
@@ -18,13 +18,15 @@ import {
   FaWrench,
   FaCalendarCheck,
   FaClipboardList,
+  FaBuilding,
+  FaUser,
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
-import { API_BASE_URL } from "../services/api";
+import { api, ApiService, SessionUser } from "../services/api";
 import createStyles, { spacing, radius } from "../styles/shared";
 import QuotaCard from "../components/QuotaCard";
 
-// ── Tipos ──
+// â”€â”€ Tipos â”€â”€
 interface AIEngine {
   name: string;
   status: "online" | "offline" | "loading";
@@ -50,7 +52,7 @@ interface AnalysisResult {
   timestamp: Date;
 }
 
-// ── Configuração das IAs (Nomes em Português) ──
+// â”€â”€ ConfiguraÃ§Ã£o das IAs (Nomes em PortuguÃªs) â”€â”€
 const AI_ENGINES_CONFIG: Record<
   string,
   {
@@ -65,53 +67,53 @@ const AI_ENGINES_CONFIG: Record<
     color: "#00D4FF",
     displayName: "Analisador de Desenhos",
     description:
-      "Analisa desenhos CAD, extrai componentes, valida normas técnicas",
+      "Analisa desenhos CAD, extrai componentes, valida normas tÃ©cnicas",
   },
   PipeOptimizerAI: {
     icon: <FaRoute />,
     color: "#00FF94",
     displayName: "Otimizador de Rotas",
-    description: "Otimiza rotas de tubulação, calcula materiais e custos",
+    description: "Otimiza rotas de tubulaÃ§Ã£o, calcula materiais e custos",
   },
   ConflictDetectorAI: {
     icon: <FaExclamationTriangle />,
     color: "#FF6B6B",
     displayName: "Detector de Conflitos",
-    description: "Detecta colisões e interferências entre componentes",
+    description: "Detecta colisÃµes e interferÃªncias entre componentes",
   },
   CostEstimatorAI: {
     icon: <FaDollarSign />,
     color: "#FFD93D",
     displayName: "Estimador de Custos",
-    description: "Estima custos, gera MTO e relatórios financeiros",
+    description: "Estima custos, gera MTO e relatÃ³rios financeiros",
   },
   QualityInspectorAI: {
     icon: <FaCheckCircle />,
     color: "#6BCB77",
     displayName: "Inspetor de Qualidade",
-    description: "Inspeção automática de qualidade e conformidade",
+    description: "InspeÃ§Ã£o automÃ¡tica de qualidade e conformidade",
   },
   DocumentGeneratorAI: {
     icon: <FaFileAlt />,
     color: "#9B59B6",
     displayName: "Gerador de Documentos",
-    description: "Gera documentação técnica automaticamente",
+    description: "Gera documentaÃ§Ã£o tÃ©cnica automaticamente",
   },
   MaintenancePredictorAI: {
     icon: <FaTools />,
     color: "#FF8C00",
-    displayName: "Preditor de Manutenção",
-    description: "Predição de manutenção baseada em padrões",
+    displayName: "Preditor de ManutenÃ§Ã£o",
+    description: "PrediÃ§Ã£o de manutenÃ§Ã£o baseada em padrÃµes",
   },
   AssistantChatbotAI: {
     icon: <FaComments />,
     color: "#00B4D8",
-    displayName: "Assistente Técnico",
-    description: "Assistente técnico com conhecimento CAD/Industrial",
+    displayName: "Assistente TÃ©cnico",
+    description: "Assistente tÃ©cnico com conhecimento CAD/Industrial",
   },
 };
 
-// ── Componentes ──
+// â”€â”€ Componentes â”€â”€
 const AICard: React.FC<{
   engine: AIEngine;
   theme: ReturnType<typeof useTheme>["theme"];
@@ -130,8 +132,8 @@ const AICard: React.FC<{
       onClick={onSelect}
       style={{
         background: isSelected
-          ? `linear-gradient(135deg, ${config.color}20 0%, ${theme.bgSecondary} 100%)`
-          : theme.bgSecondary,
+          ? `linear-gradient(135deg, ${config.color}20 0%, ${theme.surface} 100%)`
+          : theme.surface,
         border: `2px solid ${isSelected ? config.color : theme.border}`,
         borderRadius: radius.lg,
         padding: spacing.md,
@@ -213,7 +215,7 @@ const AICard: React.FC<{
                 fontSize: 10,
                 padding: "2px 6px",
                 borderRadius: radius.sm,
-                background: theme.bgPrimary,
+                background: theme.background,
                 color: theme.textSecondary,
               }}
             >
@@ -224,7 +226,7 @@ const AICard: React.FC<{
                 fontSize: 10,
                 padding: "2px 6px",
                 borderRadius: radius.sm,
-                background: theme.bgPrimary,
+                background: theme.background,
                 color: engine.metrics.successRate > 90 ? "#00FF94" : "#FFD93D",
               }}
             >
@@ -255,7 +257,7 @@ const ChatInterface: React.FC<{
   return (
     <div
       style={{
-        background: theme.bgSecondary,
+        background: theme.surface,
         borderRadius: radius.lg,
         border: `1px solid ${theme.border}`,
         display: "flex",
@@ -307,9 +309,9 @@ const ChatInterface: React.FC<{
             >
               <FaRobot size={40} />
             </span>
-            <p>Olá! Como posso ajudar com seu projeto CAD?</p>
+            <p>OlÃ¡! Como posso ajudar com seu projeto CAD?</p>
             <p style={{ fontSize: 12 }}>
-              Pergunte sobre normas, materiais, comandos AutoCAD, cálculos...
+              Pergunte sobre normas, materiais, comandos AutoCAD, cÃ¡lculos...
             </p>
           </div>
         )}
@@ -322,7 +324,7 @@ const ChatInterface: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               background:
-                msg.role === "user" ? theme.accentPrimary : theme.bgPrimary,
+                msg.role === "user" ? theme.accentPrimary : theme.background,
               color: msg.role === "user" ? "#fff" : theme.textPrimary,
             }}
           >
@@ -335,7 +337,7 @@ const ChatInterface: React.FC<{
               alignSelf: "flex-start",
               padding: spacing.sm,
               borderRadius: radius.md,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textSecondary,
             }}
           >
@@ -363,7 +365,7 @@ const ChatInterface: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
@@ -399,7 +401,7 @@ const AnalysisPanel: React.FC<{
     return (
       <div
         style={{
-          background: theme.bgSecondary,
+          background: theme.surface,
           borderRadius: radius.lg,
           border: `1px solid ${theme.border}`,
           padding: spacing.xl,
@@ -416,7 +418,7 @@ const AnalysisPanel: React.FC<{
         >
           <FaCog size={40} />
         </span>
-        <p>Selecione uma IA para ver opções de análise</p>
+        <p>Selecione uma IA para ver opÃ§Ãµes de anÃ¡lise</p>
       </div>
     );
   }
@@ -426,7 +428,7 @@ const AnalysisPanel: React.FC<{
   return (
     <div
       style={{
-        background: theme.bgSecondary,
+        background: theme.surface,
         borderRadius: radius.lg,
         border: `1px solid ${theme.border}`,
         padding: spacing.md,
@@ -479,7 +481,7 @@ const AnalysisPanel: React.FC<{
                 padding: `${spacing.xs} ${spacing.sm}`,
                 borderRadius: radius.md,
                 border: `1px solid ${theme.border}`,
-                background: theme.bgPrimary,
+                background: theme.background,
                 color: theme.textPrimary,
                 cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 11,
@@ -510,7 +512,7 @@ const AnalysisPanel: React.FC<{
                 style={{
                   padding: spacing.sm,
                   borderRadius: radius.md,
-                  background: theme.bgPrimary,
+                  background: theme.background,
                   marginBottom: spacing.xs,
                 }}
               >
@@ -530,7 +532,7 @@ const AnalysisPanel: React.FC<{
                       color: result.success ? "#00FF94" : "#FF6B6B",
                     }}
                   >
-                    {result.success ? "✓ Sucesso" : "✗ Erro"}
+                    {result.success ? "âœ“ Sucesso" : "âœ— Erro"}
                   </span>
                 </div>
                 <pre
@@ -554,7 +556,7 @@ const AnalysisPanel: React.FC<{
   );
 };
 
-// ── Panel de Estimativa de Custos ──
+// â”€â”€ Panel de Estimativa de Custos â”€â”€
 const CostEstimatorPanel: React.FC<{
   theme: ReturnType<typeof useTheme>["theme"];
   onSubmit: (data: any) => Promise<any>;
@@ -563,7 +565,7 @@ const CostEstimatorPanel: React.FC<{
   const [result, setResult] = useState<any>(null);
   const [formData, setFormData] = useState({
     project_name: "",
-    materials: "Aço Carbono ASTM A106",
+    materials: "AÃ§o Carbono ASTM A106",
     labor_hours: 100,
     complexity: "medium",
   });
@@ -581,7 +583,7 @@ const CostEstimatorPanel: React.FC<{
   return (
     <div
       style={{
-        background: theme.bgSecondary,
+        background: theme.surface,
         borderRadius: radius.lg,
         border: `1px solid ${theme.border}`,
         padding: spacing.md,
@@ -639,7 +641,7 @@ const CostEstimatorPanel: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
@@ -653,13 +655,13 @@ const CostEstimatorPanel: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
         >
-          <option value="Aço Carbono ASTM A106">Aço Carbono ASTM A106</option>
-          <option value="Aço Inox 316L">Aço Inox 316L</option>
+          <option value="AÃ§o Carbono ASTM A106">AÃ§o Carbono ASTM A106</option>
+          <option value="AÃ§o Inox 316L">AÃ§o Inox 316L</option>
           <option value="Inconel 625">Inconel 625</option>
           <option value="Hastelloy C-276">Hastelloy C-276</option>
         </select>
@@ -676,7 +678,7 @@ const CostEstimatorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
@@ -691,13 +693,13 @@ const CostEstimatorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
           >
             <option value="low">Baixa complexidade</option>
-            <option value="medium">Média complexidade</option>
+            <option value="medium">MÃ©dia complexidade</option>
             <option value="high">Alta complexidade</option>
           </select>
         </div>
@@ -735,7 +737,7 @@ const CostEstimatorPanel: React.FC<{
             marginTop: spacing.md,
             padding: spacing.sm,
             borderRadius: radius.md,
-            background: theme.bgPrimary,
+            background: theme.background,
           }}
         >
           <div
@@ -748,7 +750,7 @@ const CostEstimatorPanel: React.FC<{
             <span style={{ color: theme.textSecondary, fontSize: 11 }}>
               RESULTADO
             </span>
-            <span style={{ color: "#00FF94", fontSize: 11 }}>✓ Estimado</span>
+            <span style={{ color: "#00FF94", fontSize: 11 }}>âœ“ Estimado</span>
           </div>
           <div
             style={{ color: theme.textPrimary, fontSize: 20, fontWeight: 700 }}
@@ -767,7 +769,7 @@ const CostEstimatorPanel: React.FC<{
           >
             Materiais: R${" "}
             {result?.data?.material_cost?.toLocaleString("pt-BR") || "---"} |
-            Mão de obra: R${" "}
+            MÃ£o de obra: R${" "}
             {result?.data?.labor_cost?.toLocaleString("pt-BR") || "---"}
           </div>
         </div>
@@ -776,7 +778,7 @@ const CostEstimatorPanel: React.FC<{
   );
 };
 
-// ── Panel de Predição de Manutenção ──
+// â”€â”€ Panel de PrediÃ§Ã£o de ManutenÃ§Ã£o â”€â”€
 const MaintenancePredictorPanel: React.FC<{
   theme: ReturnType<typeof useTheme>["theme"];
   onSubmit: (data: any) => Promise<any>;
@@ -804,7 +806,7 @@ const MaintenancePredictorPanel: React.FC<{
   return (
     <div
       style={{
-        background: theme.bgSecondary,
+        background: theme.surface,
         borderRadius: radius.lg,
         border: `1px solid ${theme.border}`,
         padding: spacing.md,
@@ -841,7 +843,7 @@ const MaintenancePredictorPanel: React.FC<{
               margin: 0,
             }}
           >
-            Predição de Manutenção
+            PrediÃ§Ã£o de ManutenÃ§Ã£o
           </h3>
           <span style={{ color: theme.textSecondary, fontSize: 11 }}>
             MaintenancePredictor AI
@@ -861,21 +863,21 @@ const MaintenancePredictorPanel: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
         >
-          <option value="pipe_segment">Segmento de Tubulação</option>
-          <option value="valve">Válvula</option>
+          <option value="pipe_segment">Segmento de TubulaÃ§Ã£o</option>
+          <option value="valve">VÃ¡lvula</option>
           <option value="pump">Bomba</option>
           <option value="heat_exchanger">Trocador de Calor</option>
-          <option value="vessel">Vaso de Pressão</option>
+          <option value="vessel">Vaso de PressÃ£o</option>
         </select>
         <div style={{ display: "flex", gap: spacing.sm }}>
           <input
             type="number"
-            placeholder="Horas de operação"
+            placeholder="Horas de operaÃ§Ã£o"
             value={formData.operating_hours}
             onChange={(e) =>
               setFormData({
@@ -888,7 +890,7 @@ const MaintenancePredictorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
@@ -904,7 +906,7 @@ const MaintenancePredictorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
@@ -913,7 +915,7 @@ const MaintenancePredictorPanel: React.FC<{
         <div style={{ display: "flex", gap: spacing.sm }}>
           <input
             type="number"
-            placeholder="Pressão (bar)"
+            placeholder="PressÃ£o (bar)"
             value={formData.pressure_bar}
             onChange={(e) =>
               setFormData({ ...formData, pressure_bar: Number(e.target.value) })
@@ -923,14 +925,14 @@ const MaintenancePredictorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
           />
           <input
             type="number"
-            placeholder="Temperatura (°C)"
+            placeholder="Temperatura (Â°C)"
             value={formData.temperature_c}
             onChange={(e) =>
               setFormData({
@@ -943,7 +945,7 @@ const MaintenancePredictorPanel: React.FC<{
               padding: spacing.sm,
               borderRadius: radius.md,
               border: `1px solid ${theme.border}`,
-              background: theme.bgPrimary,
+              background: theme.background,
               color: theme.textPrimary,
               outline: "none",
             }}
@@ -973,7 +975,7 @@ const MaintenancePredictorPanel: React.FC<{
           ) : (
             <FaCalendarCheck />
           )}{" "}
-          {loading ? "Analisando..." : "Prever Manutenção"}
+          {loading ? "Analisando..." : "Prever ManutenÃ§Ã£o"}
         </button>
       </div>
 
@@ -983,7 +985,7 @@ const MaintenancePredictorPanel: React.FC<{
             marginTop: spacing.md,
             padding: spacing.sm,
             borderRadius: radius.md,
-            background: theme.bgPrimary,
+            background: theme.background,
           }}
         >
           <div
@@ -994,7 +996,7 @@ const MaintenancePredictorPanel: React.FC<{
             }}
           >
             <span style={{ color: theme.textSecondary, fontSize: 11 }}>
-              PREDIÇÃO
+              PREDIÃ‡ÃƒO
             </span>
             <span
               style={{
@@ -1019,7 +1021,7 @@ const MaintenancePredictorPanel: React.FC<{
           <div
             style={{ color: theme.textPrimary, fontSize: 14, fontWeight: 600 }}
           >
-            Próxima manutenção:{" "}
+            PrÃ³xima manutenÃ§Ã£o:{" "}
             {result?.data?.next_maintenance ||
               result?.next_maintenance ||
               "---"}
@@ -1031,11 +1033,11 @@ const MaintenancePredictorPanel: React.FC<{
               marginTop: spacing.xs,
             }}
           >
-            Vida útil restante:{" "}
+            Vida Ãºtil restante:{" "}
             {result?.data?.remaining_life_percent ||
               result?.remaining_life_percent ||
               "---"}
-            % | Confiança:{" "}
+            % | ConfianÃ§a:{" "}
             {result?.data?.confidence || result?.confidence || "---"}%
           </div>
         </div>
@@ -1044,7 +1046,7 @@ const MaintenancePredictorPanel: React.FC<{
   );
 };
 
-// ── Panel de Geração de Documentos ──
+// â”€â”€ Panel de GeraÃ§Ã£o de Documentos â”€â”€
 const DocumentGeneratorPanel: React.FC<{
   theme: ReturnType<typeof useTheme>["theme"];
   onSubmit: (data: any) => Promise<any>;
@@ -1083,7 +1085,7 @@ const DocumentGeneratorPanel: React.FC<{
   return (
     <div
       style={{
-        background: theme.bgSecondary,
+        background: theme.surface,
         borderRadius: radius.lg,
         border: `1px solid ${theme.border}`,
         padding: spacing.md,
@@ -1120,7 +1122,7 @@ const DocumentGeneratorPanel: React.FC<{
               margin: 0,
             }}
           >
-            Geração de Documentos
+            GeraÃ§Ã£o de Documentos
           </h3>
           <span style={{ color: theme.textSecondary, fontSize: 11 }}>
             DocumentGenerator AI
@@ -1141,7 +1143,7 @@ const DocumentGeneratorPanel: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
@@ -1155,16 +1157,16 @@ const DocumentGeneratorPanel: React.FC<{
             padding: spacing.sm,
             borderRadius: radius.md,
             border: `1px solid ${theme.border}`,
-            background: theme.bgPrimary,
+            background: theme.background,
             color: theme.textPrimary,
             outline: "none",
           }}
         >
-          <option value="technical_report">Relatório Técnico</option>
+          <option value="technical_report">RelatÃ³rio TÃ©cnico</option>
           <option value="material_list">Lista de Materiais (BOM)</option>
-          <option value="specification">Especificação Técnica</option>
-          <option value="maintenance_manual">Manual de Manutenção</option>
-          <option value="quality_report">Relatório de Qualidade</option>
+          <option value="specification">EspecificaÃ§Ã£o TÃ©cnica</option>
+          <option value="maintenance_manual">Manual de ManutenÃ§Ã£o</option>
+          <option value="quality_report">RelatÃ³rio de Qualidade</option>
         </select>
         <div style={{ display: "flex", flexWrap: "wrap", gap: spacing.xs }}>
           {[
@@ -1183,7 +1185,7 @@ const DocumentGeneratorPanel: React.FC<{
                 gap: 4,
                 padding: "4px 8px",
                 borderRadius: radius.sm,
-                background: theme.bgPrimary,
+                background: theme.background,
                 cursor: "pointer",
                 fontSize: 11,
                 color: theme.textSecondary,
@@ -1222,7 +1224,7 @@ const DocumentGeneratorPanel: React.FC<{
                 {section === "summary"
                   ? "Resumo"
                   : section === "specifications"
-                    ? "Especificações"
+                    ? "EspecificaÃ§Ãµes"
                     : section === "materials"
                       ? "Materiais"
                       : section === "costs"
@@ -1268,7 +1270,7 @@ const DocumentGeneratorPanel: React.FC<{
             marginTop: spacing.md,
             padding: spacing.sm,
             borderRadius: radius.md,
-            background: theme.bgPrimary,
+            background: theme.background,
           }}
         >
           <div
@@ -1318,7 +1320,7 @@ const DocumentGeneratorPanel: React.FC<{
   );
 };
 
-// ── Página Principal ──
+// â”€â”€ PÃ¡gina Principal â”€â”€
 const AIDashboard: React.FC = () => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -1329,6 +1331,7 @@ const AIDashboard: React.FC = () => {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
   const [activeTab, setActiveTab] = useState<"engines" | "tools">("tools");
   const [loading, setLoading] = useState(false);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [systemStatus, setSystemStatus] = useState<
     "online" | "offline" | "loading"
   >("loading");
@@ -1338,19 +1341,14 @@ const AIDashboard: React.FC = () => {
     let cancelled = false;
     const loadEngines = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/ai/engines`);
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) {
-            setEngines(data.engines || []);
-            setSystemStatus("online");
-          }
-        } else {
-          throw new Error("API offline");
+        const res = await api.get("/api/ai/engines");
+        if (!cancelled) {
+          setEngines(res.data.engines || []);
+          setSystemStatus("online");
         }
       } catch {
         if (!cancelled) {
-          // Fallback: engines padrão offline
+          // Fallback: engines padrÃ£o offline
           setEngines(
             Object.keys(AI_ENGINES_CONFIG).map((name) => ({
               name,
@@ -1370,6 +1368,22 @@ const AIDashboard: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadSession = async () => {
+      try {
+        const user = await ApiService.getCurrentUser();
+        if (!cancelled) setSessionUser(user);
+      } catch {
+        if (!cancelled) setSessionUser(null);
+      }
+    };
+    loadSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Enviar mensagem ao chat
   const handleSendChat = async (message: string) => {
     setChatMessages((prev) => [
@@ -1379,17 +1393,8 @@ const AIDashboard: React.FC = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE_URL}/api/ai/chat`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ message, context: {} }),
-      });
-      const data = await res.json();
+      const res = await api.post("/api/ai/chat", { message, context: {} });
+      const data = res.data;
 
       // Extrair resposta do formato agregado do router de IAs
       const chatResponse =
@@ -1397,7 +1402,7 @@ const AIDashboard: React.FC = () => {
         data.response ||
         data.message ||
         (data.success === false ? data.error : null) ||
-        "Desculpe, não consegui processar.";
+        "Desculpe, nÃ£o consegui processar.";
 
       setChatMessages((prev) => [
         ...prev,
@@ -1421,7 +1426,7 @@ const AIDashboard: React.FC = () => {
     }
   };
 
-  // Executar análise
+  // Executar anÃ¡lise
   const handleAnalyze = async (
     type: string,
     inputData: Record<string, unknown>,
@@ -1430,20 +1435,11 @@ const AIDashboard: React.FC = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(
-        `${API_BASE_URL}/api/ai/engine/${selectedEngine.name}/execute`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ capability: type, input: inputData }),
-        },
+      const res = await api.post(
+        `/api/ai/engine/${selectedEngine.name}/execute`,
+        { capability: type, input: inputData },
       );
-      const data = await res.json();
+      const data = res.data;
       setAnalysisResults((prev) => [
         ...prev,
         { type, success: data.success !== false, data, timestamp: new Date() },
@@ -1454,7 +1450,7 @@ const AIDashboard: React.FC = () => {
         {
           type,
           success: false,
-          data: { error: "Erro de conexão" },
+          data: { error: "Erro de conexÃ£o" },
           timestamp: new Date(),
         },
       ]);
@@ -1465,47 +1461,29 @@ const AIDashboard: React.FC = () => {
 
   // Handler para estimativa de custos
   const handleCostEstimate = useCallback(async (data: any) => {
-    const token = localStorage.getItem("token");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/api/ai/estimate/costs`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ data, options: {} }),
+    const res = await api.post("/api/ai/estimate/costs", {
+      data,
+      options: {},
     });
-    return res.json();
+    return res.data;
   }, []);
 
-  // Handler para predição de manutenção
+  // Handler para prediÃ§Ã£o de manutenÃ§Ã£o
   const handleMaintenancePredict = useCallback(async (data: any) => {
-    const token = localStorage.getItem("token");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/api/ai/estimate/maintenance`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ data, options: {} }),
+    const res = await api.post("/api/ai/estimate/maintenance", {
+      data,
+      options: {},
     });
-    return res.json();
+    return res.data;
   }, []);
 
-  // Handler para geração de documentos
+  // Handler para geraÃ§Ã£o de documentos
   const handleDocumentGenerate = useCallback(async (data: any) => {
-    const token = localStorage.getItem("token");
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/api/ai/generate/document`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ data, options: {} }),
+    const res = await api.post("/api/ai/generate/document", {
+      data,
+      options: {},
     });
-    return res.json();
+    return res.data;
   }, []);
 
   // Engines with status "idle", "processing", or "completed" are considered online/available
@@ -1514,6 +1492,26 @@ const AIDashboard: React.FC = () => {
       e.status?.toLowerCase() || "",
     ),
   ).length;
+  const totalCalls = engines.reduce(
+    (sum, e) => sum + (e.metrics?.calls || 0),
+    0,
+  );
+  const avgSuccessRate =
+    engines.length > 0
+      ? Math.round(
+          engines.reduce((sum, e) => sum + (e.metrics?.successRate || 0), 0) /
+            engines.length,
+        )
+      : 0;
+  const avgResponseTime =
+    engines.length > 0
+      ? Math.round(
+          engines.reduce(
+            (sum, e) => sum + (e.metrics?.avgResponseTime || 0),
+            0,
+          ) / engines.length,
+        )
+      : 0;
 
   return (
     <div style={{ ...styles.pageContainer, padding: 0 }}>
@@ -1543,19 +1541,130 @@ const AIDashboard: React.FC = () => {
               </span>
             </p>
           </div>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              ...styles.buttonPrimary,
-              background: `linear-gradient(135deg, #00D4FF 0%, #00D4FFCC 100%)`,
-              boxShadow: `0 4px 15px #00D4FF40`,
-            }}
+          <div
+            style={{ display: "flex", gap: spacing.sm, alignItems: "center" }}
           >
-            <FaSync size={12} /> ATUALIZAR STATUS
-          </button>
+            {sessionUser?.empresa && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${theme.border}`,
+                  background: theme.surface,
+                  color: theme.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <FaBuilding />
+                {sessionUser.empresa}
+              </span>
+            )}
+            {sessionUser?.email && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${theme.border}`,
+                  background: theme.surface,
+                  color: theme.textSecondary,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <FaUser />
+                {sessionUser.email}
+              </span>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                ...styles.buttonPrimary,
+                background: `linear-gradient(135deg, #00D4FF 0%, #00D4FFCC 100%)`,
+                boxShadow: `0 4px 15px #00D4FF40`,
+              }}
+            >
+              <FaSync size={12} /> ATUALIZAR STATUS
+            </button>
+          </div>
         </header>
 
-        {/* Métricas Globais */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: spacing.sm,
+            marginBottom: spacing.lg,
+          }}
+        >
+          <div
+            style={{
+              border: `1px solid ${theme.border}`,
+              borderRadius: radius.lg,
+              background: `linear-gradient(135deg, ${theme.surface} 0%, ${theme.background} 100%)`,
+              padding: spacing.md,
+            }}
+          >
+            <div
+              style={{
+                color: theme.textSecondary,
+                fontSize: 11,
+                marginBottom: 6,
+              }}
+            >
+              PERFORMANCE EXECUTIVA
+            </div>
+            <div
+              style={{
+                color: theme.textPrimary,
+                fontSize: 18,
+                fontWeight: 700,
+              }}
+            >
+              {onlineCount}/{engines.length} engines ativas
+            </div>
+            <div
+              style={{ color: theme.textSecondary, fontSize: 12, marginTop: 6 }}
+            >
+              {totalCalls.toLocaleString("pt-BR")} chamadas processadas
+            </div>
+          </div>
+
+          <div
+            style={{
+              border: `1px solid ${theme.border}`,
+              borderRadius: radius.lg,
+              background: theme.surface,
+              padding: spacing.md,
+            }}
+          >
+            <div
+              style={{
+                color: theme.textSecondary,
+                fontSize: 11,
+                marginBottom: 6,
+              }}
+            >
+              SLA DE RESPOSTA
+            </div>
+            <div style={{ color: "#00FF94", fontSize: 18, fontWeight: 700 }}>
+              {avgSuccessRate}% sucesso mÃ©dio
+            </div>
+            <div
+              style={{ color: theme.textSecondary, fontSize: 12, marginTop: 6 }}
+            >
+              {avgResponseTime}ms tempo mÃ©dio
+            </div>
+          </div>
+        </div>
+
+        {/* MÃ©tricas Globais */}
         <div
           style={{
             display: "grid",
@@ -1575,40 +1684,22 @@ const AIDashboard: React.FC = () => {
           <MetricCard
             icon={<FaChartLine />}
             label="Chamadas Hoje"
-            value={engines.reduce((sum, e) => sum + (e.metrics?.calls || 0), 0)}
+            value={totalCalls}
             color="#00FF94"
             theme={theme}
           />
           <MetricCard
             icon={<FaCheckCircle />}
             label="Taxa de Sucesso"
-            value={
-              engines.length > 0
-                ? Math.round(
-                    engines.reduce(
-                      (sum, e) => sum + (e.metrics?.successRate || 0),
-                      0,
-                    ) / engines.length,
-                  )
-                : 0
-            }
+            value={avgSuccessRate}
             suffix="%"
             color="#6BCB77"
             theme={theme}
           />
           <MetricCard
             icon={<FaCog />}
-            label="Tempo Médio"
-            value={
-              engines.length > 0
-                ? Math.round(
-                    engines.reduce(
-                      (sum, e) => sum + (e.metrics?.avgResponseTime || 0),
-                      0,
-                    ) / engines.length,
-                  )
-                : 0
-            }
+            label="Tempo MÃ©dio"
+            value={avgResponseTime}
             suffix="ms"
             color="#FFD93D"
             theme={theme}
@@ -1620,7 +1711,7 @@ const AIDashboard: React.FC = () => {
           <QuotaCard />
         </div>
 
-        {/* Tabs de navegação */}
+        {/* Tabs de navegaÃ§Ã£o */}
         <div
           style={{
             display: "flex",
@@ -1674,12 +1765,12 @@ const AIDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab: Ferramentas IA (Painéis diretos) */}
+        {/* Tab: Ferramentas IA (PainÃ©is diretos) */}
         {activeTab === "tools" && (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
               gap: spacing.lg,
             }}
           >
@@ -1722,11 +1813,11 @@ const AIDashboard: React.FC = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
               gap: spacing.lg,
             }}
           >
-            {/* Coluna Esquerda: IAs + Análise */}
+            {/* Coluna Esquerda: IAs + AnÃ¡lise */}
             <div>
               <h2
                 style={{
@@ -1747,7 +1838,7 @@ const AIDashboard: React.FC = () => {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                   gap: spacing.sm,
                   marginBottom: spacing.lg,
                 }}
@@ -1788,7 +1879,7 @@ const AIDashboard: React.FC = () => {
                 <span style={{ color: "#00B4D8" }}>
                   <FaComments />
                 </span>
-                Assistente Técnico
+                Assistente TÃ©cnico
               </h2>
               <ChatInterface
                 messages={chatMessages}
@@ -1806,7 +1897,7 @@ const AIDashboard: React.FC = () => {
                     marginBottom: spacing.sm,
                   }}
                 >
-                  AÇÕES RÁPIDAS
+                  AÃ‡Ã•ES RÃPIDAS
                 </h3>
                 <div
                   style={{ display: "flex", flexWrap: "wrap", gap: spacing.xs }}
@@ -1843,7 +1934,7 @@ const AIDashboard: React.FC = () => {
   );
 };
 
-// ── Componente Auxiliar: Metric Card ──
+// â”€â”€ Componente Auxiliar: Metric Card â”€â”€
 const MetricCard: React.FC<{
   icon: React.ReactElement;
   label: string;
@@ -1855,7 +1946,7 @@ const MetricCard: React.FC<{
 }> = ({ icon, label, value, total, suffix, color, theme }) => (
   <div
     style={{
-      background: theme.bgSecondary,
+      background: theme.surface,
       borderRadius: radius.lg,
       border: `1px solid ${theme.border}`,
       padding: spacing.md,

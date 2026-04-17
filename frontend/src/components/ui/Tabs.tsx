@@ -1,8 +1,8 @@
 /**
  * Tabs Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Elegant tabs with underline or pills variants and smooth animations.
- * 
+ *
  * @usage
  * <Tabs value={activeTab} onChange={setActiveTab}>
  *   <TabsList>
@@ -14,10 +14,16 @@
  * </Tabs>
  */
 
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { colors, radius, spacing } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { colors, radius, spacing } from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -26,8 +32,8 @@ import { fontFamily, fontSize, fontWeight } from '../../design/typography';
 export interface TabsProps {
   value: string;
   onChange: (value: string) => void;
-  variant?: 'underline' | 'pills' | 'bordered';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "underline" | "pills" | "bordered";
+  size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   children: React.ReactNode;
   className?: string;
@@ -57,8 +63,8 @@ export interface TabsContentProps {
 interface TabsContextValue {
   value: string;
   onChange: (value: string) => void;
-  variant: 'underline' | 'pills' | 'bordered';
-  size: 'sm' | 'md' | 'lg';
+  variant: "underline" | "pills" | "bordered";
+  size: "sm" | "md" | "lg";
   fullWidth: boolean;
 }
 
@@ -71,7 +77,7 @@ const TabsContext = createContext<TabsContextValue | null>(null);
 const useTabs = () => {
   const context = useContext(TabsContext);
   if (!context) {
-    throw new Error('Tabs components must be used within a Tabs provider');
+    throw new Error("Tabs components must be used within a Tabs provider");
   }
   return context;
 };
@@ -106,19 +112,19 @@ const sizeConfig = {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const contentVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     y: 8,
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: {
       duration: 0.2,
-      ease: 'easeOut',
+      ease: "easeOut",
     },
   },
-  exit: { 
+  exit: {
     opacity: 0,
     y: -8,
     transition: {
@@ -134,17 +140,15 @@ const contentVariants = {
 export const Tabs: React.FC<TabsProps> = ({
   value,
   onChange,
-  variant = 'underline',
-  size = 'md',
+  variant = "underline",
+  size = "md",
   fullWidth = false,
   children,
-  className = '',
+  className = "",
 }) => {
   return (
     <TabsContext.Provider value={{ value, onChange, variant, size, fullWidth }}>
-      <div className={className}>
-        {children}
-      </div>
+      <div className={className}>{children}</div>
     </TabsContext.Provider>
   );
 };
@@ -153,9 +157,9 @@ export const Tabs: React.FC<TabsProps> = ({
 // TABS LIST COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const TabsList: React.FC<TabsListProps> = ({ 
-  children, 
-  className = '' 
+export const TabsList: React.FC<TabsListProps> = ({
+  children,
+  className = "",
 }) => {
   const { variant, fullWidth } = useTabs();
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
@@ -163,8 +167,10 @@ export const TabsList: React.FC<TabsListProps> = ({
 
   // Update indicator position when value changes
   useEffect(() => {
-    if (variant === 'underline' && listRef.current) {
-      const activeTab = listRef.current.querySelector('[data-state="active"]') as HTMLElement;
+    if (variant === "underline" && listRef.current) {
+      const activeTab = listRef.current.querySelector(
+        '[data-state="active"]',
+      ) as HTMLElement;
       if (activeTab) {
         setIndicatorStyle({
           left: activeTab.offsetLeft,
@@ -176,47 +182,47 @@ export const TabsList: React.FC<TabsListProps> = ({
 
   const getVariantStyles = (): React.CSSProperties => {
     switch (variant) {
-      case 'pills':
+      case "pills":
         return {
           backgroundColor: colors.dark.surface,
           padding: spacing[1],
           borderRadius: radius.lg,
         };
-      case 'bordered':
+      case "bordered":
         return {
           borderBottom: `1px solid ${colors.border.subtle}`,
         };
       default:
         return {
           borderBottom: `1px solid ${colors.border.subtle}`,
-          position: 'relative',
+          position: "relative",
         };
     }
   };
 
   const styles = {
     list: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: variant === 'pills' ? spacing[1] : spacing[2],
-      width: fullWidth ? '100%' : 'auto',
+      display: "flex",
+      alignItems: "center",
+      gap: variant === "pills" ? spacing[1] : spacing[2],
+      width: fullWidth ? "100%" : "auto",
       ...getVariantStyles(),
     } as React.CSSProperties,
 
     indicator: {
-      position: 'absolute' as const,
-      bottom: '-1px',
-      height: '2px',
+      position: "absolute" as const,
+      bottom: "-1px",
+      height: "2px",
       backgroundColor: colors.primary.DEFAULT,
       borderRadius: radius.full,
-      transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
     },
   };
 
   return (
     <div ref={listRef} style={styles.list} role="tablist" className={className}>
       {children}
-      {variant === 'underline' && (
+      {variant === "underline" && (
         <motion.div
           style={{
             ...styles.indicator,
@@ -241,7 +247,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
   icon,
   badge,
   children,
-  className = '',
+  className = "",
 }) => {
   const { value, onChange, variant, size, fullWidth } = useTabs();
   const isActive = value === triggerValue;
@@ -249,20 +255,20 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
 
   const getVariantStyles = (): React.CSSProperties => {
     switch (variant) {
-      case 'pills':
+      case "pills":
         return {
-          backgroundColor: isActive ? colors.primary.DEFAULT : 'transparent',
-          color: isActive ? '#ffffff' : colors.text.secondary,
+          backgroundColor: isActive ? colors.primary.DEFAULT : "transparent",
+          color: isActive ? "#ffffff" : colors.text.secondary,
           borderRadius: radius.md,
         };
-      case 'bordered':
+      case "bordered":
         return {
-          backgroundColor: isActive ? colors.dark.elevated : 'transparent',
+          backgroundColor: isActive ? colors.dark.elevated : "transparent",
           color: isActive ? colors.text.primary : colors.text.secondary,
-          borderBottom: isActive 
-            ? `2px solid ${colors.primary.DEFAULT}` 
-            : '2px solid transparent',
-          marginBottom: '-1px',
+          borderBottom: isActive
+            ? `2px solid ${colors.primary.DEFAULT}`
+            : "2px solid transparent",
+          marginBottom: "-1px",
         };
       default: // underline
         return {
@@ -274,21 +280,21 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
 
   const styles = {
     trigger: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
       gap: config.gap,
       padding: config.padding,
       fontFamily: fontFamily.sans,
       fontSize: config.fontSize,
       fontWeight: isActive ? fontWeight.medium : fontWeight.normal,
-      border: 'none',
-      background: 'none',
-      cursor: disabled ? 'not-allowed' : 'pointer',
+      border: "none",
+      background: "none",
+      cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.5 : 1,
-      flex: fullWidth ? 1 : 'none',
-      transition: 'all 150ms ease-out',
-      whiteSpace: 'nowrap' as const,
+      flex: fullWidth ? 1 : "none",
+      transition: "all 150ms ease-out",
+      whiteSpace: "nowrap" as const,
       ...getVariantStyles(),
     } as React.CSSProperties,
 
@@ -304,21 +310,29 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({
       role="tab"
       aria-selected={isActive}
       aria-disabled={disabled}
-      data-state={isActive ? 'active' : 'inactive'}
-      whileHover={!disabled && variant !== 'underline' ? { 
-        backgroundColor: isActive 
-          ? variant === 'pills' ? colors.primary[600] : colors.dark.elevated
-          : colors.dark.subtle 
-      } : {}}
+      data-state={isActive ? "active" : "inactive"}
+      whileHover={
+        !disabled && variant !== "underline"
+          ? {
+              backgroundColor: isActive
+                ? variant === "pills"
+                  ? colors.primary[600]
+                  : colors.dark.elevated
+                : colors.dark.subtle,
+            }
+          : {}
+      }
       whileTap={!disabled ? { scale: 0.98 } : {}}
       className={className}
     >
       {icon && (
-        <span style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          opacity: isActive ? 1 : 0.7,
-        }}>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            opacity: isActive ? 1 : 0.7,
+          }}
+        >
           {icon}
         </span>
       )}
@@ -336,7 +350,7 @@ export const TabsContent: React.FC<TabsContentProps> = ({
   value: contentValue,
   forceMount = false,
   children,
-  className = '',
+  className = "",
 }) => {
   const { value } = useTabs();
   const isActive = value === contentValue;
@@ -353,7 +367,7 @@ export const TabsContent: React.FC<TabsContentProps> = ({
       <div
         style={{
           ...styles.content,
-          display: isActive ? 'block' : 'none',
+          display: isActive ? "block" : "none",
         }}
         role="tabpanel"
         aria-hidden={!isActive}

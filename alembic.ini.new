@@ -1,0 +1,58 @@
+# Engenharia CAD — Alembic Configuration (PostgreSQL async)
+# Renomeie para alembic.ini após validar a migração para PostgreSQL.
+
+[alembic]
+script_location = alembic
+file_template = %%(rev)s_%%(slug)s
+timezone = UTC
+prepend_sys_path = .
+output_encoding = utf-8
+
+# DATABASE_URL é lida pelo alembic/env.py via os.getenv("DATABASE_URL").
+# Formato esperado para produção:
+#   postgresql+asyncpg://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}
+#
+# Este valor abaixo é apenas fallback para desenvolvimento local sem env var.
+sqlalchemy.url = postgresql+asyncpg://%(DB_USER)s:%(DB_PASS)s@%(DB_HOST)s/%(DB_NAME)s
+
+
+[post_write_hooks]
+# hooks = black
+# black.type = console_scripts
+# black.entrypoint = black
+# black.options = -l 99
+
+
+[loggers]
+keys = root,sqlalchemy,alembic
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = WARN
+handlers = console
+qualname =
+
+[logger_sqlalchemy]
+level = WARN
+handlers =
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(levelname)-5.5s [%(name)s] %(message)s
+datefmt = %H:%M:%S

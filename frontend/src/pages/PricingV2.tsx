@@ -1,13 +1,13 @@
 /**
  * PricingV2 Page — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Luxurious pricing page with glassmorphism and premium feel.
  * Monthly/annual toggle, feature comparison, and trust signals.
  */
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Rocket,
   Crown,
@@ -27,21 +27,26 @@ import {
   Star,
   Clock,
   DollarSign,
-} from 'lucide-react';
-import { colors, radius, shadows, spacing, blur } from '../design/tokens';
-import { fontFamily, fontSize, fontWeight, textStyles } from '../design/typography';
-import { Button, Badge, BottomTabBar } from '../components/ui';
+} from "lucide-react";
+import { colors, radius, shadows, spacing, blur } from "../design/tokens";
+import {
+  fontFamily,
+  fontSize,
+  fontWeight,
+  textStyles,
+} from "../design/typography";
+import { Button, Badge, BottomTabBar } from "../components/ui";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ANIMATED BACKGROUND
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const AnimatedBackground: React.FC = () => (
-  <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', zIndex: 0 }}>
+  <div style={{ position: "fixed", inset: 0, overflow: "hidden", zIndex: 0 }}>
     {/* Base gradient */}
     <div
       style={{
-        position: 'absolute',
+        position: "absolute",
         inset: 0,
         background: `linear-gradient(135deg, ${colors.dark.base} 0%, #0A0F1A 50%, ${colors.dark.base} 100%)`,
       }}
@@ -54,16 +59,16 @@ const AnimatedBackground: React.FC = () => (
         y: [0, -40, 0],
         scale: [1, 1.1, 1],
       }}
-      transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+      transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
       style={{
-        position: 'absolute',
-        top: '5%',
-        left: '10%',
-        width: '500px',
-        height: '500px',
-        borderRadius: '50%',
+        position: "absolute",
+        top: "5%",
+        left: "10%",
+        width: "500px",
+        height: "500px",
+        borderRadius: "50%",
         background: `radial-gradient(circle, ${colors.primary.glow} 0%, transparent 70%)`,
-        filter: 'blur(80px)',
+        filter: "blur(80px)",
       }}
     />
     <motion.div
@@ -72,16 +77,16 @@ const AnimatedBackground: React.FC = () => (
         y: [0, 60, 0],
         scale: [1, 1.2, 1],
       }}
-      transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+      transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
       style={{
-        position: 'absolute',
-        bottom: '10%',
-        right: '5%',
-        width: '400px',
-        height: '400px',
-        borderRadius: '50%',
+        position: "absolute",
+        bottom: "10%",
+        right: "5%",
+        width: "400px",
+        height: "400px",
+        borderRadius: "50%",
         background: `radial-gradient(circle, ${colors.secondary.glow} 0%, transparent 70%)`,
-        filter: 'blur(60px)',
+        filter: "blur(60px)",
       }}
     />
     <motion.div
@@ -89,29 +94,29 @@ const AnimatedBackground: React.FC = () => (
         x: [0, 40, 0],
         y: [0, 40, 0],
       }}
-      transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+      transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
       style={{
-        position: 'absolute',
-        top: '50%',
-        right: '30%',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
+        position: "absolute",
+        top: "50%",
+        right: "30%",
+        width: "300px",
+        height: "300px",
+        borderRadius: "50%",
         background: `radial-gradient(circle, ${colors.gold.glow} 0%, transparent 70%)`,
-        filter: 'blur(50px)',
+        filter: "blur(50px)",
       }}
     />
 
     {/* Grid overlay */}
     <div
       style={{
-        position: 'absolute',
+        position: "absolute",
         inset: 0,
         backgroundImage: `
           linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)
         `,
-        backgroundSize: '64px 64px',
+        backgroundSize: "64px 64px",
       }}
     />
   </div>
@@ -139,8 +144,8 @@ interface Plan {
   features: PlanFeature[];
   limits: {
     machines: number;
-    projects: number | 'unlimited';
-    aiQueries: number | 'unlimited';
+    projects: number | "unlimited";
+    aiQueries: number | "unlimited";
     support: string;
   };
 }
@@ -151,101 +156,103 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
-    id: 'starter',
-    name: 'Starter',
+    id: "starter",
+    name: "Starter",
     icon: <Rocket size={24} />,
     monthlyPrice: 297,
     yearlyPrice: 2970,
-    description: 'Para profissionais autônomos',
+    description: "Para profissionais autônomos",
     color: colors.success.DEFAULT,
     features: [
-      { text: 'Automação CAD básica', included: true },
-      { text: 'Geração P&ID', included: true },
-      { text: 'Validação ASME básica', included: true },
-      { text: 'Exportação DXF/DWG', included: true },
-      { text: '5 projetos simultâneos', included: true },
-      { text: 'Suporte por email', included: true },
-      { text: 'IA Assistente (100 consultas)', included: true },
-      { text: 'Controle CNC/Plasma', included: false },
-      { text: 'API de integração', included: false },
-      { text: 'Suporte prioritário', included: false },
+      { text: "Automação CAD básica", included: true },
+      { text: "Geração P&ID", included: true },
+      { text: "Validação ASME básica", included: true },
+      { text: "Exportação DXF/DWG", included: true },
+      { text: "5 projetos simultâneos", included: true },
+      { text: "Suporte por email", included: true },
+      { text: "IA Assistente (100 consultas)", included: true },
+      { text: "Controle CNC/Plasma", included: false },
+      { text: "API de integração", included: false },
+      { text: "Suporte prioritário", included: false },
     ],
     limits: {
       machines: 1,
       projects: 5,
       aiQueries: 100,
-      support: 'Email (48h)',
+      support: "Email (48h)",
     },
   },
   {
-    id: 'professional',
-    name: 'Professional',
+    id: "professional",
+    name: "Professional",
     icon: <Crown size={24} />,
     monthlyPrice: 697,
     yearlyPrice: 6970,
-    description: 'Para empresas em crescimento',
+    description: "Para empresas em crescimento",
     color: colors.primary.DEFAULT,
     popular: true,
     features: [
-      { text: 'Tudo do Starter +', included: true, highlight: true },
-      { text: 'Automação avançada', included: true },
-      { text: 'Validação ASME + Petrobras', included: true },
-      { text: 'Controle CNC/Plasma completo', included: true },
-      { text: '50 projetos simultâneos', included: true },
-      { text: 'Nesting inteligente', included: true },
-      { text: 'IA Assistente ilimitada', included: true },
-      { text: 'API de integração', included: true },
-      { text: 'Suporte prioritário', included: true },
-      { text: '5 licenças incluídas', included: true },
+      { text: "Tudo do Starter +", included: true, highlight: true },
+      { text: "Automação avançada", included: true },
+      { text: "Validação ASME + Petrobras", included: true },
+      { text: "Controle CNC/Plasma completo", included: true },
+      { text: "50 projetos simultâneos", included: true },
+      { text: "Nesting inteligente", included: true },
+      { text: "IA Assistente ilimitada", included: true },
+      { text: "API de integração", included: true },
+      { text: "Suporte prioritário", included: true },
+      { text: "5 licenças incluídas", included: true },
     ],
     limits: {
       machines: 5,
       projects: 50,
-      aiQueries: 'unlimited',
-      support: 'Chat + Tel (4h)',
+      aiQueries: "unlimited",
+      support: "Chat + Tel (4h)",
     },
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
+    id: "enterprise",
+    name: "Enterprise",
     icon: <Building2 size={24} />,
     monthlyPrice: 1997,
     yearlyPrice: 19970,
-    description: 'Solução completa para indústrias',
+    description: "Solução completa para indústrias",
     color: colors.gold.DEFAULT,
     features: [
-      { text: 'Tudo do Professional +', included: true, highlight: true },
-      { text: 'Deploy on-premise opcional', included: true },
-      { text: 'Integrações customizadas', included: true },
-      { text: 'SLA garantido 99.9%', included: true },
-      { text: 'Projetos ilimitados', included: true },
-      { text: 'Licenças ilimitadas', included: true },
-      { text: 'Treinamento presencial', included: true },
-      { text: 'Gerente de conta dedicado', included: true },
-      { text: 'Compliance & Auditoria', included: true },
-      { text: 'Suporte 24/7', included: true },
+      { text: "Tudo do Professional +", included: true, highlight: true },
+      { text: "Deploy on-premise opcional", included: true },
+      { text: "Integrações customizadas", included: true },
+      { text: "SLA garantido 99.9%", included: true },
+      { text: "Projetos ilimitados", included: true },
+      { text: "Licenças ilimitadas", included: true },
+      { text: "Treinamento presencial", included: true },
+      { text: "Gerente de conta dedicado", included: true },
+      { text: "Compliance & Auditoria", included: true },
+      { text: "Suporte 24/7", included: true },
     ],
     limits: {
       machines: Infinity,
-      projects: 'unlimited',
-      aiQueries: 'unlimited',
-      support: '24/7 Dedicado',
+      projects: "unlimited",
+      aiQueries: "unlimited",
+      support: "24/7 Dedicado",
     },
   },
 ];
 
 const TESTIMONIALS = [
   {
-    quote: 'Reduziu nosso tempo de projeto em 70%. Imprescindível para nossa operação.',
-    author: 'Carlos M.',
-    role: 'Gerente de Engenharia',
-    company: 'Petroeng Industrial',
+    quote:
+      "Reduziu nosso tempo de projeto em 70%. Imprescindível para nossa operação.",
+    author: "Carlos M.",
+    role: "Gerente de Engenharia",
+    company: "Petroeng Industrial",
   },
   {
-    quote: 'A IA de validação detecta erros que passariam despercebidos. Qualidade nota 10.',
-    author: 'Ana S.',
-    role: 'Projetista Senior',
-    company: 'Construtora Atlântica',
+    quote:
+      "A IA de validação detecta erros que passariam despercebidos. Qualidade nota 10.",
+    author: "Ana S.",
+    role: "Projetista Senior",
+    company: "Construtora Atlântica",
   },
 ];
 
@@ -255,10 +262,10 @@ const TESTIMONIALS = [
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
+    transition: { duration: 0.5, ease: "easeOut" },
   },
 };
 
@@ -282,53 +289,61 @@ interface PlanCardProps {
 
 const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
   const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-  const monthlyEquivalent = isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
-  const savings = isYearly ? Math.round(((plan.monthlyPrice * 12) - plan.yearlyPrice) / (plan.monthlyPrice * 12) * 100) : 0;
+  const monthlyEquivalent = isYearly
+    ? Math.round(plan.yearlyPrice / 12)
+    : plan.monthlyPrice;
+  const savings = isYearly
+    ? Math.round(
+        ((plan.monthlyPrice * 12 - plan.yearlyPrice) /
+          (plan.monthlyPrice * 12)) *
+          100,
+      )
+    : 0;
 
   const styles = {
     card: {
-      position: 'relative' as const,
-      backgroundColor: plan.popular 
-        ? 'rgba(255, 255, 255, 0.05)' 
-        : 'rgba(255, 255, 255, 0.02)',
+      position: "relative" as const,
+      backgroundColor: plan.popular
+        ? "rgba(255, 255, 255, 0.05)"
+        : "rgba(255, 255, 255, 0.02)",
       backdropFilter: `blur(${blur.lg})`,
-      borderRadius: radius['2xl'],
-      border: plan.popular 
-        ? `2px solid ${plan.color}` 
+      borderRadius: radius["2xl"],
+      border: plan.popular
+        ? `2px solid ${plan.color}`
         : `1px solid ${colors.border.subtle}`,
       padding: spacing[6],
-      display: 'flex',
-      flexDirection: 'column' as const,
-      height: '100%',
-      overflow: 'hidden',
+      display: "flex",
+      flexDirection: "column" as const,
+      height: "100%",
+      overflow: "hidden",
     },
 
     popularBadge: {
-      position: 'absolute' as const,
-      top: '-12px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      position: "absolute" as const,
+      top: "-12px",
+      left: "50%",
+      transform: "translateX(-50%)",
       padding: `${spacing[1]} ${spacing[4]}`,
       backgroundColor: plan.color,
       borderRadius: radius.full,
       fontFamily: fontFamily.sans,
       fontSize: fontSize.xs,
       fontWeight: fontWeight.semibold,
-      color: '#ffffff',
-      display: 'flex',
-      alignItems: 'center',
+      color: "#ffffff",
+      display: "flex",
+      alignItems: "center",
       gap: spacing[1],
       boxShadow: `0 4px 20px ${plan.color}40`,
     },
 
     iconWrapper: {
-      width: '56px',
-      height: '56px',
+      width: "56px",
+      height: "56px",
       borderRadius: radius.xl,
       backgroundColor: `${plan.color}15`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       color: plan.color,
       marginBottom: spacing[4],
     },
@@ -352,8 +367,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
     },
 
     price: {
-      display: 'flex',
-      alignItems: 'baseline',
+      display: "flex",
+      alignItems: "baseline",
       gap: spacing[1],
     },
 
@@ -366,7 +381,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
 
     amount: {
       fontFamily: fontFamily.display,
-      fontSize: fontSize['4xl'],
+      fontSize: fontSize["4xl"],
       fontWeight: fontWeight.bold,
       color: colors.text.primary,
       lineHeight: 1,
@@ -386,8 +401,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
     },
 
     savingsBadge: {
-      display: 'inline-flex',
-      alignItems: 'center',
+      display: "inline-flex",
+      alignItems: "center",
       gap: spacing[1],
       padding: `${spacing[1]} ${spacing[2]}`,
       backgroundColor: colors.success.soft,
@@ -400,59 +415,59 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
     },
 
     divider: {
-      height: '1px',
+      height: "1px",
       backgroundColor: colors.border.subtle,
       marginBottom: spacing[5],
     },
 
     featuresList: {
       flex: 1,
-      display: 'flex',
-      flexDirection: 'column' as const,
+      display: "flex",
+      flexDirection: "column" as const,
       gap: spacing[3],
       marginBottom: spacing[6],
     },
 
     feature: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
       fontFamily: fontFamily.sans,
       fontSize: fontSize.sm,
     },
 
     featureIcon: (included: boolean) => ({
-      width: '20px',
-      height: '20px',
+      width: "20px",
+      height: "20px",
       borderRadius: radius.full,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       backgroundColor: included ? colors.success.soft : colors.dark.subtle,
       color: included ? colors.success.DEFAULT : colors.text.tertiary,
       flexShrink: 0,
     }),
 
     featureText: (included: boolean, highlight?: boolean) => ({
-      color: highlight 
-        ? plan.color 
-        : included 
-          ? colors.text.primary 
+      color: highlight
+        ? plan.color
+        : included
+          ? colors.text.primary
           : colors.text.tertiary,
       fontWeight: highlight ? fontWeight.medium : fontWeight.normal,
     }),
 
     cta: {
-      marginTop: 'auto',
+      marginTop: "auto",
     },
 
     glow: {
-      position: 'absolute' as const,
+      position: "absolute" as const,
       top: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '80%',
-      height: '2px',
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: "80%",
+      height: "2px",
       background: `linear-gradient(90deg, transparent, ${plan.color}, transparent)`,
       opacity: plan.popular ? 1 : 0.5,
     },
@@ -462,11 +477,9 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
     <motion.div
       style={styles.card}
       variants={fadeInUp}
-      whileHover={{ 
+      whileHover={{
         y: -8,
-        boxShadow: plan.popular 
-          ? `0 20px 60px ${plan.color}20` 
-          : shadows.xl,
+        boxShadow: plan.popular ? `0 20px 60px ${plan.color}20` : shadows.xl,
       }}
       transition={{ duration: 0.3 }}
     >
@@ -482,9 +495,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
       )}
 
       {/* Icon */}
-      <div style={styles.iconWrapper}>
-        {plan.icon}
-      </div>
+      <div style={styles.iconWrapper}>{plan.icon}</div>
 
       {/* Name & Description */}
       <h3 style={styles.name}>{plan.name}</h3>
@@ -495,14 +506,16 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
         <div style={styles.price}>
           <span style={styles.currency}>R$</span>
           <span style={styles.amount}>
-            {isYearly ? monthlyEquivalent.toLocaleString('pt-BR') : price.toLocaleString('pt-BR')}
+            {isYearly
+              ? monthlyEquivalent.toLocaleString("pt-BR")
+              : price.toLocaleString("pt-BR")}
           </span>
           <span style={styles.period}>/mês</span>
         </div>
         {isYearly && (
           <>
             <p style={styles.monthlyNote}>
-              Faturado R$ {price.toLocaleString('pt-BR')}/ano
+              Faturado R$ {price.toLocaleString("pt-BR")}/ano
             </p>
             <div style={styles.savingsBadge}>
               <DollarSign size={12} />
@@ -521,7 +534,9 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
             <div style={styles.featureIcon(feature.included)}>
               {feature.included ? <Check size={12} /> : <X size={12} />}
             </div>
-            <span style={styles.featureText(feature.included, feature.highlight)}>
+            <span
+              style={styles.featureText(feature.included, feature.highlight)}
+            >
               {feature.text}
             </span>
           </div>
@@ -531,13 +546,13 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelect }) => {
       {/* CTA */}
       <div style={styles.cta}>
         <Button
-          variant={plan.popular ? 'primary' : 'outline'}
+          variant={plan.popular ? "primary" : "outline"}
           size="lg"
           fullWidth
           onClick={() => onSelect(plan.id)}
           rightIcon={<ArrowRight size={18} />}
         >
-          {plan.id === 'enterprise' ? 'Falar com Vendas' : 'Começar Agora'}
+          {plan.id === "enterprise" ? "Falar com Vendas" : "Começar Agora"}
         </Button>
       </div>
     </motion.div>
@@ -553,12 +568,15 @@ interface BillingToggleProps {
   onChange: (isYearly: boolean) => void;
 }
 
-const BillingToggle: React.FC<BillingToggleProps> = ({ isYearly, onChange }) => {
+const BillingToggle: React.FC<BillingToggleProps> = ({
+  isYearly,
+  onChange,
+}) => {
   const styles = {
     container: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       gap: spacing[4],
       padding: spacing[1],
       backgroundColor: colors.dark.surface,
@@ -573,12 +591,12 @@ const BillingToggle: React.FC<BillingToggleProps> = ({ isYearly, onChange }) => 
       fontSize: fontSize.sm,
       fontWeight: active ? fontWeight.semibold : fontWeight.normal,
       color: active ? colors.text.primary : colors.text.secondary,
-      backgroundColor: active ? colors.primary.DEFAULT : 'transparent',
-      border: 'none',
-      cursor: 'pointer',
-      transition: 'all 200ms ease-out',
-      display: 'flex',
-      alignItems: 'center',
+      backgroundColor: active ? colors.primary.DEFAULT : "transparent",
+      border: "none",
+      cursor: "pointer",
+      transition: "all 200ms ease-out",
+      display: "flex",
+      alignItems: "center",
       gap: spacing[2],
     }),
 
@@ -625,38 +643,43 @@ const PricingV2: React.FC = () => {
   const [isYearly, setIsYearly] = useState(true);
 
   const handleSelectPlan = (planId: string) => {
-    if (planId === 'enterprise') {
+    if (planId === "enterprise") {
       // Contact sales
-      window.open('mailto:comercial@automacao-cad.com.br?subject=Enterprise Plan', '_blank');
+      window.open(
+        "mailto:comercial@automacao-cad.com.br?subject=Enterprise Plan",
+        "_blank",
+      );
     } else {
-      navigate(`/register?plan=${planId}&billing=${isYearly ? 'yearly' : 'monthly'}`);
+      navigate(
+        `/register?plan=${planId}&billing=${isYearly ? "yearly" : "monthly"}`,
+      );
     }
   };
 
   const styles = {
     page: {
-      minHeight: '100vh',
+      minHeight: "100vh",
       backgroundColor: colors.dark.base,
-      position: 'relative' as const,
-      paddingBottom: '100px',
+      position: "relative" as const,
+      paddingBottom: "100px",
     },
 
     content: {
-      position: 'relative' as const,
+      position: "relative" as const,
       zIndex: 1,
-      maxWidth: '1280px',
-      margin: '0 auto',
+      maxWidth: "1280px",
+      margin: "0 auto",
       padding: `${spacing[12]} ${spacing[4]}`,
     },
 
     header: {
-      textAlign: 'center' as const,
+      textAlign: "center" as const,
       marginBottom: spacing[10],
     },
 
     badge: {
-      display: 'inline-flex',
-      alignItems: 'center',
+      display: "inline-flex",
+      alignItems: "center",
       gap: spacing[2],
       padding: `${spacing[2]} ${spacing[4]}`,
       backgroundColor: colors.primary.soft,
@@ -679,30 +702,30 @@ const PricingV2: React.FC = () => {
 
     titleGradient: {
       background: `linear-gradient(135deg, ${colors.primary.DEFAULT} 0%, ${colors.secondary.DEFAULT} 100%)`,
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
     },
 
     subtitle: {
       fontFamily: fontFamily.sans,
       fontSize: fontSize.lg,
       color: colors.text.secondary,
-      maxWidth: '600px',
-      margin: '0 auto',
+      maxWidth: "600px",
+      margin: "0 auto",
       marginBottom: spacing[8],
       lineHeight: 1.6,
     },
 
     plansGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
       gap: spacing[6],
       marginBottom: spacing[12],
     },
 
     trustSection: {
-      textAlign: 'center' as const,
+      textAlign: "center" as const,
       marginBottom: spacing[12],
     },
 
@@ -713,20 +736,20 @@ const PricingV2: React.FC = () => {
     },
 
     trustGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
       gap: spacing[4],
-      maxWidth: '800px',
-      margin: '0 auto',
+      maxWidth: "800px",
+      margin: "0 auto",
     },
 
     trustItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       gap: spacing[2],
       padding: spacing[4],
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      backgroundColor: "rgba(255, 255, 255, 0.02)",
       borderRadius: radius.lg,
       border: `1px solid ${colors.border.subtle}`,
     },
@@ -743,23 +766,23 @@ const PricingV2: React.FC = () => {
     },
 
     faqSection: {
-      maxWidth: '800px',
-      margin: '0 auto',
+      maxWidth: "800px",
+      margin: "0 auto",
     },
 
     faqTitle: {
       ...textStyles.heading.h3,
       color: colors.text.primary,
-      textAlign: 'center' as const,
+      textAlign: "center" as const,
       marginBottom: spacing[8],
     },
   };
 
   const trustItems = [
-    { icon: <Shield size={20} />, text: 'Dados criptografados' },
-    { icon: <Clock size={20} />, text: 'Teste grátis 14 dias' },
-    { icon: <Lock size={20} />, text: 'Cancele quando quiser' },
-    { icon: <HeadphonesIcon size={20} />, text: 'Suporte brasileiro' },
+    { icon: <Shield size={20} />, text: "Dados criptografados" },
+    { icon: <Clock size={20} />, text: "Teste grátis 14 dias" },
+    { icon: <Lock size={20} />, text: "Cancele quando quiser" },
+    { icon: <HeadphonesIcon size={20} />, text: "Suporte brasileiro" },
   ];
 
   return (
@@ -781,15 +804,14 @@ const PricingV2: React.FC = () => {
 
           {/* Title */}
           <motion.h1 style={styles.title} variants={fadeInUp}>
-            Escolha o plano{' '}
-            <span style={styles.titleGradient}>perfeito</span>
-            {' '}para você
+            Escolha o plano <span style={styles.titleGradient}>perfeito</span>{" "}
+            para você
           </motion.h1>
 
           {/* Subtitle */}
           <motion.p style={styles.subtitle} variants={fadeInUp}>
-            Automatize seus projetos CAD com inteligência artificial. 
-            Todos os planos incluem acesso completo por 14 dias grátis.
+            Automatize seus projetos CAD com inteligência artificial. Todos os
+            planos incluem acesso completo por 14 dias grátis.
           </motion.p>
 
           {/* Billing Toggle */}

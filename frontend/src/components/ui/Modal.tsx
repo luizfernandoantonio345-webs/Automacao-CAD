@@ -1,9 +1,9 @@
 /**
  * Modal Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Luxurious modal with glass effect, backdrop blur, and smooth animations.
  * Supports center + slide-over variants.
- * 
+ *
  * @usage
  * <Modal isOpen={open} onClose={close} title="Settings">
  *   <ModalBody>Content here</ModalBody>
@@ -14,11 +14,18 @@
  * </Modal>
  */
 
-import React, { useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
-import { colors, radius, shadows, spacing, blur, zIndex } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
+import React, { useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+import {
+  colors,
+  radius,
+  shadows,
+  spacing,
+  blur,
+  zIndex,
+} from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -29,8 +36,8 @@ export interface ModalProps {
   onClose: () => void;
   title?: string;
   description?: string;
-  variant?: 'center' | 'slideOver' | 'fullscreen';
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  variant?: "center" | "slideOver" | "fullscreen";
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
@@ -50,7 +57,7 @@ export interface ModalBodyProps {
 
 export interface ModalFooterProps {
   children: React.ReactNode;
-  align?: 'left' | 'center' | 'right' | 'between';
+  align?: "left" | "center" | "right" | "between";
   className?: string;
 }
 
@@ -59,11 +66,11 @@ export interface ModalFooterProps {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sizeStyles: Record<string, React.CSSProperties> = {
-  sm: { maxWidth: '400px', width: '90%' },
-  md: { maxWidth: '500px', width: '90%' },
-  lg: { maxWidth: '640px', width: '90%' },
-  xl: { maxWidth: '800px', width: '90%' },
-  full: { maxWidth: '95%', width: '95%', maxHeight: '95vh' },
+  sm: { maxWidth: "400px", width: "90%" },
+  md: { maxWidth: "500px", width: "90%" },
+  lg: { maxWidth: "640px", width: "90%" },
+  xl: { maxWidth: "800px", width: "90%" },
+  full: { maxWidth: "95%", width: "95%", maxHeight: "95vh" },
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,23 +84,23 @@ const backdropVariants = {
 };
 
 const centerVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     scale: 0.95,
     y: 10,
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     y: 0,
     transition: {
-      type: 'spring',
+      type: "spring",
       stiffness: 400,
       damping: 30,
     },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     scale: 0.95,
     y: 10,
     transition: { duration: 0.15 },
@@ -101,18 +108,18 @@ const centerVariants = {
 };
 
 const slideOverVariants = {
-  hidden: { x: '100%', opacity: 0 },
-  visible: { 
-    x: 0, 
+  hidden: { x: "100%", opacity: 0 },
+  visible: {
+    x: 0,
     opacity: 1,
     transition: {
-      type: 'spring',
+      type: "spring",
       stiffness: 300,
       damping: 30,
     },
   },
-  exit: { 
-    x: '100%', 
+  exit: {
+    x: "100%",
     opacity: 0,
     transition: { duration: 0.2 },
   },
@@ -120,13 +127,13 @@ const slideOverVariants = {
 
 const fullscreenVariants = {
   hidden: { opacity: 0, scale: 0.98 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     transition: { duration: 0.2 },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     scale: 0.98,
     transition: { duration: 0.15 },
   },
@@ -138,24 +145,24 @@ const fullscreenVariants = {
 
 const styles = {
   backdrop: {
-    position: 'fixed' as const,
+    position: "fixed" as const,
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     backdropFilter: `blur(${blur.sm})`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: zIndex.modal,
     padding: spacing[4],
   },
 
   slideOverBackdrop: {
-    position: 'fixed' as const,
+    position: "fixed" as const,
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     backdropFilter: `blur(${blur.sm})`,
-    display: 'flex',
-    justifyContent: 'flex-end',
+    display: "flex",
+    justifyContent: "flex-end",
     zIndex: zIndex.modal,
   },
 
@@ -163,44 +170,44 @@ const styles = {
     backgroundColor: colors.dark.elevated,
     borderRadius: radius.xl,
     border: `1px solid ${colors.border.subtle}`,
-    boxShadow: shadows['2xl'],
-    display: 'flex',
-    flexDirection: 'column' as const,
-    maxHeight: '85vh',
-    overflow: 'hidden',
+    boxShadow: shadows["2xl"],
+    display: "flex",
+    flexDirection: "column" as const,
+    maxHeight: "85vh",
+    overflow: "hidden",
   },
 
   modalSlideOver: {
     backgroundColor: colors.dark.elevated,
     borderLeft: `1px solid ${colors.border.subtle}`,
-    boxShadow: shadows['2xl'],
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '100vh',
-    width: '100%',
-    maxWidth: '480px',
+    boxShadow: shadows["2xl"],
+    display: "flex",
+    flexDirection: "column" as const,
+    height: "100vh",
+    width: "100%",
+    maxWidth: "480px",
   },
 
   modalFullscreen: {
     backgroundColor: colors.dark.base,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    width: '100vw',
-    height: '100vh',
+    display: "flex",
+    flexDirection: "column" as const,
+    width: "100vw",
+    height: "100vh",
   },
 
   header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: `${spacing[5]} ${spacing[6]}`,
     borderBottom: `1px solid ${colors.border.subtle}`,
     flexShrink: 0,
   },
 
   headerContent: {
-    display: 'flex',
-    flexDirection: 'column' as const,
+    display: "flex",
+    flexDirection: "column" as const,
     gap: spacing[1],
   },
 
@@ -221,28 +228,28 @@ const styles = {
   },
 
   closeButton: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '36px',
-    height: '36px',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "36px",
+    height: "36px",
     borderRadius: radius.md,
-    border: 'none',
-    backgroundColor: 'transparent',
+    border: "none",
+    backgroundColor: "transparent",
     color: colors.text.tertiary,
-    cursor: 'pointer',
-    transition: 'all 150ms ease-out',
+    cursor: "pointer",
+    transition: "all 150ms ease-out",
     flexShrink: 0,
   },
 
   body: {
     flex: 1,
-    overflowY: 'auto' as const,
+    overflowY: "auto" as const,
     padding: spacing[6],
   },
 
   footer: {
-    display: 'flex',
+    display: "flex",
     gap: spacing[3],
     padding: `${spacing[4]} ${spacing[6]}`,
     borderTop: `1px solid ${colors.border.subtle}`,
@@ -254,9 +261,9 @@ const styles = {
 // MODAL HEADER COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const ModalHeader: React.FC<ModalHeaderProps> = ({ 
-  children, 
-  className = '' 
+export const ModalHeader: React.FC<ModalHeaderProps> = ({
+  children,
+  className = "",
 }) => {
   return (
     <div style={styles.header} className={className}>
@@ -269,9 +276,9 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
 // MODAL BODY COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const ModalBody: React.FC<ModalBodyProps> = ({ 
-  children, 
-  className = '' 
+export const ModalBody: React.FC<ModalBodyProps> = ({
+  children,
+  className = "",
 }) => {
   return (
     <div style={styles.body} className={className}>
@@ -284,21 +291,21 @@ export const ModalBody: React.FC<ModalBodyProps> = ({
 // MODAL FOOTER COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export const ModalFooter: React.FC<ModalFooterProps> = ({ 
-  children, 
-  align = 'right',
-  className = '' 
+export const ModalFooter: React.FC<ModalFooterProps> = ({
+  children,
+  align = "right",
+  className = "",
 }) => {
   const alignStyles: Record<string, React.CSSProperties> = {
-    left: { justifyContent: 'flex-start' },
-    center: { justifyContent: 'center' },
-    right: { justifyContent: 'flex-end' },
-    between: { justifyContent: 'space-between' },
+    left: { justifyContent: "flex-start" },
+    center: { justifyContent: "center" },
+    right: { justifyContent: "flex-end" },
+    between: { justifyContent: "space-between" },
   };
 
   return (
-    <div 
-      style={{ ...styles.footer, ...alignStyles[align] }} 
+    <div
+      style={{ ...styles.footer, ...alignStyles[align] }}
       className={className}
     >
       {children}
@@ -315,39 +322,45 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   description,
-  variant = 'center',
-  size = 'md',
+  variant = "center",
+  size = "md",
   showCloseButton = true,
   closeOnOverlayClick = true,
   closeOnEscape = true,
   children,
-  className = '',
+  className = "",
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle escape key
-  const handleEscape = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && closeOnEscape) {
-      onClose();
-    }
-  }, [closeOnEscape, onClose]);
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape" && closeOnEscape) {
+        onClose();
+      }
+    },
+    [closeOnEscape, onClose],
+  );
 
   // Handle overlay click
-  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
-    if (closeOnOverlayClick && e.target === e.currentTarget) {
-      onClose();
-    }
-  }, [closeOnOverlayClick, onClose]);
+  const handleOverlayClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (closeOnOverlayClick && e.target === e.currentTarget) {
+        onClose();
+      }
+    },
+    [closeOnOverlayClick, onClose],
+  );
 
   // Lock body scroll when open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", handleEscape);
     }
     return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, handleEscape]);
 
@@ -361,13 +374,13 @@ export const Modal: React.FC<ModalProps> = ({
   // Get variant-specific styles and animations
   const getModalConfig = () => {
     switch (variant) {
-      case 'slideOver':
+      case "slideOver":
         return {
           backdrop: styles.slideOverBackdrop,
           modal: styles.modalSlideOver,
           variants: slideOverVariants,
         };
-      case 'fullscreen':
+      case "fullscreen":
         return {
           backdrop: { ...styles.backdrop, padding: 0 },
           modal: styles.modalFullscreen,
@@ -404,8 +417,8 @@ export const Modal: React.FC<ModalProps> = ({
             exit="exit"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? 'modal-title' : undefined}
-            aria-describedby={description ? 'modal-description' : undefined}
+            aria-labelledby={title ? "modal-title" : undefined}
+            aria-describedby={description ? "modal-description" : undefined}
             tabIndex={-1}
             className={className}
           >
@@ -428,7 +441,7 @@ export const Modal: React.FC<ModalProps> = ({
                   <motion.button
                     style={styles.closeButton}
                     onClick={onClose}
-                    whileHover={{ 
+                    whileHover={{
                       backgroundColor: colors.dark.subtle,
                       color: colors.text.primary,
                     }}

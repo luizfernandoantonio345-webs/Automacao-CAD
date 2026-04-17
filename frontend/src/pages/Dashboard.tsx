@@ -477,7 +477,7 @@ const Dashboard = () => {
             trendLabel="vs mês anterior"
             color={theme.accentPrimary}
             theme={widgetTheme}
-            onClick={() => navigate("/quality-gate")}
+            onClick={() => navigate("/quality")}
           />
           <MetricCardAdvanced
             icon={<FaDraftingCompass size={20} />}
@@ -636,7 +636,7 @@ const Dashboard = () => {
                       status: p.status,
                       progress: p.status === "completed" ? 100 : 65,
                     }}
-                    onClick={() => navigate(`/quality-gate?project=${p.id}`)}
+                    onClick={() => navigate(`/quality?project=${p.id}`)}
                     theme={widgetTheme}
                   />
                 ))}

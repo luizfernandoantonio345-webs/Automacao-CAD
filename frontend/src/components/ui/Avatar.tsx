@@ -1,8 +1,8 @@
 /**
  * Avatar Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Elegant user avatar with status indicator and fallback initials.
- * 
+ *
  * @usage
  * <Avatar src="/user.jpg" name="John Doe" />
  * <Avatar name="John Doe" status="online" />
@@ -12,18 +12,18 @@
  * </AvatarGroup>
  */
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { User } from 'lucide-react';
-import { colors, radius, shadows, spacing } from '../../design/tokens';
-import { fontFamily, fontSize, fontWeight } from '../../design/typography';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { User } from "lucide-react";
+import { colors, radius, shadows, spacing } from "../../design/tokens";
+import { fontFamily, fontSize, fontWeight } from "../../design/typography";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-export type AvatarStatus = 'online' | 'offline' | 'away' | 'busy' | 'dnd';
+export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+export type AvatarStatus = "online" | "offline" | "away" | "busy" | "dnd";
 
 export interface AvatarProps {
   src?: string;
@@ -31,7 +31,7 @@ export interface AvatarProps {
   size?: AvatarSize;
   status?: AvatarStatus;
   showStatus?: boolean;
-  variant?: 'circle' | 'rounded' | 'square';
+  variant?: "circle" | "rounded" | "square";
   bordered?: boolean;
   className?: string;
   onClick?: () => void;
@@ -48,18 +48,21 @@ export interface AvatarGroupProps {
 // CONFIG
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const sizeConfig: Record<AvatarSize, { 
-  size: number; 
-  fontSize: string; 
-  statusSize: number;
-  iconSize: number;
-}> = {
+const sizeConfig: Record<
+  AvatarSize,
+  {
+    size: number;
+    fontSize: string;
+    statusSize: number;
+    iconSize: number;
+  }
+> = {
   xs: { size: 24, fontSize: fontSize.xs, statusSize: 6, iconSize: 12 },
   sm: { size: 32, fontSize: fontSize.xs, statusSize: 8, iconSize: 14 },
   md: { size: 40, fontSize: fontSize.sm, statusSize: 10, iconSize: 16 },
   lg: { size: 48, fontSize: fontSize.base, statusSize: 12, iconSize: 20 },
   xl: { size: 64, fontSize: fontSize.lg, statusSize: 14, iconSize: 24 },
-  '2xl': { size: 96, fontSize: fontSize.xl, statusSize: 16, iconSize: 32 },
+  "2xl": { size: 96, fontSize: fontSize.xl, statusSize: 16, iconSize: 32 },
 };
 
 const statusColors: Record<AvatarStatus, string> = {
@@ -80,16 +83,18 @@ const getGradientFromName = (name: string): string => {
     `linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)`,
     `linear-gradient(135deg, ${colors.gold.DEFAULT} 0%, #F59E0B 100%)`,
   ];
-  
-  const charSum = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+  const charSum = name
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return gradients[charSum % gradients.length];
 };
 
 // Get initials from name
 const getInitials = (name: string): string => {
-  if (!name) return '';
-  const parts = name.trim().split(' ').filter(Boolean);
-  if (parts.length === 0) return '';
+  if (!name) return "";
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
@@ -100,13 +105,13 @@ const getInitials = (name: string): string => {
 
 export const Avatar: React.FC<AvatarProps> = ({
   src,
-  name = '',
-  size = 'md',
+  name = "",
+  size = "md",
   status,
   showStatus = true,
-  variant = 'circle',
+  variant = "circle",
   bordered = false,
-  className = '',
+  className = "",
   onClick,
 }) => {
   const [imageError, setImageError] = useState(false);
@@ -114,52 +119,55 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const getBorderRadius = (): string => {
     switch (variant) {
-      case 'rounded': return radius.lg;
-      case 'square': return radius.md;
-      default: return radius.full;
+      case "rounded":
+        return radius.lg;
+      case "square":
+        return radius.md;
+      default:
+        return radius.full;
     }
   };
 
   const styles = {
     container: {
-      position: 'relative' as const,
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      position: "relative" as const,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
       width: `${config.size}px`,
       height: `${config.size}px`,
       borderRadius: getBorderRadius(),
-      overflow: 'hidden',
-      cursor: onClick ? 'pointer' : 'default',
+      overflow: "hidden",
+      cursor: onClick ? "pointer" : "default",
       flexShrink: 0,
-      border: bordered ? `2px solid ${colors.dark.base}` : 'none',
-      boxShadow: bordered ? shadows.md : 'none',
+      border: bordered ? `2px solid ${colors.dark.base}` : "none",
+      boxShadow: bordered ? shadows.md : "none",
     },
 
     image: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover' as const,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover" as const,
     },
 
     fallback: {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       background: name ? getGradientFromName(name) : colors.dark.elevated,
       fontFamily: fontFamily.sans,
       fontSize: config.fontSize,
       fontWeight: fontWeight.semibold,
-      color: '#ffffff',
-      textTransform: 'uppercase' as const,
+      color: "#ffffff",
+      textTransform: "uppercase" as const,
     },
 
     statusDot: {
-      position: 'absolute' as const,
-      bottom: variant === 'circle' ? '2px' : '0',
-      right: variant === 'circle' ? '2px' : '0',
+      position: "absolute" as const,
+      bottom: variant === "circle" ? "2px" : "0",
+      right: variant === "circle" ? "2px" : "0",
       width: `${config.statusSize}px`,
       height: `${config.statusSize}px`,
       borderRadius: radius.full,
@@ -183,17 +191,13 @@ export const Avatar: React.FC<AvatarProps> = ({
       {!showFallback ? (
         <img
           src={src}
-          alt={name || 'Avatar'}
+          alt={name || "Avatar"}
           style={styles.image}
           onError={() => setImageError(true)}
         />
       ) : (
         <div style={styles.fallback}>
-          {name ? (
-            getInitials(name)
-          ) : (
-            <User size={config.iconSize} />
-          )}
+          {name ? getInitials(name) : <User size={config.iconSize} />}
         </div>
       )}
 
@@ -203,7 +207,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           style={styles.statusDot}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       )}
     </motion.div>
@@ -216,9 +220,9 @@ export const Avatar: React.FC<AvatarProps> = ({
 
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({
   max = 4,
-  size = 'md',
+  size = "md",
   children,
-  className = '',
+  className = "",
 }) => {
   const config = sizeConfig[size];
   const childArray = React.Children.toArray(children);
@@ -227,13 +231,13 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
 
   const styles = {
     group: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
     },
 
     avatarWrapper: {
-      marginLeft: size === 'xs' || size === 'sm' ? '-8px' : '-12px',
-      position: 'relative' as const,
+      marginLeft: size === "xs" || size === "sm" ? "-8px" : "-12px",
+      position: "relative" as const,
     },
 
     firstAvatarWrapper: {
@@ -241,15 +245,15 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
     },
 
     remaining: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       width: `${config.size}px`,
       height: `${config.size}px`,
       borderRadius: radius.full,
       backgroundColor: colors.dark.elevated,
       border: `2px solid ${colors.dark.base}`,
-      marginLeft: size === 'xs' || size === 'sm' ? '-8px' : '-12px',
+      marginLeft: size === "xs" || size === "sm" ? "-8px" : "-12px",
       fontFamily: fontFamily.sans,
       fontSize: config.fontSize,
       fontWeight: fontWeight.medium,
@@ -275,9 +279,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
         </div>
       ))}
       {remainingCount > 0 && (
-        <div style={styles.remaining}>
-          +{remainingCount}
-        </div>
+        <div style={styles.remaining}>+{remainingCount}</div>
       )}
     </div>
   );
@@ -301,8 +303,8 @@ export const AvatarWithInfo: React.FC<AvatarWithInfoProps> = ({
 }) => {
   const styles = {
     container: {
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: spacing[3],
     },
 
@@ -317,9 +319,9 @@ export const AvatarWithInfo: React.FC<AvatarWithInfoProps> = ({
       fontWeight: fontWeight.medium,
       color: colors.text.primary,
       margin: 0,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap' as const,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap" as const,
     },
 
     subtitle: {
@@ -328,9 +330,9 @@ export const AvatarWithInfo: React.FC<AvatarWithInfoProps> = ({
       color: colors.text.secondary,
       margin: 0,
       marginTop: spacing[1],
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap' as const,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap" as const,
     },
   };
 

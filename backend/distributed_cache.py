@@ -302,7 +302,8 @@ def _build_key(prefix: str, args: tuple, kwargs: dict) -> str:
         parts.append(f"{k}={v}")
     raw = "|".join(parts)
     if len(raw) > 200:
-        return prefix + ":" + hashlib.md5(raw.encode()).hexdigest()
+        # SHA-256 para chaves longas (evita conflitos, não é uso de segurança)
+        return prefix + ":" + hashlib.sha256(raw.encode()).hexdigest()[:32]
     return raw
 
 

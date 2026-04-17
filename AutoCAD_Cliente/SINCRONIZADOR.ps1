@@ -8,7 +8,18 @@ param(
     [string]$BackendUrl = "https://automacao-cad-backend.vercel.app"
 )
 
-# IMPORTANTE: Capturar TODOS os erros na inicialização
+# ===========================================================================
+# SEGURANCA: Forcar TLS 1.2+ e validar URL antes de qualquer operacao de rede
+# ===========================================================================
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+
+# Rejeitar URLs sem HTTPS para evitar Man-in-the-Middle
+if ($BackendUrl -notmatch '^https://') {
+    Write-Error "[SEGURANCA] BackendUrl deve usar HTTPS. Valor recebido: $BackendUrl"
+    exit 1
+}
+
+# IMPORTANTE: Capturar TODOS os erros na inicializacao
 $ErrorActionPreference = "Stop"
 
 # Tentar configurar encoding (pode falhar em alguns terminais)
@@ -327,7 +338,32 @@ function Get-PendingCommands {
     }
 }
 
+# Lista branca de operacoes permitidas
+$ALLOWED_OPERATIONS = @(
+    'draw_pipe', 'draw_line', 'draw_circle', 'draw_arc', 'draw_polyline',
+    'insert_block', 'move_entity', 'rotate_entity', 'scale_entity',
+    'set_layer', 'set_color', 'set_linetype',
+    'generate_bom', 'export_dxf', 'save_drawing',
+    'clash_check', 'run_script'
+)
+
 function Process-Command($cmd) {
+    # Validar operacao contra a lista branca
+    if ($cmd.operation -notin $ALLOWED_OPERATIONS) {
+        Write-Status "[SEGURANCA] Operacao rejeitada (nao permitida): $($cmd.operation)" "Error"
+        return $false
+    }
+
+    # Validar que o codigo LISP nao contem chamadas de sistema perigosas
+    $dangerousPatterns = @('shell', 'command', 'startapp', 'dos', 'exec', 'system')
+    $lispLower = $cmd.lisp_code.ToLower()
+    foreach ($pattern in $dangerousPatterns) {
+        if ($lispLower -match "\($pattern\s") {
+            Write-Status "[SEGURANCA] Codigo LISP rejeitado (padrao proibido: $pattern)" "Error"
+            return $false
+        }
+    }
+
     $filename = "cmd_$($cmd.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').lsp"
     $filepath = Join-Path $DROP_PATH $filename
     

@@ -1,282 +1,174 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Engenharia CAD — Script de Migração SQLite → PostgreSQL
-
-Este script exporta dados do SQLite local e importa no PostgreSQL.
-Útil para migrar dados de desenvolvimento para produção.
+scripts/migrate_sqlite_to_postgres.py
+--------------------------------------
+Migra todos os dados do banco SQLite (engcad.db) para PostgreSQL.
+Processa em batches de 500 linhas com barra de progresso.
 
 Uso:
-    python scripts/migrate_sqlite_to_postgres.py --postgres-url "postgresql://..."
-    
-    # Ou com variável de ambiente:
-    export POSTGRES_URL="postgresql://..."
-    python scripts/migrate_sqlite_to_postgres.py
+    python scripts/migrate_sqlite_to_postgres.py ^
+        --sqlite data/engcad.db ^
+        --postgres "postgresql://user:pass@host:5432/engcad"
+
+Pre-requisitos:
+    pip install psycopg2-binary tqdm
 """
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
-# Adicionar raiz do projeto ao path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    print("[ERRO] psycopg2-binary nao instalado. Execute: pip install psycopg2-binary")
+    sys.exit(1)
 
-import psycopg2
-import psycopg2.extras
+try:
+    from tqdm import tqdm
+    _HAS_TQDM = True
+except ImportError:
+    _HAS_TQDM = False
+    class tqdm:  # type: ignore
+        def __init__(self, iterable=None, total=None, desc="", unit=""):
+            self._it = iterable; self._total = total; self._desc = desc; self._n = 0
+        def __iter__(self):
+            for item in self._it:
+                yield item
+                self._n += 1
+                pct = int(self._n / self._total * 100) if self._total else 0
+                print(f"\r  {self._desc}: {self._n}/{self._total} ({pct}%)", end="", flush=True)
+            print()
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def update(self, n=1):
+            self._n += n
+            pct = int(self._n / self._total * 100) if self._total else 0
+            print(f"\r  {self._desc}: {self._n}/{self._total} ({pct}%)", end="", flush=True)
 
-# Caminho padrão do SQLite local
-DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[1] / "data" / "engcad.db"
+BATCH_SIZE = 500
+TABLES = ["users", "projects", "quality_checks", "uploads", "licenses"]
 
-# Tabelas a migrar (ordem importa por causa de FKs)
-TABLES_TO_MIGRATE = [
-    "users",
-    "projects",
-    "quality_checks",
-    "uploads",
-    "licenses",
-    "audit_logs",
-    "notifications",
-    "user_sessions",
-    "user_devices",
-]
-
-
-def get_sqlite_conn(db_path: Path) -> sqlite3.Connection:
-    """Conecta ao SQLite."""
-    if not db_path.exists():
-        raise FileNotFoundError(f"SQLite database not found: {db_path}")
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def get_postgres_conn(postgres_url: str):
-    """Conecta ao PostgreSQL."""
-    return psycopg2.connect(postgres_url)
-
-
-def get_table_columns(sqlite_conn: sqlite3.Connection, table: str) -> list[str]:
-    """Obtém lista de colunas de uma tabela SQLite."""
-    cursor = sqlite_conn.execute(f"PRAGMA table_info({table})")
-    return [row["name"] for row in cursor.fetchall()]
-
-
-def table_exists_sqlite(sqlite_conn: sqlite3.Connection, table: str) -> bool:
-    """Verifica se tabela existe no SQLite."""
-    cursor = sqlite_conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-        (table,)
-    )
-    return cursor.fetchone() is not None
-
-
-def table_exists_postgres(pg_conn, table: str) -> bool:
-    """Verifica se tabela existe no PostgreSQL."""
-    with pg_conn.cursor() as cur:
-        cur.execute(
-            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = %s)",
-            (table,)
-        )
-        return cur.fetchone()[0]
-
-
-def count_rows(conn, table: str, is_pg: bool = False) -> int:
-    """Conta linhas em uma tabela."""
-    if is_pg:
-        with conn.cursor() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM {table}")
-            return cur.fetchone()[0]
-    else:
-        cursor = conn.execute(f"SELECT COUNT(*) FROM {table}")
-        return cursor.fetchone()[0]
+INSERT_SQL: dict[str, str] = {
+    "users": (
+        "INSERT INTO users (id,email,username,password_hash,empresa,tier,limite,usado,created_at,last_login) "
+        "VALUES (%(id)s,%(email)s,%(username)s,%(password_hash)s,%(empresa)s,%(tier)s,%(limite)s,%(usado)s,%(created_at)s,%(last_login)s) "
+        "ON CONFLICT (id) DO NOTHING"
+    ),
+    "projects": (
+        "INSERT INTO projects (id,user_email,code,company,part_name,diameter,length,fluid,"
+        "temperature_c,operating_pressure_bar,status,lsp_path,dxf_path,csv_path,"
+        "clash_count,norms_checked,norms_passed,piping_spec,created_at,completed_at) "
+        "VALUES (%(id)s,%(user_email)s,%(code)s,%(company)s,%(part_name)s,%(diameter)s,%(length)s,%(fluid)s,"
+        "%(temperature_c)s,%(operating_pressure_bar)s,%(status)s,%(lsp_path)s,%(dxf_path)s,%(csv_path)s,"
+        "%(clash_count)s,%(norms_checked)s,%(norms_passed)s,%(piping_spec)s,%(created_at)s,%(completed_at)s) "
+        "ON CONFLICT (id) DO NOTHING"
+    ),
+    "quality_checks": (
+        "INSERT INTO quality_checks (id,project_id,check_type,check_name,passed,details,created_at) "
+        "VALUES (%(id)s,%(project_id)s,%(check_type)s,%(check_name)s,%(passed)s,%(details)s,%(created_at)s) "
+        "ON CONFLICT (id) DO NOTHING"
+    ),
+    "uploads": (
+        "INSERT INTO uploads (id,user_email,filename,file_path,row_count,projects_generated,status,created_at) "
+        "VALUES (%(id)s,%(user_email)s,%(filename)s,%(file_path)s,%(row_count)s,%(projects_generated)s,%(status)s,%(created_at)s) "
+        "ON CONFLICT (id) DO NOTHING"
+    ),
+    "licenses": (
+        "INSERT INTO licenses (id,username,hwid,registered_at,last_seen,access_count) "
+        "VALUES (%(id)s,%(username)s,%(hwid)s,%(registered_at)s,%(last_seen)s,%(access_count)s) "
+        "ON CONFLICT (id) DO NOTHING"
+    ),
+}
 
 
-def migrate_table(
-    sqlite_conn: sqlite3.Connection,
-    pg_conn,
-    table: str,
-    batch_size: int = 1000
-) -> int:
-    """Migra dados de uma tabela SQLite para PostgreSQL."""
-    if not table_exists_sqlite(sqlite_conn, table):
-        print(f"  ⚠️  Tabela {table} não existe no SQLite, pulando...")
+def migrate_table(sqlite_conn: sqlite3.Connection, pg_conn, table: str) -> int:
+    sqlite_conn.row_factory = sqlite3.Row
+    cur = sqlite_conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM {table}")
+    total: int = cur.fetchone()[0]
+    if total == 0:
+        print(f"  {table}: vazia, pulando.")
         return 0
-    
-    if not table_exists_postgres(pg_conn, table):
-        print(f"  ⚠️  Tabela {table} não existe no PostgreSQL, pulando...")
-        print(f"      Execute 'alembic upgrade head' primeiro para criar as tabelas.")
-        return 0
-    
-    columns = get_table_columns(sqlite_conn, table)
-    sqlite_count = count_rows(sqlite_conn, table)
-    
-    if sqlite_count == 0:
-        print(f"  ℹ️  Tabela {table} está vazia no SQLite, pulando...")
-        return 0
-    
-    print(f"  📊 Migrando {sqlite_count} registros de {table}...")
-    
-    # Limpar tabela destino (opcional - cuidado em produção!)
-    # with pg_conn.cursor() as cur:
-    #     cur.execute(f"TRUNCATE TABLE {table} CASCADE")
-    
-    # Preparar query de inserção
-    columns_str = ", ".join(columns)
-    placeholders = ", ".join(["%s"] * len(columns))
-    insert_sql = f"INSERT INTO {table} ({columns_str}) VALUES ({placeholders}) ON CONFLICT DO NOTHING"
-    
-    # Buscar dados do SQLite em batches
-    cursor = sqlite_conn.execute(f"SELECT * FROM {table}")
+    cur.execute(f"SELECT * FROM {table}")
+    pg_cur = pg_conn.cursor()
+    sql = INSERT_SQL[table]
     migrated = 0
-    
-    with pg_conn.cursor() as pg_cur:
-        while True:
-            rows = cursor.fetchmany(batch_size)
-            if not rows:
-                break
-            
-            # Converter para lista de tuplas
-            data = [tuple(row) for row in rows]
-            
-            # Inserir no PostgreSQL
-            psycopg2.extras.execute_batch(pg_cur, insert_sql, data)
-            migrated += len(data)
-            
-            print(f"    → {migrated}/{sqlite_count} registros...")
-    
-    pg_conn.commit()
-    
-    # Verificar contagem final
-    pg_count = count_rows(pg_conn, table, is_pg=True)
-    print(f"  ✅ {table}: {pg_count} registros no PostgreSQL")
-    
+    with tqdm(total=total, desc=f"  {table}", unit="rows") as bar:
+        batch = []
+        for row in cur:
+            batch.append(dict(row))
+            if len(batch) >= BATCH_SIZE:
+                psycopg2.extras.execute_batch(pg_cur, sql, batch)
+                pg_conn.commit()
+                migrated += len(batch)
+                bar.update(len(batch))
+                batch = []
+        if batch:
+            psycopg2.extras.execute_batch(pg_cur, sql, batch)
+            pg_conn.commit()
+            migrated += len(batch)
+            bar.update(len(batch))
     return migrated
 
 
-def run_migrations(pg_conn, alembic_config: str = "alembic.ini"):
-    """Executa migrations do Alembic no PostgreSQL."""
-    print("\n📦 Executando migrations do Alembic...")
-    try:
-        from alembic.config import Config
-        from alembic import command
-        
-        cfg = Config(alembic_config)
-        # Sobrescrever URL do banco
-        cfg.set_main_option("sqlalchemy.url", pg_conn.dsn)
-        
-        command.upgrade(cfg, "head")
-        print("✅ Migrations concluídas!")
-    except ImportError:
-        print("⚠️  Alembic não instalado. Execute manualmente: alembic upgrade head")
-    except Exception as e:
-        print(f"❌ Erro nas migrations: {e}")
-        print("   Execute manualmente: alembic upgrade head")
+def reset_sequences(pg_conn) -> None:
+    cur = pg_conn.cursor()
+    for table in TABLES:
+        cur.execute(
+            f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), COALESCE(MAX(id), 1)) FROM {table}"
+        )
+    pg_conn.commit()
+    print("  Sequences PostgreSQL atualizadas.")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Migra dados do SQLite local para PostgreSQL"
-    )
-    parser.add_argument(
-        "--sqlite-path",
-        type=Path,
-        default=DEFAULT_SQLITE_PATH,
-        help="Caminho do arquivo SQLite"
-    )
-    parser.add_argument(
-        "--postgres-url",
-        type=str,
-        default=os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL"),
-        help="URL de conexão PostgreSQL"
-    )
-    parser.add_argument(
-        "--run-migrations",
-        action="store_true",
-        help="Executar migrations do Alembic antes de migrar dados"
-    )
-    parser.add_argument(
-        "--tables",
-        type=str,
-        nargs="*",
-        default=TABLES_TO_MIGRATE,
-        help="Tabelas específicas para migrar"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Apenas mostrar o que seria migrado, sem executar"
-    )
-    
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Migrate SQLite to PostgreSQL")
+    parser.add_argument("--sqlite", default="data/engcad.db")
+    parser.add_argument("--postgres", required=True, help="postgresql://user:pass@host/db")
+    parser.add_argument("--tables", nargs="+", default=TABLES)
     args = parser.parse_args()
-    
-    if not args.postgres_url:
-        print("❌ Erro: PostgreSQL URL não fornecida.")
-        print("   Use --postgres-url ou defina POSTGRES_URL/DATABASE_URL")
+
+    sqlite_path = Path(args.sqlite)
+    if not sqlite_path.exists():
+        print(f"[ERRO] SQLite nao encontrado: {sqlite_path}")
         sys.exit(1)
-    
-    print("=" * 60)
-    print("🔄 MIGRAÇÃO SQLite → PostgreSQL")
-    print("=" * 60)
-    print(f"📁 SQLite: {args.sqlite_path}")
-    print(f"🐘 PostgreSQL: {args.postgres_url.split('@')[-1] if '@' in args.postgres_url else '(url)'}")
-    print(f"📋 Tabelas: {', '.join(args.tables)}")
-    print()
-    
-    if args.dry_run:
-        print("🔍 MODO DRY-RUN - Nenhuma alteração será feita")
-        print()
-    
-    # Conectar aos bancos
+
+    print(f"\n{'='*60}")
+    print(f"  Migracao SQLite -> PostgreSQL")
+    print(f"  Origem : {sqlite_path}")
+    print(f"  Destino: {args.postgres.split('@')[-1]}")
+    print(f"{'='*60}\n")
+
+    sqlite_conn = sqlite3.connect(str(sqlite_path))
     try:
-        sqlite_conn = get_sqlite_conn(args.sqlite_path)
-        print("✅ Conectado ao SQLite")
-    except FileNotFoundError as e:
-        print(f"❌ {e}")
+        pg_conn = psycopg2.connect(args.postgres)
+    except psycopg2.OperationalError as e:
+        print(f"[ERRO] Conexao PostgreSQL falhou: {e}")
         sys.exit(1)
-    
-    try:
-        pg_conn = get_postgres_conn(args.postgres_url)
-        print("✅ Conectado ao PostgreSQL")
-    except Exception as e:
-        print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
-        sys.exit(1)
-    
-    print()
-    
-    # Executar migrations se solicitado
-    if args.run_migrations and not args.dry_run:
-        run_migrations(pg_conn)
-    
-    # Migrar tabelas
-    print("\n📊 MIGRAÇÃO DE DADOS")
-    print("-" * 40)
-    
+
     total_migrated = 0
+    start = time.time()
+
     for table in args.tables:
-        if args.dry_run:
-            if table_exists_sqlite(sqlite_conn, table):
-                count = count_rows(sqlite_conn, table)
-                print(f"  [DRY-RUN] {table}: {count} registros seriam migrados")
-        else:
-            try:
-                migrated = migrate_table(sqlite_conn, pg_conn, table)
-                total_migrated += migrated
-            except Exception as e:
-                print(f"  ❌ Erro ao migrar {table}: {e}")
-    
-    # Resumo
-    print()
-    print("=" * 60)
-    if args.dry_run:
-        print("🔍 DRY-RUN CONCLUÍDO - Nenhuma alteração foi feita")
-    else:
-        print(f"✅ MIGRAÇÃO CONCLUÍDA - {total_migrated} registros migrados")
-    print("=" * 60)
-    
-    # Limpar
+        if table not in TABLES:
+            print(f"  [AVISO] Tabela desconhecida: {table}, pulando.")
+            continue
+        count = migrate_table(sqlite_conn, pg_conn, table)
+        total_migrated += count
+        print(f"  OK {table}: {count} linhas")
+
+    reset_sequences(pg_conn)
+
+    elapsed = time.time() - start
+    print(f"\n{'='*60}")
+    print(f"  Concluido em {elapsed:.1f}s | Total: {total_migrated} linhas")
+    print(f"{'='*60}\n")
+
     sqlite_conn.close()
     pg_conn.close()
 

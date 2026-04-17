@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../services/api";
+import { API_BASE_URL, api } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import { useSSE } from "../hooks/useSSE";
 import { useTheme } from "../context/ThemeContext";
@@ -109,6 +108,41 @@ const BATCH_EXAMPLE = JSON.stringify(
 const now = (): string =>
   new Date().toLocaleTimeString("pt-BR", { hour12: false });
 
+const CONTROL_GUIDE = [
+  {
+    title: "1. Detecção automática",
+    description:
+      "Use 'Detectar e Conectar AutoCAD' para localizar a instalação, abrir o CAD e sincronizar o driver com a menor intervenção manual.",
+  },
+  {
+    title: "2. Modo de operação",
+    description:
+      "Modo PONTE é o mais estável para ambientes distribuídos e bufferiza comandos para commit em .lsp. Modo COM fala direto com a instância local do AutoCAD.",
+  },
+  {
+    title: "3. Bridge Path",
+    description:
+      "Configure a pasta compartilhada quando o sincronizador usar troca de arquivos entre backend e AutoCAD. Salve antes de rodar batch ou commits.",
+  },
+  {
+    title: "4. Comandos N-58",
+    description:
+      "Traçar Tubo, Inserir Componente e Criar Layers formam o fluxo padrão de desenho técnico. Finalize a visualização e faça commit para consolidar a saída.",
+  },
+  {
+    title: "5. Operações adicionais",
+    description:
+      "Texto, Linha e Comando Direto são recursos de ajuste fino. Use Health Check e Console para validar retorno, erros e payloads enviados.",
+  },
+];
+
+const RECOMMENDED_FLOW = [
+  "Detecte e conecte o AutoCAD para validar a instância disponível.",
+  "Defina o modo PONTE ou COM conforme o cenário operacional.",
+  "Ajuste o Bridge Path antes de batch draw, commit e sincronização.",
+  "Execute comandos N-58, valide no console e finalize com commit/save.",
+];
+
 const AutoCADControl: React.FC = () => {
   const { theme } = useTheme();
   const { addToast, handleApiError } = useToast();
@@ -189,8 +223,8 @@ const AutoCADControl: React.FC = () => {
     const fetchStatus = async () => {
       try {
         const [statusRes, healthRes] = await Promise.all([
-          axios.get<DriverStatus>(`${API}/api/autocad/status`),
-          axios.get(`${API}/api/autocad/health`),
+          api.get<DriverStatus>("/api/autocad/status"),
+          api.get("/api/autocad/health"),
         ]);
         if (!cancelled) {
           setDriverStatus(statusRes.data);
@@ -256,9 +290,7 @@ const AutoCADControl: React.FC = () => {
     pushLog("CMD", `${method.toUpperCase()} ${path}`);
     try {
       const res =
-        method === "get"
-          ? await axios.get(`${API}${path}`)
-          : await axios.post(`${API}${path}`, body);
+        method === "get" ? await api.get(path) : await api.post(path, body);
       pushLog("OK", `${tag} — Sucesso`, res.data);
       return res.data;
     } catch (err: any) {
@@ -296,14 +328,11 @@ const AutoCADControl: React.FC = () => {
     addToast("info", "Detectando CAD", "Procurando instalações de AutoCAD...");
 
     try {
-      const res = await axios.post(
-        `${API}/api/cad-detection/detect-and-launch`,
-        {
-          auto_connect: true,
-          auto_load_lsp: true,
-          wait_seconds: 60,
-        },
-      );
+      const res = await api.post("/api/cad-detection/detect-and-launch", {
+        auto_connect: true,
+        auto_load_lsp: true,
+        wait_seconds: 60,
+      });
 
       if (res.data.success) {
         pushLog("OK", `CAD Detectado: ${res.data.message}`, res.data);
@@ -312,7 +341,7 @@ const AutoCADControl: React.FC = () => {
         setCadInstallations(res.data.installations || []);
 
         // Atualizar status do driver
-        const statusRes = await axios.get(`${API}/api/autocad/status`);
+        const statusRes = await api.get("/api/autocad/status");
         setDriverStatus(statusRes.data);
       } else {
         pushLog("ERR", `Falha: ${res.data.message}`, res.data);
@@ -333,7 +362,7 @@ const AutoCADControl: React.FC = () => {
   const handleQuickStatus = async () => {
     pushLog("CMD", "Verificando status do CAD...");
     try {
-      const res = await axios.get(`${API}/api/cad-detection/status`);
+      const res = await api.get("/api/cad-detection/status");
       pushLog("OK", `Status: ${res.data.message}`, res.data);
       setDetectionStatus(res.data.status);
       setCadInstallations(res.data.installations || []);
@@ -347,7 +376,7 @@ const AutoCADControl: React.FC = () => {
   const handleTestConnection = async () => {
     pushLog("CMD", "Testando conexão com AutoCAD...");
     try {
-      const res = await axios.post(`${API}/api/cad-detection/test-connection`);
+      const res = await api.post("/api/cad-detection/test-connection");
       if (res.data.success) {
         pushLog("OK", "Teste OK - círculo desenhado!", res.data);
         addToast(
@@ -622,6 +651,21 @@ const AutoCADControl: React.FC = () => {
             <p style={st.pageSubtitle}>
               Driver híbrido COM + Ponte de Rede • Norma N-58 Petrobras
             </p>
+            <div style={st.headerMetaRow}>
+              <span style={st.headerMetaPill}>
+                {driverStatus?.status
+                  ? `Status ${driverStatus.status}`
+                  : "Status aguardando leitura"}
+              </span>
+              <span style={st.headerMetaPill}>
+                {driverStatus?.mode
+                  ? `Modo ${driverStatus.mode.toUpperCase()}`
+                  : "Modo não definido"}
+              </span>
+              <span style={st.headerMetaPill}>
+                {polling ? "Monitoramento ativo" : "Monitoramento pausado"}
+              </span>
+            </div>
           </div>
           <label style={st.toggleLabel}>
             <input
@@ -630,9 +674,68 @@ const AutoCADControl: React.FC = () => {
               onChange={(e) => setPolling(e.target.checked)}
               style={{ accentColor: theme.accentPrimary }}
             />
-            <span>Auto-refresh (3s)</span>
+            <span>Auto-refresh de status (8s)</span>
           </label>
         </header>
+
+        <div style={st.recommendedFlowCard}>
+          <div style={st.recommendedFlowHeader}>
+            <span style={st.recommendedFlowBadge}>Fluxo recomendado</span>
+            <span style={st.recommendedFlowCaption}>
+              Operação assistida para reduzir erro manual e acelerar setup
+            </span>
+          </div>
+          <div style={st.recommendedFlowGrid}>
+            {RECOMMENDED_FLOW.map((step, index) => (
+              <div key={step} style={st.recommendedFlowStep}>
+                <span style={st.recommendedFlowIndex}>{index + 1}</span>
+                <span style={st.recommendedFlowText}>{step}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Section title="Guia Operacional" theme={theme} st={st}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {CONTROL_GUIDE.map((item) => (
+              <div
+                key={item.title}
+                style={{
+                  ...st.card,
+                  background: `linear-gradient(180deg, ${theme.surface} 0%, ${theme.surfaceAlt} 100%)`,
+                  border: `1px solid ${theme.border}`,
+                  minHeight: 150,
+                }}
+              >
+                <h3
+                  style={{
+                    ...st.cardTitle,
+                    color: theme.accentPrimary,
+                    marginBottom: 10,
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  style={{
+                    margin: 0,
+                    color: theme.textSecondary,
+                    fontSize: "0.86rem",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Section>
 
         {/* ═══ PAINEL 1: Status ═══ */}
         <Section title="Status do Driver" theme={theme} st={st}>
@@ -1445,6 +1548,22 @@ function buildUIStyles(theme: any) {
       color: theme.textTertiary,
       letterSpacing: "0.02em",
     } as React.CSSProperties,
+    headerMetaRow: {
+      display: "flex",
+      gap: 8,
+      flexWrap: "wrap" as const,
+      marginTop: 14,
+    } as React.CSSProperties,
+    headerMetaPill: {
+      fontSize: "0.7rem",
+      fontWeight: 600,
+      padding: "6px 10px",
+      borderRadius: 999,
+      backgroundColor: theme.surfaceAlt || theme.background,
+      color: theme.textSecondary,
+      border: `1px solid ${theme.border}`,
+      letterSpacing: "0.03em",
+    } as React.CSSProperties,
     badge: {
       fontSize: "0.68rem",
       fontWeight: 600,
@@ -1462,6 +1581,65 @@ function buildUIStyles(theme: any) {
       fontSize: "0.8rem",
       color: theme.textSecondary,
       cursor: "pointer",
+    } as React.CSSProperties,
+    recommendedFlowCard: {
+      marginBottom: 16,
+      padding: 18,
+      borderRadius: 14,
+      background: `linear-gradient(135deg, ${theme.accentPrimary}12 0%, ${theme.surface} 46%, ${theme.accentSecondary}12 100%)`,
+      border: `1px solid ${theme.accentPrimary}22`,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+    } as React.CSSProperties,
+    recommendedFlowHeader: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      flexWrap: "wrap" as const,
+      marginBottom: 14,
+    } as React.CSSProperties,
+    recommendedFlowBadge: {
+      fontSize: "0.72rem",
+      fontWeight: 700,
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.08em",
+      color: theme.accentPrimary,
+    } as React.CSSProperties,
+    recommendedFlowCaption: {
+      fontSize: "0.78rem",
+      color: theme.textSecondary,
+    } as React.CSSProperties,
+    recommendedFlowGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: 12,
+    } as React.CSSProperties,
+    recommendedFlowStep: {
+      display: "flex",
+      gap: 10,
+      alignItems: "flex-start",
+      padding: "12px 14px",
+      borderRadius: 12,
+      backgroundColor: theme.surfaceAlt || theme.background,
+      border: `1px solid ${theme.border}`,
+    } as React.CSSProperties,
+    recommendedFlowIndex: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 24,
+      height: 24,
+      borderRadius: 999,
+      backgroundColor: theme.accentPrimary,
+      color: "#fff",
+      fontSize: "0.72rem",
+      fontWeight: 700,
+      marginTop: 1,
+    } as React.CSSProperties,
+    recommendedFlowText: {
+      fontSize: "0.82rem",
+      lineHeight: 1.6,
+      color: theme.textSecondary,
     } as React.CSSProperties,
 
     // Section
@@ -1523,17 +1701,17 @@ function buildUIStyles(theme: any) {
     // Grids
     grid2: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
       gap: 16,
     } as React.CSSProperties,
     grid2Inner: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr",
+      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
       gap: 12,
     } as React.CSSProperties,
     grid3: {
       display: "grid",
-      gridTemplateColumns: "1fr 1fr 1fr",
+      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
       gap: 16,
     } as React.CSSProperties,
 

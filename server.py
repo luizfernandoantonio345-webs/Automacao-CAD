@@ -644,6 +644,14 @@ try:
 except ImportError as e:
     logger.warning(f"LLM Gateway não disponível: {e}")
 
+# Agent download endpoint
+try:
+    from backend.routes_agent_download import router as agent_download_router
+    app.include_router(agent_download_router)
+    logger.info("Agent Download endpoint carregado")
+except ImportError as e:
+    logger.warning(f"Agent Download não disponível: {e}")
+
 # ══════════════════════════════════════════════════════════════════════════════
 # WEBSOCKET HUB (Real-time bidirecional multi-usuário)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2142,28 +2150,61 @@ async def upload_excel(request: Request):
     else:
         raise HTTPException(status_code=400, detail="Envie o arquivo como multipart/form-data")
 
-    # Registrar upload no DB
-    upload_id = create_upload(user_email, original_name, saved_path)
+    # Registrar upload no DB quando a camada persistente estiver disponível
+    upload_id = (
+        create_upload(user_email, original_name, saved_path)
+        if callable(create_upload)
+        else None
+    )
 
     # Processar via ProjectService
     try:
         svc = ProjectService()
         generated_files = svc.generate_projects_from_excel(saved_path, output_dir)
 
+        if not generated_files:
+            if callable(update_upload) and upload_id is not None:
+                update_upload(
+                    upload_id,
+                    row_count=0,
+                    projects_generated=0,
+                    status="failed",
+                )
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "Nenhum projeto válido foi gerado a partir da planilha. "
+                    "Verifique se as colunas obrigatórias e os dados das linhas estão preenchidos."
+                ),
+            )
+
         # Registrar cada projeto gerado no DB
         project_ids = []
         for gen_path in generated_files:
-            pid = db_create_project(user_email, {
-                "code": gen_path.stem,
-                "company": "Excel Import",
-                "part_name": original_name,
-            })
-            db_update_project(pid, status="completed", lsp_path=str(gen_path), completed_at=time.time())
-            project_ids.append(pid)
+            if callable(db_create_project):
+                pid = db_create_project(user_email, {
+                    "code": gen_path.stem,
+                    "company": "Excel Import",
+                    "part_name": original_name,
+                })
+                if callable(db_update_project):
+                    db_update_project(
+                        pid,
+                        status="completed",
+                        lsp_path=str(gen_path),
+                        completed_at=time.time(),
+                    )
+                project_ids.append(pid)
 
-        update_upload(upload_id, row_count=len(generated_files), projects_generated=len(generated_files), status="completed")
+        if callable(update_upload) and upload_id is not None:
+            update_upload(
+                upload_id,
+                row_count=len(generated_files),
+                projects_generated=len(generated_files),
+                status="completed",
+            )
 
-        user = get_user_by_email(user_email)
+        user = get_user_by_email(user_email) if callable(get_user_by_email) else None
         return {
             "files": [str(f) for f in generated_files],
             "count": len(generated_files),
@@ -2172,8 +2213,18 @@ async def upload_excel(request: Request):
             "usado": user["usado"] if user else 0,
             "limite": user["limite"] if user else 999,
         }
+    except HTTPException:
+        if callable(update_upload) and upload_id is not None:
+            update_upload(upload_id, status="failed")
+        raise
+    except (ValueError, FileNotFoundError, ImportError) as e:
+        if callable(update_upload) and upload_id is not None:
+            update_upload(upload_id, status="failed")
+        logger.warning("Falha validando planilha Excel: %s", e)
+        raise HTTPException(status_code=422, detail=f"Falha ao ler planilha Excel: {e}")
     except Exception as e:
-        update_upload(upload_id, status="failed")
+        if callable(update_upload) and upload_id is not None:
+            update_upload(upload_id, status="failed")
         logger.error("Falha no processamento Excel: %s", e)
         raise HTTPException(status_code=500, detail=f"Erro ao processar Excel: {e}")
 

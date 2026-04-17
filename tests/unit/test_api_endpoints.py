@@ -9,6 +9,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 import sys
 import os
+import tempfile
+from uuid import uuid4
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -21,6 +23,16 @@ os.environ.setdefault("JARVIS_SECRET", "test_secret_key_minimum_32_bytes_long")
 @pytest.fixture
 def client():
     """Cliente de teste FastAPI."""
+    test_db_path = Path(tempfile.gettempdir()) / f"engcad_test_api_endpoints_{uuid4().hex}.db"
+
+    os.environ["ENGCAD_DB_PATH"] = str(test_db_path)
+    for module_name in [
+        "server",
+        "backend.database.db",
+        "backend.database.connection_pool",
+    ]:
+        sys.modules.pop(module_name, None)
+
     from server import app
     from fastapi.testclient import TestClient
     return TestClient(app)
@@ -32,6 +44,15 @@ def auth_headers(client):
     # Login com usuário demo
     response = client.post("/auth/demo")
     token = response.json().get("access_token")
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def standard_auth_headers(client):
+    """Headers com token não-demo para rotas bloqueadas em demonstração."""
+    from server import _make_token
+
+    token = _make_token("qa-excel@test.com", expiry_minutes=30)
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -133,6 +154,95 @@ class TestAuthEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert "email" in data
+
+
+class TestExcelUploadEndpoint:
+    """Testes focados no upload/processamento de Excel."""
+
+    def test_excel_rejects_invalid_extension(self, client, standard_auth_headers):
+        response = client.post(
+            "/excel",
+            files={"file": ("planilha.txt", b"conteudo invalido", "text/plain")},
+            headers=standard_auth_headers,
+        )
+
+        assert response.status_code == 400
+        assert "xlsx" in (response.json().get("detalhe") or response.text).lower()
+
+    @patch("server.get_user_by_email", return_value={"usado": 0, "limite": 999})
+    @patch("server.update_upload")
+    @patch("server.create_upload", return_value=101)
+    @patch("engenharia_automacao.core.main.ProjectService")
+    def test_excel_returns_422_when_no_projects_generated(
+        self,
+        project_service_cls,
+        create_upload_mock,
+        update_upload_mock,
+        get_user_mock,
+        client,
+        standard_auth_headers,
+    ):
+        project_service_cls.return_value.generate_projects_from_excel.return_value = []
+
+        response = client.post(
+            "/excel",
+            files={
+                "file": (
+                    "entrada.xlsx",
+                    b"fake excel payload",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+            headers=standard_auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "nenhum projeto válido" in (response.json().get("detalhe") or response.text).lower()
+        create_upload_mock.assert_called_once()
+        update_upload_mock.assert_called()
+
+    @patch("server.get_user_by_email", return_value={"usado": 5, "limite": 999})
+    @patch("server.db_update_project")
+    @patch("server.db_create_project", side_effect=[301, 302])
+    @patch("server.update_upload")
+    @patch("server.create_upload", return_value=202)
+    @patch("engenharia_automacao.core.main.ProjectService")
+    def test_excel_returns_generated_project_ids(
+        self,
+        project_service_cls,
+        create_upload_mock,
+        update_upload_mock,
+        db_create_project_mock,
+        db_update_project_mock,
+        get_user_mock,
+        client,
+        standard_auth_headers,
+        tmp_path,
+    ):
+        generated_files = [tmp_path / "P-100.lsp", tmp_path / "P-200.lsp"]
+        project_service_cls.return_value.generate_projects_from_excel.return_value = generated_files
+
+        response = client.post(
+            "/excel",
+            files={
+                "file": (
+                    "entrada.xlsx",
+                    b"fake excel payload",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+            headers=standard_auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2
+        assert data["project_ids"] == [301, 302]
+        assert data["upload_id"] == 202
+        assert create_upload_mock.called
+        assert update_upload_mock.called
+        assert db_create_project_mock.call_count == 2
+        assert db_update_project_mock.call_count == 2
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

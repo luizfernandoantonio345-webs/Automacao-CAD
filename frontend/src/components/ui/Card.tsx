@@ -1,8 +1,8 @@
 /**
  * Card Component — AutomAção CAD Enterprise v2.0
- * 
+ *
  * Premium card component with glass effect, hover states, and glow.
- * 
+ *
  * @usage
  * <Card variant="surface" hover glow>
  *   <Card.Header>Title</Card.Header>
@@ -10,26 +10,33 @@
  * </Card>
  */
 
-import React, { forwardRef, HTMLAttributes } from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
-import { colors, radius, shadows, transitions, spacing, blur } from '../../design/tokens';
-import { fontFamily, textStyles } from '../../design/typography';
-import { fadeInScale, hoverLift, hoverGlow } from '../../design/animations';
+import React, { forwardRef, HTMLAttributes } from "react";
+import { motion, HTMLMotionProps } from "framer-motion";
+import {
+  colors,
+  radius,
+  shadows,
+  transitions,
+  spacing,
+  blur,
+} from "../../design/tokens";
+import { fontFamily, textStyles } from "../../design/typography";
+import { fadeInScale, hoverLift, hoverGlow } from "../../design/animations";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export type CardVariant = 
-  | 'surface'      // Standard card bg
-  | 'elevated'     // Slightly lighter bg
-  | 'glass'        // Glassmorphism effect
-  | 'outline'      // Border only, transparent
-  | 'gradient';    // Gradient border
+export type CardVariant =
+  | "surface" // Standard card bg
+  | "elevated" // Slightly lighter bg
+  | "glass" // Glassmorphism effect
+  | "outline" // Border only, transparent
+  | "gradient"; // Gradient border
 
-export type CardSize = 'sm' | 'md' | 'lg';
+export type CardSize = "sm" | "md" | "lg";
 
-export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
+export interface CardProps extends Omit<HTMLMotionProps<"div">, "ref"> {
   variant?: CardVariant;
   size?: CardSize;
   hover?: boolean;
@@ -39,26 +46,24 @@ export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
   animated?: boolean;
 }
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SIZE STYLES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const sizeStyles: Record<CardSize, React.CSSProperties> = {
   sm: {
-    padding: spacing[4],    // 16px
+    padding: spacing[4], // 16px
     borderRadius: radius.md,
   },
   md: {
-    padding: spacing[6],    // 24px
+    padding: spacing[6], // 24px
     borderRadius: radius.lg,
   },
   lg: {
-    padding: spacing[8],    // 32px
+    padding: spacing[8], // 32px
     borderRadius: radius.xl,
   },
 };
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // VARIANT STYLES
@@ -70,35 +75,34 @@ const variantStyles: Record<CardVariant, React.CSSProperties> = {
     border: `1px solid ${colors.border.subtle}`,
     boxShadow: shadows.card,
   },
-  
+
   elevated: {
     background: colors.dark.elevated,
     border: `1px solid ${colors.border.default}`,
     boxShadow: shadows.md,
   },
-  
+
   glass: {
-    background: 'rgba(255, 255, 255, 0.03)',
+    background: "rgba(255, 255, 255, 0.03)",
     backdropFilter: `blur(${blur.lg})`,
     WebkitBackdropFilter: `blur(${blur.lg})`,
     border: `1px solid ${colors.border.subtle}`,
     boxShadow: shadows.card,
   },
-  
+
   outline: {
-    background: 'transparent',
+    background: "transparent",
     border: `1px solid ${colors.border.default}`,
-    boxShadow: 'none',
+    boxShadow: "none",
   },
-  
+
   gradient: {
     background: colors.dark.surface,
-    border: 'none',
+    border: "none",
     boxShadow: shadows.card,
     // Gradient border is applied via pseudo-element in wrapper
   },
 };
-
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // GRADIENT BORDER WRAPPER
@@ -110,8 +114,8 @@ const GradientBorderWrapper: React.FC<{
 }> = ({ children, borderRadius }) => (
   <div
     style={{
-      position: 'relative',
-      padding: '1px',
+      position: "relative",
+      padding: "1px",
       background: colors.gradient.primary,
       borderRadius,
     }}
@@ -120,7 +124,6 @@ const GradientBorderWrapper: React.FC<{
   </div>
 );
 
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -128,8 +131,8 @@ const GradientBorderWrapper: React.FC<{
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   (
     {
-      variant = 'surface',
-      size = 'md',
+      variant = "surface",
+      size = "md",
       hover = false,
       glow = false,
       glowColor = colors.primary.glow,
@@ -139,26 +142,26 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const variantStyle = variantStyles[variant];
     const sizeStyle = sizeStyles[size];
 
     const baseStyles: React.CSSProperties = {
       // Layout
-      position: 'relative',
-      width: '100%',
-      
+      position: "relative",
+      width: "100%",
+
       // Apply variant
       ...variantStyle,
-      
+
       // Apply size (unless noPadding)
       borderRadius: sizeStyle.borderRadius,
       ...(noPadding ? {} : { padding: sizeStyle.padding }),
-      
+
       // Transition
       transition: `all ${transitions.default}`,
-      
+
       // Custom styles
       ...style,
     };
@@ -178,8 +181,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         style={baseStyles}
         variants={animated ? fadeInScale : undefined}
-        initial={animated ? 'hidden' : undefined}
-        animate={animated ? 'visible' : undefined}
+        initial={animated ? "hidden" : undefined}
+        animate={animated ? "visible" : undefined}
         whileHover={hoverAnimation}
         {...props}
       >
@@ -188,20 +191,21 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     );
 
     // Wrap with gradient border if variant is gradient
-    if (variant === 'gradient') {
+    if (variant === "gradient") {
       return (
-        <GradientBorderWrapper borderRadius={sizeStyle.borderRadius || radius.lg}>
+        <GradientBorderWrapper
+          borderRadius={sizeStyle.borderRadius || radius.lg}
+        >
           {cardContent}
         </GradientBorderWrapper>
       );
     }
 
     return cardContent;
-  }
+  },
 );
 
-Card.displayName = 'Card';
-
+Card.displayName = "Card";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CARD SUBCOMPONENTS
@@ -223,9 +227,9 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
 }) => (
   <div
     style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
       marginBottom: spacing[4],
       ...style,
     }}
@@ -260,8 +264,7 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
   </div>
 );
 
-CardHeader.displayName = 'CardHeader';
-
+CardHeader.displayName = "CardHeader";
 
 interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {}
 
@@ -282,31 +285,30 @@ export const CardBody: React.FC<CardBodyProps> = ({
   </div>
 );
 
-CardBody.displayName = 'CardBody';
-
+CardBody.displayName = "CardBody";
 
 interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
-  align?: 'left' | 'center' | 'right' | 'between';
+  align?: "left" | "center" | "right" | "between";
 }
 
 export const CardFooter: React.FC<CardFooterProps> = ({
-  align = 'right',
+  align = "right",
   children,
   style,
   ...props
 }) => {
   const justifyContent = {
-    left: 'flex-start',
-    center: 'center',
-    right: 'flex-end',
-    between: 'space-between',
+    left: "flex-start",
+    center: "center",
+    right: "flex-end",
+    between: "space-between",
   }[align];
 
   return (
     <div
       style={{
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         justifyContent,
         gap: spacing[3],
         marginTop: spacing[6],
@@ -321,8 +323,7 @@ export const CardFooter: React.FC<CardFooterProps> = ({
   );
 };
 
-CardFooter.displayName = 'CardFooter';
-
+CardFooter.displayName = "CardFooter";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // COMPOUND EXPORT
