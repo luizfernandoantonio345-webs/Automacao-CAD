@@ -267,6 +267,8 @@ _AUTH_WHITELIST = {
     "/api/bridge/connection", "/api/bridge/ack", "/api/bridge/health",
     # Download do sincronizador (público para facilitar instalação)
     "/api/download/sincronizador",
+    # Agente AutoCAD - download e instalação (público)
+    "/api/agent/download", "/api/agent/install", "/api/agent/installer",
     # Status endpoints para dashboard (somente leitura)
     "/api/autocad/health", "/api/autocad/buffer", "/api/autocad/status",
     # AI endpoints para frontend (somente leitura e chat)
