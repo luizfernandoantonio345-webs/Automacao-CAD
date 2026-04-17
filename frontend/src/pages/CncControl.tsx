@@ -321,6 +321,29 @@ const CncControl: React.FC = () => {
   const [showAutoCADGuide, setShowAutoCADGuide] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
+  // ── Simulação CNC ──
+  const [simPlaying, setSimPlaying] = useState(false);
+  const [simProgress, setSimProgress] = useState(0); // 0–100
+  const [simSpeed, setSimSpeed] = useState(1); // 0.5x | 1x | 2x | 4x
+  const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (simPlaying) {
+      simIntervalRef.current = setInterval(() => {
+        setSimProgress((p) => {
+          if (p >= 100) {
+            setSimPlaying(false);
+            return 100;
+          }
+          return Math.min(100, p + 0.5 * simSpeed);
+        });
+      }, 50);
+    } else {
+      if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+    }
+    return () => { if (simIntervalRef.current) clearInterval(simIntervalRef.current); };
+  }, [simPlaying, simSpeed]);
+
   // ── Modo de operação ──
   type OperationMode = "import" | "create" | "nesting";
   const [operationMode, setOperationMode] = useState<OperationMode>("import");
@@ -4006,6 +4029,122 @@ M02 (Fim do programa)
                           </span>
                         </div>
                       )}
+                    </div>
+
+                    {/* ── Simulação CNC — Timeline interativa ── */}
+                    <div
+                      style={{
+                        marginTop: "18px",
+                        padding: "14px 16px",
+                        background: `${theme.surface}cc`,
+                        border: `1px solid ${theme.border}`,
+                        borderRadius: "10px",
+                      }}
+                    >
+                      {/* Barra de progresso */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "11px", color: theme.textTertiary, minWidth: "28px" }}>
+                          {Math.round(simProgress)}%
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: "6px",
+                            background: theme.border,
+                            borderRadius: "3px",
+                            cursor: "pointer",
+                            position: "relative",
+                          }}
+                          onClick={(e) => {
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                            setSimProgress(pct);
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${simProgress}%`,
+                              height: "100%",
+                              background: `linear-gradient(90deg, ${theme.accentPrimary}, ${theme.success})`,
+                              borderRadius: "3px",
+                              transition: "width 0.05s linear",
+                            }}
+                          />
+                        </div>
+                        {gcode && (
+                          <span style={{ fontSize: "11px", color: theme.textTertiary, minWidth: "36px", textAlign: "right" }}>
+                            {((simProgress / 100) * (gcode.estimatedTime || 2.5)).toFixed(1)}min
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Controles */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {/* Retroceder */}
+                        <button
+                          onClick={() => setSimProgress(0)}
+                          title="Reiniciar"
+                          style={{
+                            background: "transparent",
+                            border: `1px solid ${theme.border}`,
+                            borderRadius: "6px",
+                            color: theme.textSecondary,
+                            padding: "5px 8px",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                          }}
+                        >
+                          ⏮
+                        </button>
+
+                        {/* Play / Pause */}
+                        <button
+                          onClick={() => {
+                            if (simProgress >= 100) setSimProgress(0);
+                            setSimPlaying((v) => !v);
+                          }}
+                          style={{
+                            background: simPlaying
+                              ? `linear-gradient(135deg, ${theme.warning}, #d97706)`
+                              : `linear-gradient(135deg, ${theme.accentPrimary}, ${theme.success})`,
+                            border: "none",
+                            borderRadius: "8px",
+                            color: "#fff",
+                            padding: "7px 16px",
+                            cursor: "pointer",
+                            fontWeight: 700,
+                            fontSize: "13px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          {simPlaying ? "⏸ Pausar" : "▶ Simular"}
+                        </button>
+
+                        {/* Velocidade */}
+                        <span style={{ fontSize: "11px", color: theme.textSecondary, marginLeft: "auto" }}>
+                          Velocidade:
+                        </span>
+                        {[0.5, 1, 2, 4].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setSimSpeed(s)}
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: "5px",
+                              border: `1px solid ${simSpeed === s ? theme.accentPrimary : theme.border}`,
+                              background: simSpeed === s ? `${theme.accentPrimary}22` : "transparent",
+                              color: simSpeed === s ? theme.accentPrimary : theme.textSecondary,
+                              cursor: "pointer",
+                              fontSize: "11px",
+                              fontWeight: simSpeed === s ? 700 : 400,
+                            }}
+                          >
+                            {s}x
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </motion.div>
                 )}

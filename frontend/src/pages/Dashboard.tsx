@@ -105,11 +105,12 @@ const Dashboard = () => {
     () => [
       {
         id: "new-project",
-        label: "Novo Projeto",
-        description: "Criar um novo projeto de engenharia",
-        icon: <FaPlus size={20} />,
+        label: "Ingestão de Dados",
+        description: "Importar Excel e gerar projeto",
+        icon: <Upload size={20} />,
         color: theme.accentPrimary,
-        onClick: () => navigate("/global-setup"),
+        onClick: () => navigate("/data-ingestion"),
+        badge: undefined,
       },
       {
         id: "cnc",
@@ -238,6 +239,36 @@ const Dashboard = () => {
         {/* Welcome Hero */}
         <WelcomeHero userName="Operador" theme={widgetTheme} />
 
+        {/* CTA principal — GERAR PROJETO */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}
+        >
+          <button
+            onClick={() => navigate("/data-ingestion")}
+            style={{
+              padding: "13px 28px",
+              background: "linear-gradient(135deg, #00A1FF 0%, #0055CC 100%)",
+              border: "none",
+              borderRadius: 12,
+              color: "#FFF",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              boxShadow: "0 4px 24px rgba(0,161,255,0.35)",
+              letterSpacing: "0.02em",
+            }}
+          >
+            <Upload size={16} />
+            GERAR PROJETO
+          </button>
+        </motion.div>
+
         {/* Guided Walkthrough — first 7 days */}
         <OnboardingWalkthrough onNavigate={(path) => navigate(path)} />
 
@@ -308,7 +339,7 @@ const Dashboard = () => {
                 </button>
               )}
               <button
-                onClick={() => navigate("/global-setup")}
+                onClick={() => navigate("/data-ingestion")}
                 style={{
                   padding: "12px 24px",
                   background: isDemo
@@ -326,8 +357,8 @@ const Dashboard = () => {
                   boxShadow: isDemo ? "none" : "0 4px 20px rgba(0,161,255,0.3)",
                 }}
               >
-                <FaPlus size={14} />
-                {total === 0 ? "Criar Primeiro Projeto" : "Novo Projeto"}
+                <Upload size={14} />
+                {total === 0 ? "Importar Excel → Gerar Projeto" : "Novo Projeto"}
               </button>
             </div>
 
@@ -547,7 +578,7 @@ const Dashboard = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/global-setup")}
+                onClick={() => navigate("/data-ingestion")}
                 style={{
                   padding: "8px 16px",
                   border: "none",
@@ -599,7 +630,7 @@ const Dashboard = () => {
                 </p>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
-                  onClick={() => navigate("/global-setup")}
+                  onClick={() => navigate("/data-ingestion")}
                   style={{
                     padding: "10px 20px",
                     border: `1px solid ${theme.accentPrimary}`,
@@ -611,7 +642,7 @@ const Dashboard = () => {
                     cursor: "pointer",
                   }}
                 >
-                  Criar Primeiro Projeto
+                  Importar Excel → Gerar Projeto
                 </motion.button>
               </div>
             ) : (

@@ -1178,6 +1178,137 @@ const ChatCAD: React.FC = () => {
                         {msg.copiedId ? "Copiado!" : "Copiar"}
                       </button>
                     )}
+
+                    {/* Quick actions for assistant messages */}
+                    {!msg.loading && msg.role === "assistant" && msg.content && (
+                      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "6px", marginTop: "10px" }}>
+                        {/* Gerar novamente */}
+                        {idx > 0 && messages[idx - 1]?.role === "user" && (
+                          <button
+                            onClick={async () => {
+                              const prev = messages[idx - 1];
+                              if (!prev || loading) return;
+                              if (!consumeAiQuery()) return;
+                              setLoading(true);
+                              const assistantId = addMsg("assistant", "", { loading: true });
+                              try {
+                                const res = await apiClient.post("/api/chatcad/chat", { texto: prev.content });
+                                const data = res.data;
+                                const content = data.resposta?.response || (typeof data.resposta === "string" ? data.resposta : "Comando processado.");
+                                updateMsg(assistantId, { content, loading: false, streaming: true, tipo: data.tipo });
+                              } catch {
+                                updateMsg(assistantId, { content: "❌ Erro ao regenerar resposta.", loading: false });
+                              } finally {
+                                setLoading(false);
+                              }
+                              const assistantId = addMsg("assistant", "", { loading: true });
+                              try {
+                                const res = await apiClient.post("/api/chatcad/chat", { texto: prev.content });
+                                const data = res.data;
+                                const content = data.resposta?.response || (typeof data.resposta === "string" ? data.resposta : "Comando processado.");
+                                updateMsg(assistantId, { content, loading: false, streaming: true, tipo: data.tipo });
+                              } catch {
+                                updateMsg(assistantId, { content: "❌ Erro ao regenerar resposta.", loading: false });
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                            title="Gerar novamente"
+                            style={{
+                              padding: "5px 10px",
+                              background: "rgba(99,102,241,0.12)",
+                              border: "1px solid rgba(99,102,241,0.3)",
+                              borderRadius: "6px",
+                              color: "#818cf8",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                            }}
+                          >
+                            🔄 Gerar novamente
+                          </button>
+                        )}
+                        {/* Melhorar desenho */}
+                        <button
+                          onClick={() => {
+                            if (loading) return;
+                            setInput("Melhore e otimize o desenho anterior com mais detalhes técnicos");
+                            inputRef.current?.focus();
+                          }}
+                          title="Melhorar desenho"
+                          style={{
+                            padding: "5px 10px",
+                            background: "rgba(16,185,129,0.1)",
+                            border: "1px solid rgba(16,185,129,0.3)",
+                            borderRadius: "6px",
+                            color: "#10B981",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          ✨ Melhorar desenho
+                        </button>
+                        {/* Explicar código */}
+                        {msg.content.includes("(") && msg.content.includes(")") && (
+                          <button
+                            onClick={() => {
+                              if (loading) return;
+                              setInput("Explique o código LISP gerado na resposta anterior, passo a passo");
+                              inputRef.current?.focus();
+                            }}
+                            title="Explicar código"
+                            style={{
+                              padding: "5px 10px",
+                              background: "rgba(245,158,11,0.1)",
+                              border: "1px solid rgba(245,158,11,0.3)",
+                              borderRadius: "6px",
+                              color: "#F59E0B",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                            }}
+                          >
+                            📖 Explicar código
+                          </button>
+                        )}
+                        {/* Executar no AutoCAD — sempre visível para qualquer assistente */}
+                        {!msg.plano && (
+                          <button
+                            onClick={() => {
+                              if (loading) return;
+                              setInput(`Execute no AutoCAD: ${msg.content.slice(0, 120)}`);
+                              inputRef.current?.focus();
+                            }}
+                            title="Executar no AutoCAD"
+                            style={{
+                              padding: "5px 10px",
+                              background: "rgba(0,161,255,0.1)",
+                              border: "1px solid rgba(0,161,255,0.3)",
+                              borderRadius: "6px",
+                              color: "#00A1FF",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                            }}
+                          >
+                            <FaPlay size={9} /> Executar no AutoCAD
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );

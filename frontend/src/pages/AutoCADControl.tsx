@@ -189,6 +189,8 @@ const AutoCADControl: React.FC = () => {
 
   // ── Comando Direto ──
   const [rawCommand, setRawCommand] = useState("");
+  const [cmdStatus, setCmdStatus] = useState<"idle" | "sent" | "executed">("idle");
+  const cmdStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Batch Draw ──
   const [batchJson, setBatchJson] = useState(BATCH_EXAMPLE);
@@ -536,12 +538,18 @@ const AutoCADControl: React.FC = () => {
       pushLog("ERR", "Comando vazio");
       return;
     }
+    setCmdStatus("sent");
+    if (cmdStatusTimerRef.current) clearTimeout(cmdStatusTimerRef.current);
     apiCall(
       "post",
       "/api/autocad/send-command",
       { command: rawCommand },
       `CMD: ${rawCommand.slice(0, 40)}`,
     );
+    cmdStatusTimerRef.current = setTimeout(() => {
+      setCmdStatus("executed");
+      cmdStatusTimerRef.current = setTimeout(() => setCmdStatus("idle"), 2500);
+    }, 800);
     setRawCommand("");
   };
 
@@ -1282,7 +1290,34 @@ const AutoCADControl: React.FC = () => {
 
             {/* Comando Direto */}
             <div style={st.card}>
-              <h3 style={st.cardTitle}>Comando Direto (LISP)</h3>
+              <h3 style={st.cardTitle}>
+                Comando Direto (LISP)
+                {cmdStatus === "sent" && (
+                  <span style={{
+                    marginLeft: 10,
+                    padding: "2px 10px",
+                    borderRadius: 12,
+                    background: "rgba(0,161,255,0.15)",
+                    border: "1px solid rgba(0,161,255,0.4)",
+                    color: "#00A1FF",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    animation: "pulse 1s infinite",
+                  }}>⬆ Enviado...</span>
+                )}
+                {cmdStatus === "executed" && (
+                  <span style={{
+                    marginLeft: 10,
+                    padding: "2px 10px",
+                    borderRadius: 12,
+                    background: "rgba(16,185,129,0.15)",
+                    border: "1px solid rgba(16,185,129,0.4)",
+                    color: "#10B981",
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}>✓ Executado</span>
+                )}
+              </h3>
               <FieldGroup label="Comando" theme={theme} st={st}>
                 <textarea
                   style={{

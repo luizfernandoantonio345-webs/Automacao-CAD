@@ -634,6 +634,60 @@ const Billing: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
+            {/* ── Métricas de Valor ── */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "14px",
+                marginBottom: "24px",
+              }}
+            >
+              {[
+                {
+                  label: "Economia Mensal",
+                  value: `R$ ${((subscription?.usage?.cam_jobs_used || 0) * 48).toLocaleString("pt-BR")}`,
+                  sub: "vs. processo manual",
+                  icon: "📉",
+                  color: "#10B981",
+                },
+                {
+                  label: "Tempo Economizado",
+                  value: `${Math.max(1, Math.round((subscription?.usage?.cam_jobs_used || 0) * 1.5))}h/mês`,
+                  sub: "horas de engenharia",
+                  icon: "⏱",
+                  color: "#00A1FF",
+                },
+                {
+                  label: "Uso do Sistema",
+                  value: `${camUsagePercent.toFixed(0)}%`,
+                  sub: `${subscription?.usage?.cam_jobs_used || 0} de ${subscription?.usage?.cam_jobs_limit || 0} jobs`,
+                  icon: "⚡",
+                  color: camUsagePercent > 80 ? "#f59e0b" : "#8B5CF6",
+                },
+              ].map((m) => (
+                <div
+                  key={m.label}
+                  style={{
+                    padding: "18px 20px",
+                    borderRadius: "14px",
+                    background: "linear-gradient(135deg, #0a1628, #0f2035)",
+                    border: `1px solid ${m.color}33`,
+                    boxShadow: `0 0 18px ${m.color}14`,
+                  }}
+                >
+                  <div style={{ fontSize: "22px", marginBottom: "6px" }}>{m.icon}</div>
+                  <div style={{ color: "#64748b", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {m.label}
+                  </div>
+                  <div style={{ color: m.color, fontSize: "24px", fontWeight: 800, margin: "6px 0 4px" }}>
+                    {m.value}
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: "12px" }}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+
             {/* Subscription Card */}
             <div
               style={{
