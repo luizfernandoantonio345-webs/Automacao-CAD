@@ -1201,17 +1201,6 @@ const ChatCAD: React.FC = () => {
                               } finally {
                                 setLoading(false);
                               }
-                              const assistantId = addMsg("assistant", "", { loading: true });
-                              try {
-                                const res = await apiClient.post("/api/chatcad/chat", { texto: prev.content });
-                                const data = res.data;
-                                const content = data.resposta?.response || (typeof data.resposta === "string" ? data.resposta : "Comando processado.");
-                                updateMsg(assistantId, { content, loading: false, streaming: true, tipo: data.tipo });
-                              } catch {
-                                updateMsg(assistantId, { content: "❌ Erro ao regenerar resposta.", loading: false });
-                              } finally {
-                                setLoading(false);
-                              }
                             }}
                             title="Gerar novamente"
                             style={{
