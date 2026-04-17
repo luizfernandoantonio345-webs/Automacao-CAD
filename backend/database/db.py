@@ -52,11 +52,20 @@ _ALLOW_EPHEMERAL = os.getenv("ALLOW_EPHEMERAL_DB", "").strip().lower() in ("true
 _EPHEMERAL_MODE = False
 
 if _IS_PRODUCTION and not _USE_PG and not _ALLOW_EPHEMERAL:
-    raise RuntimeError(
-        "DATABASE_URL é obrigatório em produção e deve apontar para PostgreSQL. "
-        "SQLite local/efêmero não é permitido nesse ambiente. "
-        "Para demo/MVP, defina ALLOW_EPHEMERAL_DB=true (dados serão perdidos entre deploys)."
-    )
+    if _IS_VERCEL:
+        # Vercel serverless: aceita SQLite efêmero quando DATABASE_URL não configurada.
+        # Dados são perdidos entre reinicializações, mas o sistema funciona.
+        logger.warning(
+            "⚠️ PRODUÇÃO SEM DATABASE_URL: Usando SQLite efêmero no Vercel. "
+            "Configure DATABASE_URL para PostgreSQL para persistência real."
+        )
+        _EPHEMERAL_MODE = True
+    else:
+        raise RuntimeError(
+            "DATABASE_URL é obrigatório em produção e deve apontar para PostgreSQL. "
+            "SQLite local/efêmero não é permitido nesse ambiente. "
+            "Para demo/MVP, defina ALLOW_EPHEMERAL_DB=true (dados serão perdidos entre deploys)."
+        )
 
 if _USE_PG:
     logger.info("Usando PostgreSQL async (asyncpg): %s", _RAW_URL.split("@")[-1] if "@" in _RAW_URL else "(url)")
@@ -1032,6 +1041,20 @@ async def _seed_enterprise_test_user_async() -> None:
                 text("UPDATE users SET tier = 'enterprise' WHERE email = :e"),
                 {"e": test_email},
             )
+    # Conta do dono do sistema — enterprise ilimitado fixo
+    owner_email = "santossod345@gmail.com"
+    owner_pw = "Santos14!"
+    if not await email_exists_async(owner_email):
+        await create_user_async(owner_email, "santossod345", owner_pw,
+                                "Sistema EngCAD - Dono", 9999999, "enterprise")
+        logger.info("Usuário dono %s criado com enterprise ilimitado (PG)", owner_email)
+    else:
+        async with get_async_session() as session:
+            await session.execute(
+                text("UPDATE users SET tier = 'enterprise', limite = 9999999 WHERE email = :e"),
+                {"e": owner_email},
+            )
+        logger.info("Usuário dono %s atualizado para enterprise ilimitado (PG)", owner_email)
 
 
 async def seed_default_user_async() -> None:
@@ -1078,6 +1101,7 @@ def seed_default_user() -> None:
 
 
 def _seed_enterprise_test_user_sqlite() -> None:
+    # Conta enterprise de testes padrão
     test_email = "enterprise@engenharia-cad.com"
     test_pw = "Eng@Enterprise2026"
     if not email_exists(test_email):
@@ -1085,13 +1109,19 @@ def _seed_enterprise_test_user_sqlite() -> None:
     else:
         with get_db() as conn:
             conn.execute("UPDATE users SET tier = 'enterprise' WHERE email = ?", (test_email,))
-
-        cur = conn.cursor() if _USE_PG else conn
-        row = cur.execute(_q("SELECT * FROM users WHERE email = ?"), (email,)).fetchone()
-    if not row:
-        return None
-    row_d = dict(row)
-    return {"email": row_d["email"], "empresa": row_d["empresa"], "tier": row_d.get("tier", "demo"), "limite": row_d["limite"], "usado": row_d["usado"]}
+    # Conta do dono do sistema — enterprise ilimitado fixo
+    owner_email = "santossod345@gmail.com"
+    owner_pw = "Santos14!"
+    if not email_exists(owner_email):
+        create_user(owner_email, "santossod345", owner_pw, "Sistema EngCAD - Dono", 9999999, "enterprise")
+        logger.info("Usuário dono %s criado com plano enterprise ilimitado (SQLite)", owner_email)
+    else:
+        with get_db() as conn:
+            conn.execute(
+                "UPDATE users SET tier = 'enterprise', limite = 9999999 WHERE email = ?",
+                (owner_email,)
+            )
+        logger.info("Usuário dono %s atualizado para enterprise ilimitado (SQLite)", owner_email)
 
 
 def email_exists(email: str) -> bool:

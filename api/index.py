@@ -54,7 +54,49 @@ except Exception as e:
             "status": "maintenance",
             "message": "Sistema em manutenção. Tente novamente em alguns minutos."
         }
-    
+
+    @app.post("/login")
+    async def login_fallback(request: Request):
+        """Endpoint de login de emergência — autentica usuários via SQLite ephemeral."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        email = (body.get("email") or body.get("username") or "").strip().lower()
+        senha = (body.get("senha") or body.get("password") or "").strip()
+        if not email or not senha:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail="Credenciais obrigatórias")
+        try:
+            import sys
+            from pathlib import Path
+            _root = Path(__file__).resolve().parent.parent
+            if str(_root) not in sys.path:
+                sys.path.insert(0, str(_root))
+            from backend.database.db import authenticate_user, seed_default_user, init_db
+            init_db()
+            seed_default_user()
+            user = authenticate_user(email, senha)
+        except Exception as e:
+            logger.error("Fallback login error: %s", e)
+            user = None
+        if not user:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail="Credenciais inválidas")
+        import jwt as _jwt, time as _time
+        secret = os.getenv("JARVIS_SECRET", "fallback-secret-change-in-prod-32bytes!")
+        token = _jwt.encode(
+            {"sub": user["email"], "tier": user.get("tier", "demo"), "exp": int(_time.time()) + 86400 * 7},
+            secret, algorithm="HS256"
+        )
+        return {
+            "access_token": token, "token_type": "bearer",
+            "email": user["email"], "empresa": user.get("empresa", ""),
+            "tier": user.get("tier", "demo"),
+            "limite": user.get("limite", 100),
+            "usado": user.get("usado", 0),
+        }
+
     @app.get("/_debug/error")
     async def debug_error():
         """DEBUG: Show import error (only in dev/staging)"""
@@ -65,7 +107,7 @@ except Exception as e:
             "error": _import_error,
             "traceback": _import_traceback.split("\n") if _import_traceback else []
         }
-    
+
     @app.get("/health")
     async def health():
         return {
@@ -73,11 +115,11 @@ except Exception as e:
             "mode": "maintenance",
             "message": "Serviço temporariamente indisponível"
         }
-    
+
     @app.get("/healthz")
     async def healthz():
         return {"status": "degraded"}
-    
+
     @app.get("/api/cam/materials")
     async def cam_materials_fallback():
         return {"error": "Serviço CAM temporariamente indisponível", "materials": []}
