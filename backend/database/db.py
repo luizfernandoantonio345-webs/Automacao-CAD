@@ -38,6 +38,10 @@ logger = logging.getLogger("engcad.db")
 # ── Engine selection ─────────────────────────────────────────────────────────
 _RAW_URL: str = os.getenv("DATABASE_URL", "").strip()
 
+# Decodificar URL-encoded characters (%26 -> &, etc.)
+from urllib.parse import unquote
+_RAW_URL = unquote(_RAW_URL)
+
 # Normalizar postgres:// → postgresql+asyncpg://
 if _RAW_URL.startswith("postgres://"):
     _RAW_URL = _RAW_URL.replace("postgres://", "postgresql+asyncpg://", 1)
