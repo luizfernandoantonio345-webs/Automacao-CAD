@@ -77,8 +77,17 @@ _IS_PRODUCTION = os.getenv("VERCEL_ENV") == "production" or os.getenv("APP_ENV")
 _ALLOW_EPHEMERAL = os.getenv("ALLOW_EPHEMERAL_DB", "").strip().lower() in ("true", "1", "yes")
 _EPHEMERAL_MODE = False
 
+# If DATABASE_URL is malformed (path contains &), force fallback to SQLite
+_URL_MALFORMED = False
+if _USE_PG and _RAW_URL:
+    _check_parsed = urlparse(_RAW_URL)
+    if "&" in _check_parsed.path:
+        logger.error("DATABASE_URL still malformed after fix attempt: path contains &")
+        _URL_MALFORMED = True
+        _USE_PG = False  # Force fallback to SQLite
+
 if _IS_PRODUCTION and not _USE_PG and not _ALLOW_EPHEMERAL:
-    if _IS_VERCEL:
+    if _IS_VERCEL or _URL_MALFORMED:
         # Vercel serverless: aceita SQLite efêmero quando DATABASE_URL não configurada.
         # Dados são perdidos entre reinicializações, mas o sistema funciona.
         logger.warning(
