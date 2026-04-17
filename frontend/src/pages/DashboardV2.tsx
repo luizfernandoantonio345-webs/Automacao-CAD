@@ -202,7 +202,7 @@ const HeroSection: React.FC<{
             leftIcon={<Plus size={18} />}
             onClick={onNewProject}
           >
-            Novo Projeto
+            GERAR PROJETO
           </Button>
           {isDemo && (
             <Button
@@ -600,11 +600,11 @@ const Dashboard: React.FC = () => {
     () => [
       {
         id: "new-project",
-        label: "Novo Projeto",
-        description: "Criar um novo projeto de engenharia",
+        label: "Gerar Projeto",
+        description: "Iniciar ingestão de dados e preparar a geração",
         icon: <Plus size={20} />,
         color: colors.primary.DEFAULT,
-        path: "/autopilot",
+        path: "/data-ingestion",
       },
       {
         id: "cnc",
@@ -739,7 +739,7 @@ const Dashboard: React.FC = () => {
         <HeroSection
           userName="Operador"
           isDemo={isDemo}
-          onNewProject={() => navigate("/autopilot")}
+          onNewProject={() => navigate("/data-ingestion")}
           onUpgrade={() => navigate("/pricing")}
         />
 

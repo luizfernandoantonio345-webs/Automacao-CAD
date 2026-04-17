@@ -24,7 +24,7 @@ import {
   FaCheck,
   FaBolt,
 } from "react-icons/fa";
-import { api as apiClient } from "../services/api";
+import { api as apiClient, ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import { useLicense } from "../context/LicenseContext";
@@ -345,6 +345,34 @@ const STARTER_PROMPTS = [
   },
 ];
 
+function extractAssistantSections(content: string) {
+  const codeBlocks = [...content.matchAll(/```(?:lisp|elisp|clisp|autolisp)?\s*([\s\S]*?)```/gi)]
+    .map((match) => match[1].trim())
+    .filter(Boolean);
+  const stripped = content.replace(/```[\s\S]*?```/g, "").trim();
+  const paragraphs = stripped
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  let lispCode = codeBlocks.find((block) => /\([A-Za-z_\-]+/.test(block)) || "";
+  if (!lispCode) {
+    const parenLines = content
+      .split("\n")
+      .filter((line) => /^\s*\(|^\s*\(defun/i.test(line));
+    if (parenLines.length > 0) {
+      lispCode = parenLines.join("\n").trim();
+    }
+  }
+
+  return {
+    summary: paragraphs[0] || "Resposta gerada pelo ChatCAD.",
+    details: paragraphs.slice(1).join("\n\n"),
+    lispCode,
+    hasStructuredContent: Boolean(paragraphs[0] || lispCode),
+  };
+}
+
 // ─────────────────── Main Component ───────────────────
 const STORAGE_KEY = "chatcad_history";
 
@@ -421,96 +449,109 @@ const ChatCAD: React.FC = () => {
     );
   }, []);
 
+  const submitPrompt = useCallback(
+    async (texto: string, options?: { echoUser?: boolean }) => {
+      const prompt = texto.trim();
+      if (!prompt || loading) return;
+      if (!consumeAiQuery()) return;
+
+      if (options?.echoUser !== false) {
+        addMsg("user", prompt);
+      }
+
+      setLoading(true);
+      const assistantId = addMsg("assistant", "", { loading: true });
+
+      try {
+        const endpoint = autoExecute
+          ? "/api/chatcad/chat"
+          : "/api/chatcad/interpret";
+        const res = await apiClient.post(endpoint, { texto: prompt });
+        const data = res.data;
+
+        let content = "";
+        let plano: any[] | undefined;
+        let execucao: any | undefined;
+        let sugestoes: string[] | undefined;
+
+        if (data.resposta?.response) content = data.resposta.response;
+        else if (data.tipo === "desconhecido") {
+          content =
+            "Não entendi esse comando. Reformule ou use uma das sugestões abaixo.";
+          sugestoes = data.interpretacao?.sugestoes;
+        } else if (data.resposta) {
+          content =
+            typeof data.resposta === "string"
+              ? data.resposta
+              : JSON.stringify(data.resposta, null, 2);
+        }
+
+        if (data.interpretacao?.correcao) {
+          content = `> 📝 *Correção:* "${data.interpretacao.correcao}"\n\n${content}`;
+        }
+
+        if (
+          !autoExecute &&
+          data.tipo !== "pergunta" &&
+          data.tipo !== "desconhecido"
+        ) {
+          plano = data.dados?.plano || data.plano;
+          if (plano?.length) {
+            content = `**Plano de execução** (${plano.length} etapas):\n\n`;
+            plano.forEach((a: any, i: number) => {
+              content += `${i + 1}. ${a.descricao || a.acao}\n`;
+            });
+            content += `\n*Clique em **Executar** para rodar no AutoCAD.*`;
+          }
+        }
+
+        if (data.execucao) {
+          execucao = data.execucao;
+          plano = data.interpretacao?.dados?.plano;
+        }
+        sugestoes = sugestoes || data.interpretacao?.sugestoes;
+
+        updateMsg(assistantId, {
+          content: content || "Comando processado com sucesso.",
+          loading: false,
+          streaming: true,
+          tipo: data.tipo,
+          plano,
+          execucao,
+          sugestoes,
+        });
+
+        if (data.executado)
+          addToast(
+            data.execucao?.falhas === 0 ? "success" : "warning",
+            "ChatCAD",
+            data.resposta?.response || "Executado",
+          );
+      } catch (err: any) {
+        updateMsg(assistantId, {
+          content: !err?.response
+            ? "❌ Servidor indisponível. Verifique sua conexão e tente novamente."
+            : `❌ Erro ao processar (${err?.response?.status}). Tente novamente.`,
+          loading: false,
+        });
+        if (err?.response) handleApiError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, consumeAiQuery, addMsg, autoExecute, updateMsg, addToast, handleApiError],
+  );
+
   const handleSend = async () => {
     const texto = input.trim();
     if (!texto || loading) return;
-    if (!consumeAiQuery()) return;
 
     setInput("");
     // Reset textarea height
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
-    addMsg("user", texto);
-    setLoading(true);
-    const assistantId = addMsg("assistant", "", { loading: true });
-
-    try {
-      const endpoint = autoExecute
-        ? "/api/chatcad/chat"
-        : "/api/chatcad/interpret";
-      const res = await apiClient.post(endpoint, { texto });
-      const data = res.data;
-
-      let content = "";
-      let plano: any[] | undefined;
-      let execucao: any | undefined;
-      let sugestoes: string[] | undefined;
-
-      if (data.resposta?.response) content = data.resposta.response;
-      else if (data.tipo === "desconhecido") {
-        content =
-          "Não entendi esse comando. Reformule ou use uma das sugestões abaixo.";
-        sugestoes = data.interpretacao?.sugestoes;
-      } else if (data.resposta) {
-        content =
-          typeof data.resposta === "string"
-            ? data.resposta
-            : JSON.stringify(data.resposta, null, 2);
-      }
-
-      if (data.interpretacao?.correcao) {
-        content = `> 📝 *Correção:* "${data.interpretacao.correcao}"\n\n${content}`;
-      }
-
-      if (
-        !autoExecute &&
-        data.tipo !== "pergunta" &&
-        data.tipo !== "desconhecido"
-      ) {
-        plano = data.dados?.plano || data.plano;
-        if (plano?.length) {
-          content = `**Plano de execução** (${plano.length} etapas):\n\n`;
-          plano.forEach((a: any, i: number) => {
-            content += `${i + 1}. ${a.descricao || a.acao}\n`;
-          });
-          content += `\n*Clique em **Executar** para rodar no AutoCAD.*`;
-        }
-      }
-
-      if (data.execucao) {
-        execucao = data.execucao;
-        plano = data.interpretacao?.dados?.plano;
-      }
-      sugestoes = sugestoes || data.interpretacao?.sugestoes;
-
-      updateMsg(assistantId, {
-        content: content || "Comando processado com sucesso.",
-        loading: false,
-        streaming: true,
-        tipo: data.tipo,
-        plano,
-        execucao,
-        sugestoes,
-      });
-
-      if (data.executado)
-        addToast(
-          data.execucao?.falhas === 0 ? "success" : "warning",
-          "ChatCAD",
-          data.resposta?.response || "Executado",
-        );
-    } catch (err: any) {
-      updateMsg(assistantId, {
-        content: !err?.response
-          ? "❌ Servidor indisponível. Verifique sua conexão e tente novamente."
-          : `❌ Erro ao processar (${err?.response?.status}). Tente novamente.`,
-        loading: false,
-      });
-      if (err?.response) handleApiError(err);
-    } finally {
-      setLoading(false);
-    }
+    await submitPrompt(texto);
   };
 
   const handleExecutePlan = async (plano: any[]) => {
@@ -560,6 +601,50 @@ const ChatCAD: React.FC = () => {
       updateMsg(id, { copiedId: true });
       setTimeout(() => updateMsg(id, { copiedId: false }), 2500);
     });
+  };
+
+  const handleExecuteLisp = async (code: string) => {
+    if (!code.trim() || loading) return;
+
+    setLoading(true);
+    const execId = addMsg("assistant", "", { loading: true });
+
+    try {
+      const result = await ApiService.autocadSendCommand(code);
+      const success = Boolean((result as any)?.success ?? true);
+      updateMsg(execId, {
+        content: success
+          ? "✅ Código LISP enviado ao AutoCAD com sucesso."
+          : `❌ Falha ao enviar código LISP: ${(result as any)?.message || "erro desconhecido"}`,
+        loading: false,
+        streaming: true,
+        execucao: {
+          executadas: success ? 1 : 0,
+          total: 1,
+          falhas: success ? 0 : 1,
+          resultados: [
+            {
+              success,
+              descricao: success
+                ? "Comando enviado e aguardando execução no AutoCAD"
+                : "Envio do código LISP não concluído",
+            },
+          ],
+        },
+      });
+      addToast(
+        success ? "success" : "error",
+        "AutoCAD",
+        success ? "Código enviado ao AutoCAD" : "Falha ao enviar código",
+      );
+    } catch (err: any) {
+      updateMsg(execId, {
+        content: `❌ Erro ao enviar código LISP ao AutoCAD: ${err?.message || "falha de conexão"}`,
+        loading: false,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const remaining = license.aiQueriesLimit - license.aiQueriesUsed;
@@ -867,6 +952,7 @@ const ChatCAD: React.FC = () => {
             }}
           >
             {messages.map((msg, idx) => {
+              const responseSections = extractAssistantSections(msg.content);
               if (msg.role === "user") {
                 return (
                   <motion.div
@@ -1027,6 +1113,111 @@ const ChatCAD: React.FC = () => {
                             />
                           ))}
                         </div>
+                      ) : responseSections.hasStructuredContent && responseSections.lispCode ? (
+                        <div style={{ display: "grid", gap: "12px" }}>
+                          <div
+                            style={{
+                              padding: "12px 14px",
+                              borderRadius: "12px",
+                              background: "rgba(255,255,255,0.03)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                color: "#00A1FF",
+                                fontWeight: 700,
+                                marginBottom: 6,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                              }}
+                            >
+                              Explicação curta
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "14px",
+                                color: "#dbe7f3",
+                                lineHeight: 1.7,
+                              }}
+                            >
+                              {responseSections.summary}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              padding: "12px 14px",
+                              borderRadius: "12px",
+                              background: "rgba(0, 161, 255, 0.06)",
+                              border: "1px solid rgba(0, 161, 255, 0.18)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 12,
+                                marginBottom: 8,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: "#8fcfff",
+                                  fontWeight: 700,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.08em",
+                                }}
+                              >
+                                Código LISP
+                              </div>
+                              <button
+                                onClick={() => handleCopy(msg.id, responseSections.lispCode)}
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "transparent",
+                                  border: "1px solid rgba(0,161,255,0.2)",
+                                  borderRadius: "6px",
+                                  color: msg.copiedId ? "#10B981" : "#8fcfff",
+                                  cursor: "pointer",
+                                  fontSize: "11px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                {msg.copiedId ? <FaCheck size={10} /> : <FaCopy size={10} />}
+                                {msg.copiedId ? "Copiado!" : "Copiar código"}
+                              </button>
+                            </div>
+                            <pre
+                              style={{
+                                margin: 0,
+                                whiteSpace: "pre-wrap",
+                                fontSize: "12px",
+                                lineHeight: 1.65,
+                                color: "#dff3ff",
+                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                              }}
+                            >
+                              {responseSections.lispCode}
+                            </pre>
+                          </div>
+
+                          {responseSections.details && (
+                            <div
+                              style={{
+                                fontSize: "13px",
+                                color: "#9cb0c4",
+                              }}
+                            >
+                              {renderMarkdown(responseSections.details)}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <TypingContent
                           text={msg.content}
@@ -1117,6 +1308,28 @@ const ChatCAD: React.FC = () => {
                       </button>
                     )}
 
+                    {!msg.plano && !msg.execucao && !msg.loading && responseSections.lispCode && (
+                      <button
+                        onClick={() => handleExecuteLisp(responseSections.lispCode)}
+                        style={{
+                          marginTop: "10px",
+                          padding: "8px 14px",
+                          background: "rgba(0,161,255,0.15)",
+                          border: "1px solid rgba(0,161,255,0.4)",
+                          borderRadius: "8px",
+                          color: "#00A1FF",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <FaPlay size={11} /> Executar no AutoCAD
+                      </button>
+                    )}
+
                     {/* Suggestions */}
                     {msg.sugestoes &&
                       msg.sugestoes.length > 0 &&
@@ -1185,22 +1398,10 @@ const ChatCAD: React.FC = () => {
                         {/* Gerar novamente */}
                         {idx > 0 && messages[idx - 1]?.role === "user" && (
                           <button
-                            onClick={async () => {
+                            onClick={() => {
                               const prev = messages[idx - 1];
-                              if (!prev || loading) return;
-                              if (!consumeAiQuery()) return;
-                              setLoading(true);
-                              const assistantId = addMsg("assistant", "", { loading: true });
-                              try {
-                                const res = await apiClient.post("/api/chatcad/chat", { texto: prev.content });
-                                const data = res.data;
-                                const content = data.resposta?.response || (typeof data.resposta === "string" ? data.resposta : "Comando processado.");
-                                updateMsg(assistantId, { content, loading: false, streaming: true, tipo: data.tipo });
-                              } catch {
-                                updateMsg(assistantId, { content: "❌ Erro ao regenerar resposta.", loading: false });
-                              } finally {
-                                setLoading(false);
-                              }
+                              if (!prev) return;
+                              submitPrompt(prev.content, { echoUser: false });
                             }}
                             title="Gerar novamente"
                             style={{
@@ -1224,8 +1425,7 @@ const ChatCAD: React.FC = () => {
                         <button
                           onClick={() => {
                             if (loading) return;
-                            setInput("Melhore e otimize o desenho anterior com mais detalhes técnicos");
-                            inputRef.current?.focus();
+                            submitPrompt("Melhore e otimize o desenho anterior com mais detalhes técnicos");
                           }}
                           title="Melhorar desenho"
                           style={{
@@ -1249,8 +1449,7 @@ const ChatCAD: React.FC = () => {
                           <button
                             onClick={() => {
                               if (loading) return;
-                              setInput("Explique o código LISP gerado na resposta anterior, passo a passo");
-                              inputRef.current?.focus();
+                              submitPrompt("Explique o código LISP gerado na resposta anterior, passo a passo");
                             }}
                             title="Explicar código"
                             style={{
@@ -1275,6 +1474,10 @@ const ChatCAD: React.FC = () => {
                           <button
                             onClick={() => {
                               if (loading) return;
+                              if (responseSections.lispCode) {
+                                handleExecuteLisp(responseSections.lispCode);
+                                return;
+                              }
                               setInput(`Execute no AutoCAD: ${msg.content.slice(0, 120)}`);
                               inputRef.current?.focus();
                             }}
@@ -1451,8 +1654,7 @@ const ChatCAD: React.FC = () => {
             marginRight: "auto",
           }}
         >
-          Enter para enviar • Shift+Enter para nova linha • ChatCAD executa
-          comandos no AutoCAD automaticamente
+          Enter para enviar • Shift+Enter para nova linha • Cada resposta traz explicação curta, código LISP e ação de execução
         </p>
       </div>
     </div>

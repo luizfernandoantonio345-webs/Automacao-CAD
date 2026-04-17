@@ -8,7 +8,7 @@
  * - Alteração de plano
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaCreditCard,
@@ -311,6 +311,20 @@ const Billing: React.FC = () => {
       100,
   );
   const activeUsers = Math.max(1, subscription?.features?.max_users ? 1 : 1);
+  const monthlySavings = useMemo(
+    () => (subscription?.usage?.cam_jobs_used || 0) * 48,
+    [subscription],
+  );
+  const savedHours = useMemo(
+    () => Math.max(1, Math.round((subscription?.usage?.cam_jobs_used || 0) * 1.5)),
+    [subscription],
+  );
+  const usageLabel =
+    camUsagePercent >= 80
+      ? "Uso intenso"
+      : camUsagePercent >= 40
+        ? "Uso consistente"
+        : "Adoção em crescimento";
 
   if (loading) {
     return (
@@ -646,22 +660,22 @@ const Billing: React.FC = () => {
               {[
                 {
                   label: "Economia Mensal",
-                  value: `R$ ${((subscription?.usage?.cam_jobs_used || 0) * 48).toLocaleString("pt-BR")}`,
-                  sub: "vs. processo manual",
+                  value: `R$ ${monthlySavings.toLocaleString("pt-BR")}`,
+                  sub: "economia estimada vs. processo manual",
                   icon: "📉",
                   color: "#10B981",
                 },
                 {
                   label: "Tempo Economizado",
-                  value: `${Math.max(1, Math.round((subscription?.usage?.cam_jobs_used || 0) * 1.5))}h/mês`,
-                  sub: "horas de engenharia",
+                  value: `${savedHours}h/mês`,
+                  sub: "horas técnicas liberadas para produção",
                   icon: "⏱",
                   color: "#00A1FF",
                 },
                 {
                   label: "Uso do Sistema",
                   value: `${camUsagePercent.toFixed(0)}%`,
-                  sub: `${subscription?.usage?.cam_jobs_used || 0} de ${subscription?.usage?.cam_jobs_limit || 0} jobs`,
+                  sub: `${usageLabel} • ${subscription?.usage?.cam_jobs_used || 0} de ${subscription?.usage?.cam_jobs_limit || 0} jobs`,
                   icon: "⚡",
                   color: camUsagePercent > 80 ? "#f59e0b" : "#8B5CF6",
                 },
@@ -830,7 +844,7 @@ const Billing: React.FC = () => {
                       marginTop: "8px",
                     }}
                   >
-                    Este mês
+                    {usageLabel}
                   </p>
                 </div>
 

@@ -9,6 +9,7 @@ import {
   FaArrowRight,
   FaTable,
   FaFileCsv,
+  FaSearch,
 } from "react-icons/fa";
 import { ApiService } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -18,6 +19,12 @@ type UploadStatus = "idle" | "uploading" | "processing" | "done" | "error";
 // Preview row type for Excel data
 interface PreviewRow {
   [key: string]: string | number;
+}
+
+interface ValidationStep {
+  id: string;
+  label: string;
+  ready: boolean;
 }
 
 const DataIngestion = () => {
@@ -39,6 +46,33 @@ const DataIngestion = () => {
   } | null>(null);
   const [error, setError] = useState("");
 
+  const fileSizeLabel = selectedFile
+    ? `${(selectedFile.size / 1024).toFixed(1)} KB`
+    : "Nenhum arquivo selecionado";
+
+  const validationSteps: ValidationStep[] = [
+    {
+      id: "file",
+      label: "Arquivo carregado",
+      ready: Boolean(selectedFile),
+    },
+    {
+      id: "validation",
+      label: "Validação estrutural",
+      ready: Boolean(selectedFile) && !error,
+    },
+    {
+      id: "preview",
+      label: "Pré-visualização pronta",
+      ready: previewRows.length > 0,
+    },
+    {
+      id: "generated",
+      label: "Projeto gerado",
+      ready: status === "done",
+    },
+  ];
+
   const addLog = (msg: string) => setLogs((prev) => [...prev, msg]);
 
   // Parse Excel preview using FileReader (CSV-like binary scan for column names)
@@ -57,6 +91,9 @@ const DataIngestion = () => {
   const acceptFile = useCallback((file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext !== "xlsx" && ext !== "xls") {
+      setSelectedFile(null);
+      setPreviewRows([]);
+      setPreviewCols([]);
       setError("Apenas arquivos .xlsx ou .xls são aceitos.");
       return;
     }
@@ -157,9 +194,21 @@ const DataIngestion = () => {
           }}
         >
           <div style={ig.cardHeader}>
-            <h3 style={{ ...ig.title, color: theme.textSecondary }}>
-              INGESTÃO DE DADOS — EXCEL
-            </h3>
+            <div>
+              <h3 style={{ ...ig.title, color: theme.textSecondary, marginBottom: 8 }}>
+                INGESTÃO DE DADOS — EXCEL
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  color: theme.textTertiary,
+                  lineHeight: 1.6,
+                }}
+              >
+                Importe a planilha, valide a estrutura e siga para a geração sem sair do fluxo principal.
+              </p>
+            </div>
             <span
               style={{
                 fontSize: 10,
@@ -167,6 +216,7 @@ const DataIngestion = () => {
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
+                alignSelf: "flex-start",
               }}
             >
               {status === "done" ? (
@@ -178,6 +228,41 @@ const DataIngestion = () => {
               ) : null}
               {statusText[status]}
             </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: 10,
+              marginBottom: 20,
+            }}
+          >
+            {validationSteps.map((step) => (
+              <div
+                key={step.id}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: `1px solid ${step.ready ? `${theme.accentSecondary}45` : theme.border}`,
+                  background: step.ready ? `${theme.accentSecondary}12` : `${theme.inputBackground}66`,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    color: step.ready ? theme.accentSecondary : theme.textTertiary,
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {step.ready ? <FaCheckCircle /> : <FaSpinner size={10} />}
+                  {step.label}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Zona de upload — drag-and-drop */}
@@ -219,7 +304,7 @@ const DataIngestion = () => {
                   {selectedFile.name}
                 </p>
                 <p style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
-                  {(selectedFile.size / 1024).toFixed(1)} KB · clique para trocar
+                  {fileSizeLabel} · clique para trocar
                 </p>
               </>
             ) : (
@@ -232,6 +317,62 @@ const DataIngestion = () => {
                 </p>
               </>
             )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              style={{
+                marginTop: 14,
+                padding: "10px 14px",
+                borderRadius: 8,
+                border: `1px solid ${theme.accentPrimary}55`,
+                background: `${theme.accentPrimary}12`,
+                color: theme.accentPrimary,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <FaSearch size={11} /> Selecionar arquivo
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+              marginBottom: 18,
+            }}
+          >
+            <div style={ig.infoCard}>
+              <span style={ig.infoLabel}>Arquivo</span>
+              <strong style={{ color: theme.textPrimary, fontSize: 13 }}>
+                {selectedFile?.name || "Aguardando planilha"}
+              </strong>
+            </div>
+            <div style={ig.infoCard}>
+              <span style={ig.infoLabel}>Validação</span>
+              <strong
+                style={{
+                  color: error ? theme.accentDanger : theme.accentSecondary,
+                  fontSize: 13,
+                }}
+              >
+                {error ? "Corrigir arquivo" : selectedFile ? "Estrutura aceita" : "Pendente"}
+              </strong>
+            </div>
+            <div style={ig.infoCard}>
+              <span style={ig.infoLabel}>Prévia</span>
+              <strong style={{ color: theme.textPrimary, fontSize: 13 }}>
+                {previewRows.length > 0 ? `${previewRows.length} linhas exibidas` : "Sem dados"}
+              </strong>
+            </div>
           </div>
 
           {/* Preview da tabela */}
@@ -316,8 +457,8 @@ const DataIngestion = () => {
               onClick={handleUpload}
             >
               {status === "uploading" || status === "processing"
-                ? <><FaSpinner /> PROCESSANDO...</>
-                : <><FaPlay /> PROCESSAR EXCEL</>}
+                ? <><FaSpinner /> VALIDANDO E GERANDO...</>
+                : <><FaPlay /> VALIDAR E GERAR</>}
             </button>
             {result && result.project_ids && result.project_ids.length > 0 && (
               <button
@@ -528,6 +669,21 @@ const ig: { [key: string]: React.CSSProperties } = {
     justifyContent: "center",
     gap: "8px",
     fontSize: 13,
+  },
+  infoCard: {
+    padding: "12px 14px",
+    borderRadius: "8px",
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.06)",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 6,
+  },
+  infoLabel: {
+    fontSize: 10,
+    color: "#7c8aa0",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
   },
   resultCard: {
     backgroundColor: "rgba(20, 20, 25, 0.8)",

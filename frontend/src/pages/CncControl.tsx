@@ -326,6 +326,23 @@ const CncControl: React.FC = () => {
   const [simProgress, setSimProgress] = useState(0); // 0–100
   const [simSpeed, setSimSpeed] = useState(1); // 0.5x | 1x | 2x | 4x
   const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const simulationMilestones = useMemo(
+    () => [
+      { id: "prep", label: "Preparação", threshold: 0 },
+      { id: "pierce", label: "Piercing", threshold: 18 },
+      { id: "cutting", label: "Corte", threshold: 52 },
+      { id: "finishing", label: "Finalização", threshold: 84 },
+    ],
+    [],
+  );
+  const currentSimulationStage = useMemo(
+    () =>
+      [...simulationMilestones]
+        .reverse()
+        .find((milestone) => simProgress >= milestone.threshold)?.label ||
+      simulationMilestones[0].label,
+    [simProgress, simulationMilestones],
+  );
 
   useEffect(() => {
     if (simPlaying) {
@@ -4041,6 +4058,29 @@ M02 (Fim do programa)
                         borderRadius: "10px",
                       }}
                     >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          marginBottom: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: "11px", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                            Timeline interativa
+                          </div>
+                          <div style={{ fontSize: "14px", color: theme.textPrimary, fontWeight: 700 }}>
+                            Etapa atual: {currentSimulationStage}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "12px", color: theme.textSecondary }}>
+                          {simPlaying ? "Simulação em andamento" : "Simulação pronta para inspeção"}
+                        </div>
+                      </div>
+
                       {/* Barra de progresso */}
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                         <span style={{ fontSize: "11px", color: theme.textTertiary, minWidth: "28px" }}>
@@ -4076,6 +4116,37 @@ M02 (Fim do programa)
                             {((simProgress / 100) * (gcode.estimatedTime || 2.5)).toFixed(1)}min
                           </span>
                         )}
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                          gap: 8,
+                          marginBottom: 12,
+                        }}
+                      >
+                        {simulationMilestones.map((milestone) => {
+                          const active = simProgress >= milestone.threshold;
+                          return (
+                            <div
+                              key={milestone.id}
+                              style={{
+                                padding: "8px 10px",
+                                borderRadius: 8,
+                                border: `1px solid ${active ? `${theme.accentPrimary}55` : theme.border}`,
+                                background: active ? `${theme.accentPrimary}12` : "transparent",
+                              }}
+                            >
+                              <div style={{ fontSize: "11px", color: active ? theme.accentPrimary : theme.textTertiary, fontWeight: 700 }}>
+                                {milestone.label}
+                              </div>
+                              <div style={{ fontSize: "10px", color: theme.textSecondary, marginTop: 4 }}>
+                                {milestone.threshold}%
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Controles */}

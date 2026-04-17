@@ -57,6 +57,12 @@ interface CommandLog {
   message: string;
 }
 
+interface CommandFeedback {
+  command: string;
+  phase: "idle" | "sent" | "executed" | "error";
+  detail: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CadDashboard — Painel de Controle CAD Avançado
 // ═══════════════════════════════════════════════════════════════════════════
@@ -78,6 +84,11 @@ const CadDashboard: React.FC = () => {
   const [logs, setLogs] = useState<CommandLog[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [stats, setStats] = useState({ operations: 0, success: 0, errors: 0 });
+  const [commandFeedback, setCommandFeedback] = useState<CommandFeedback>({
+    command: "Nenhum comando",
+    phase: "idle",
+    detail: "Aguardando envio para o AutoCAD",
+  });
 
   // ── Draw Pipe Form ──
   const [pipeStartX, setPipeStartX] = useState("0");
@@ -243,6 +254,11 @@ const CadDashboard: React.FC = () => {
 
       setLoading(name);
       addLog(name, "pending", "Executando...");
+      setCommandFeedback({
+        command: name,
+        phase: "sent",
+        detail: "Comando enviado ao AutoCAD. Aguardando retorno.",
+      });
 
       try {
         if (connectionMode === "simulation") {
@@ -253,16 +269,36 @@ const CadDashboard: React.FC = () => {
             "simulated",
             simulatedResult || "✓ Simulado com sucesso",
           );
+          setCommandFeedback({
+            command: name,
+            phase: "executed",
+            detail: simulatedResult || "Comando processado em modo simulação.",
+          });
         } else {
           const result = await apiCall();
           if (result.success) {
             addLog(name, "success", result.message || "✓ OK");
+            setCommandFeedback({
+              command: name,
+              phase: "executed",
+              detail: result.message || "Comando executado com sucesso.",
+            });
           } else {
             addLog(name, "error", result.message || "Falhou");
+            setCommandFeedback({
+              command: name,
+              phase: "error",
+              detail: result.message || "Falha ao executar comando.",
+            });
           }
         }
       } catch (error: any) {
         addLog(name, "error", error?.message || "Erro de execução");
+        setCommandFeedback({
+          command: name,
+          phase: "error",
+          detail: error?.message || "Erro de execução no AutoCAD.",
+        });
       } finally {
         setLoading(null);
       }
@@ -771,6 +807,77 @@ const CadDashboard: React.FC = () => {
           >
             NORMA N-58 PETROBRAS
           </span>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "14px",
+            marginBottom: "18px",
+          }}
+        >
+          {[
+            {
+              label: "Último comando",
+              value: commandFeedback.command,
+              color: colors.primary,
+            },
+            {
+              label: "Status",
+              value:
+                commandFeedback.phase === "sent"
+                  ? "Comando enviado"
+                  : commandFeedback.phase === "executed"
+                    ? "Comando executado"
+                    : commandFeedback.phase === "error"
+                      ? "Falha na execução"
+                      : "Aguardando comando",
+              color:
+                commandFeedback.phase === "executed"
+                  ? colors.success
+                  : commandFeedback.phase === "error"
+                    ? colors.danger
+                    : colors.primary,
+            },
+            {
+              label: "Retorno",
+              value: commandFeedback.detail,
+              color: colors.warning,
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                padding: "14px 16px",
+                borderRadius: "14px",
+                border: `1px solid ${item.color}25`,
+                background: `${item.color}10`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.68rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: theme.textSecondary,
+                  marginBottom: 8,
+                }}
+              >
+                {item.label}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.92rem",
+                  color: theme.textPrimary,
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                }}
+              >
+                {item.value}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div
