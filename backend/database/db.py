@@ -50,12 +50,14 @@ elif _RAW_URL.startswith("postgresql://") and "+asyncpg" not in _RAW_URL:
 
 # Fix malformed URLs where query params use & instead of ?
 # E.g., /neondb&sslmode=require should be /neondb?sslmode=require
+# Version: v2 - log original URL for debugging
+logger.info("DATABASE_URL (after prefix fix): %s", _RAW_URL.split("@")[-1] if "@" in _RAW_URL else "(empty)")
 if _RAW_URL and "?" not in _RAW_URL and "&" in _RAW_URL:
     # Split on first & to separate path from query string
     parts = _RAW_URL.split("&", 1)
     if len(parts) == 2:
         _RAW_URL = parts[0] + "?" + parts[1]
-        logger.info("Fixed DATABASE_URL format: & -> ?")
+        logger.info("Fixed DATABASE_URL format: & -> ? => %s", _RAW_URL.split("@")[-1] if "@" in _RAW_URL else "(empty)")
 
 # Remove channel_binding que causa erro em algumas versões do asyncpg
 if "channel_binding" in _RAW_URL:
