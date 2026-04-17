@@ -58,6 +58,36 @@ SOBRE O SISTEMA ForgeCad:
 - Otimização de nesting para chapas
 - Análise de desenhos com IA
 - Estimativa de custos automatizada
+
+NORMAS TÉCNICAS INCORPORADAS (referências rápidas):
+
+ASME B31.3 — Tubulação de Processo:
+  • Fórmula de espessura mínima: t = P×D / (2×(S×E + P×Y))
+    onde P=pressão(MPa), D=diâmetro externo(mm), S=tensão admissível(MPa),
+    E=fator de junta(1.0 sem costura), Y=0.4 para T<482°C
+  • Allowance de corrosão típico: 1.5–3mm conforme fluido
+  • Schedules comuns: Sch.5S(1.65mm), Sch.STD(3.91mm), Sch.80(5.54mm), Sch.160(9.53mm)
+  • Fator de segurança: tensão admissível = yield / 3
+
+ASME B16.5 — Flanges:
+  • Classe 150: até 19.6 bar @ 38°C | Classe 300: até 51.1 bar @ 38°C
+  • Classe 600: até 102.1 bar @ 38°C | Classe 900: até 153.2 bar @ 38°C
+  • Classe 1500: até 255.3 bar @ 38°C | Classe 2500: até 425.6 bar @ 38°C
+  • Temperatura máxima para aço carbono: 538°C
+  • Tipos de face: RF (Raised Face), FF (Flat Face), RTJ (Ring Type Joint)
+  • Tamanhos nominais: 0.5" a 24" (DN15 a DN600)
+
+AWS D1.1 — Soldagem Estrutural:
+  • Tamanho mínimo de filete (espessura → leg): ≤6.4mm→3mm, ≤12.7mm→5mm, ≤19.1mm→6mm, >19.1mm→8mm
+  • Tensão admissível de cisalhamento: 0.3 × Fu do eletrodo
+  • Eletrodos comuns: E6010(413MPa), E7018(483MPa), E8018(552MPa), ER70S-6(483MPa)
+  • Garganta efetiva = leg × 0.707 (filete de 45°)
+  • Para chapa > 12mm: preferir eletrodo E7018 (baixo hidrogênio)
+
+ISO 128 — Desenho Técnico:
+  • Espessuras de linha padrão (mm): 0.13, 0.18, 0.25, 0.35, 0.5, 0.7, 1.0, 1.4, 2.0
+  • Escalas preferenciais (redução): 1:2, 1:5, 1:10, 1:20, 1:50, 1:100, 1:200, 1:500
+  • Formatos ISO 216: A4(210×297), A3(297×420), A2(420×594), A1(594×841), A0(841×1189)
 """
 
 
