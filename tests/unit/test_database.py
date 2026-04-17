@@ -23,10 +23,10 @@ class TestDatabaseOperations:
     def test_database_connection(self):
         """Conexão com banco de dados."""
         try:
-            from backend.database.db import _get_conn
-            conn = _get_conn()
-            result = conn.execute("SELECT 1").fetchone()
-            assert result[0] == 1
+            from backend.database.db import get_db
+            with get_db() as conn:
+                result = conn.execute("SELECT 1").fetchone()
+                assert result[0] == 1
         except ImportError:
             pytest.skip("Database module not available")
     

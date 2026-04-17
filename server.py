@@ -1401,14 +1401,24 @@ def health_check():
     db_type = "unknown"
     db_error = None
     try:
-        from backend.database.db import _get_conn, is_ephemeral, _USE_PG
+        from backend.database.db import get_db, is_ephemeral, _USE_PG
 
-        conn = _get_conn()
         if _USE_PG:
-            conn.cursor().execute("SELECT 1")
+            # PostgreSQL - use async connection
+            import asyncio
+            from sqlalchemy import text
+            from backend.database.db import get_async_connection
+            async def check_pg():
+                async with get_async_connection() as conn:
+                    await conn.execute(text("SELECT 1"))
+                return True
+            asyncio.run(check_pg())
+            db_ok = True
         else:
-            conn.execute("SELECT 1")
-        db_ok = True
+            # SQLite - use sync context manager
+            with get_db() as conn:
+                conn.execute("SELECT 1")
+            db_ok = True
         db_ephemeral = bool(is_ephemeral())
         db_type = "postgresql" if _USE_PG else "sqlite"
     except Exception as exc:
