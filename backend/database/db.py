@@ -44,6 +44,12 @@ if _RAW_URL.startswith("postgres://"):
 elif _RAW_URL.startswith("postgresql://") and "+asyncpg" not in _RAW_URL:
     _RAW_URL = _RAW_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+# Remove channel_binding que causa erro em algumas versões do asyncpg
+if "channel_binding" in _RAW_URL:
+    import re
+    _RAW_URL = re.sub(r"[?&]channel_binding=[^&]*", "", _RAW_URL)
+    _RAW_URL = re.sub(r"&+", "&", _RAW_URL).rstrip("&?")  # limpa separadores extras
+
 _DATABASE_URL = _RAW_URL  # alias para compatibilidade
 _USE_PG: bool = _RAW_URL.startswith("postgresql+asyncpg://")
 _IS_VERCEL = bool(os.getenv("VERCEL"))
@@ -92,6 +98,10 @@ _async_session_factory: async_sessionmaker | None = None
 
 if _USE_PG:
     _pool_size = int(os.getenv("DB_POOL_SIZE", "20"))
+    # connect_args sem channel_binding para compatibilidade com asyncpg mais antigo
+    _connect_args = {
+        "server_settings": {"application_name": "engcad"},
+    }
     _async_engine = create_async_engine(
         _RAW_URL,
         pool_size=_pool_size,
@@ -99,6 +109,7 @@ if _USE_PG:
         pool_pre_ping=True,
         pool_recycle=1800,
         echo=False,
+        connect_args=_connect_args,
     )
     _async_session_factory = async_sessionmaker(
         _async_engine,
@@ -475,12 +486,41 @@ async def init_db_async() -> None:
     logger.info("Engenharia CAD DB inicializado (PostgreSQL async)")
 
 
+def _sqlite_migrate_columns(conn) -> None:
+    """Adiciona colunas faltantes em bancos SQLite existentes."""
+    # Mapeia tabela -> colunas a adicionar (nome, tipo, default)
+    migrations = [
+        ("users", "tier", "TEXT", "'demo'"),
+        ("users", "limite", "INTEGER", "100"),
+        ("users", "usado", "INTEGER", "0"),
+        ("users", "empresa", "TEXT", "''"),
+        ("users", "last_login", "REAL", "NULL"),
+        ("projects", "piping_spec", "TEXT", "'{}'"),
+        ("projects", "completed_at", "REAL", "NULL"),
+        ("uploads", "row_count", "INTEGER", "0"),
+        ("uploads", "projects_generated", "INTEGER", "0"),
+        ("uploads", "status", "TEXT", "'uploaded'"),
+    ]
+    for table, col, col_type, default in migrations:
+        try:
+            # Check if column exists
+            cursor = conn.execute(f"PRAGMA table_info({table})")
+            columns = [row[1] for row in cursor.fetchall()]
+            if col not in columns:
+                default_clause = f" DEFAULT {default}" if default else ""
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}{default_clause}")
+                logger.info(f"SQLite migration: added {table}.{col}")
+        except Exception as e:
+            logger.debug(f"SQLite migration skip {table}.{col}: {e}")
+
+
 def init_db() -> None:
     if _USE_PG:
         asyncio.run(init_db_async())
     else:
         with get_db() as conn:
             conn.executescript(_SQLITE_SCHEMA)
+            _sqlite_migrate_columns(conn)
         logger.info("Engenharia CAD DB inicializado (SQLite)")
 
 
