@@ -44,10 +44,20 @@ if _RAW_URL.startswith("postgres://"):
 elif _RAW_URL.startswith("postgresql://") and "+asyncpg" not in _RAW_URL:
     _RAW_URL = _RAW_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+# Corrigir URL: se tem parâmetros sem '?' (ex: neondb&sslmode=require)
+# transforma em neondb?sslmode=require
+if "?" not in _RAW_URL and "&" in _RAW_URL:
+    # URL tem & mas não tem ?, indica dbname&param ao invés de dbname?param
+    import re
+    # Substitui o primeiro & após o / do path por ?
+    _RAW_URL = re.sub(r"(/[^/&]+)&", r"\1?", _RAW_URL, count=1)
+
 # Remove channel_binding que causa erro em algumas versões do asyncpg
 if "channel_binding" in _RAW_URL:
     import re
     _RAW_URL = re.sub(r"[?&]channel_binding=[^&]*", "", _RAW_URL)
+    # Se removeu ?channel_binding e sobrou &param, corrige para ?param
+    _RAW_URL = re.sub(r"\?&", "?", _RAW_URL)
     _RAW_URL = re.sub(r"&+", "&", _RAW_URL).rstrip("&?")  # limpa separadores extras
 
 _DATABASE_URL = _RAW_URL  # alias para compatibilidade
