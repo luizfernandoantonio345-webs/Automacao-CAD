@@ -29,7 +29,7 @@ python-dotenv==1.0.1
 redis[asyncio]>=5.0,<6.0
 
 # Billing & Monetization
-stripe>=8.0,<10.0
+stripe>=8.0,<16.0
 
 # Production Database
 asyncpg>=0.29,<1.0
