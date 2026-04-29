@@ -316,7 +316,8 @@ const Billing: React.FC = () => {
     [subscription],
   );
   const savedHours = useMemo(
-    () => Math.max(1, Math.round((subscription?.usage?.cam_jobs_used || 0) * 1.5)),
+    () =>
+      Math.max(1, Math.round((subscription?.usage?.cam_jobs_used || 0) * 1.5)),
     [subscription],
   );
   const usageLabel =
@@ -690,14 +691,32 @@ const Billing: React.FC = () => {
                     boxShadow: `0 0 18px ${m.color}14`,
                   }}
                 >
-                  <div style={{ fontSize: "22px", marginBottom: "6px" }}>{m.icon}</div>
-                  <div style={{ color: "#64748b", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  <div style={{ fontSize: "22px", marginBottom: "6px" }}>
+                    {m.icon}
+                  </div>
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "11px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
                     {m.label}
                   </div>
-                  <div style={{ color: m.color, fontSize: "24px", fontWeight: 800, margin: "6px 0 4px" }}>
+                  <div
+                    style={{
+                      color: m.color,
+                      fontSize: "24px",
+                      fontWeight: 800,
+                      margin: "6px 0 4px",
+                    }}
+                  >
                     {m.value}
                   </div>
-                  <div style={{ color: "#64748b", fontSize: "12px" }}>{m.sub}</div>
+                  <div style={{ color: "#64748b", fontSize: "12px" }}>
+                    {m.sub}
+                  </div>
                 </div>
               ))}
             </div>

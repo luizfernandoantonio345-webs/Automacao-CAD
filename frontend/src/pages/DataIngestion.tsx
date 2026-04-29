@@ -79,31 +79,70 @@ const DataIngestion = () => {
   const generatePreview = useCallback((file: File) => {
     // We generate a simple mock preview based on expected columns
     // (real XLSX parsing would require SheetJS, keeping deps minimal)
-    const expectedCols = ["empresa", "código", "diâmetro", "comprimento", "fluido", "pressão", "temperatura"];
+    const expectedCols = [
+      "empresa",
+      "código",
+      "diâmetro",
+      "comprimento",
+      "fluido",
+      "pressão",
+      "temperatura",
+    ];
     setPreviewCols(expectedCols);
     setPreviewRows([
-      { empresa: "Petrobras", "código": "FLG-001", "diâmetro": 150, comprimento: 300, fluido: "Vapor", "pressão": 150, temperatura: 260 },
-      { empresa: "Petrobras", "código": "FLG-002", "diâmetro": 100, comprimento: 200, fluido: "Água", "pressão": 10, temperatura: 80 },
-      { empresa: file.name.replace(/\.[^/.]+$/, ""), "código": "---", "diâmetro": "---", comprimento: "---", fluido: "---", "pressão": "---", temperatura: "---" },
+      {
+        empresa: "Petrobras",
+        código: "FLG-001",
+        diâmetro: 150,
+        comprimento: 300,
+        fluido: "Vapor",
+        pressão: 150,
+        temperatura: 260,
+      },
+      {
+        empresa: "Petrobras",
+        código: "FLG-002",
+        diâmetro: 100,
+        comprimento: 200,
+        fluido: "Água",
+        pressão: 10,
+        temperatura: 80,
+      },
+      {
+        empresa: file.name.replace(/\.[^/.]+$/, ""),
+        código: "---",
+        diâmetro: "---",
+        comprimento: "---",
+        fluido: "---",
+        pressão: "---",
+        temperatura: "---",
+      },
     ]);
   }, []);
 
-  const acceptFile = useCallback((file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (ext !== "xlsx" && ext !== "xls") {
-      setSelectedFile(null);
-      setPreviewRows([]);
-      setPreviewCols([]);
-      setError("Apenas arquivos .xlsx ou .xls são aceitos.");
-      return;
-    }
-    setSelectedFile(file);
-    setError("");
-    setResult(null);
-    generatePreview(file);
-    addLog(`[ARQUIVO] ${file.name} selecionado (${(file.size / 1024).toFixed(1)} KB)`);
-    addLog("[PREVIEW] Estrutura do arquivo detectada — verifique as colunas abaixo.");
-  }, [generatePreview]);
+  const acceptFile = useCallback(
+    (file: File) => {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext !== "xlsx" && ext !== "xls") {
+        setSelectedFile(null);
+        setPreviewRows([]);
+        setPreviewCols([]);
+        setError("Apenas arquivos .xlsx ou .xls são aceitos.");
+        return;
+      }
+      setSelectedFile(file);
+      setError("");
+      setResult(null);
+      generatePreview(file);
+      addLog(
+        `[ARQUIVO] ${file.name} selecionado (${(file.size / 1024).toFixed(1)} KB)`,
+      );
+      addLog(
+        "[PREVIEW] Estrutura do arquivo detectada — verifique as colunas abaixo.",
+      );
+    },
+    [generatePreview],
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -195,7 +234,13 @@ const DataIngestion = () => {
         >
           <div style={ig.cardHeader}>
             <div>
-              <h3 style={{ ...ig.title, color: theme.textSecondary, marginBottom: 8 }}>
+              <h3
+                style={{
+                  ...ig.title,
+                  color: theme.textSecondary,
+                  marginBottom: 8,
+                }}
+              >
                 INGESTÃO DE DADOS — EXCEL
               </h3>
               <p
@@ -206,7 +251,8 @@ const DataIngestion = () => {
                   lineHeight: 1.6,
                 }}
               >
-                Importe a planilha, valide a estrutura e siga para a geração sem sair do fluxo principal.
+                Importe a planilha, valide a estrutura e siga para a geração sem
+                sair do fluxo principal.
               </p>
             </div>
             <span
@@ -245,7 +291,9 @@ const DataIngestion = () => {
                   padding: "10px 12px",
                   borderRadius: 8,
                   border: `1px solid ${step.ready ? `${theme.accentSecondary}45` : theme.border}`,
-                  background: step.ready ? `${theme.accentSecondary}12` : `${theme.inputBackground}66`,
+                  background: step.ready
+                    ? `${theme.accentSecondary}12`
+                    : `${theme.inputBackground}66`,
                 }}
               >
                 <div
@@ -253,7 +301,9 @@ const DataIngestion = () => {
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    color: step.ready ? theme.accentSecondary : theme.textTertiary,
+                    color: step.ready
+                      ? theme.accentSecondary
+                      : theme.textTertiary,
                     fontSize: 12,
                     fontWeight: 700,
                   }}
@@ -294,25 +344,58 @@ const DataIngestion = () => {
               onChange={handleFileSelect}
             />
             <div style={{ marginBottom: 10 }}>
-              {selectedFile
-                ? <FaCheckCircle size={32} color={theme.accentSecondary} />
-                : <FaUpload size={32} color={isDragging ? theme.accentPrimary : "#666"} />}
+              {selectedFile ? (
+                <FaCheckCircle size={32} color={theme.accentSecondary} />
+              ) : (
+                <FaUpload
+                  size={32}
+                  color={isDragging ? theme.accentPrimary : "#666"}
+                />
+              )}
             </div>
             {selectedFile ? (
               <>
-                <p style={{ color: theme.accentSecondary, fontSize: 13, fontWeight: 600 }}>
+                <p
+                  style={{
+                    color: theme.accentSecondary,
+                    fontSize: 13,
+                    fontWeight: 600,
+                  }}
+                >
                   {selectedFile.name}
                 </p>
-                <p style={{ color: theme.textSecondary, fontSize: 11, marginTop: 4 }}>
+                <p
+                  style={{
+                    color: theme.textSecondary,
+                    fontSize: 11,
+                    marginTop: 4,
+                  }}
+                >
                   {fileSizeLabel} · clique para trocar
                 </p>
               </>
             ) : (
               <>
-                <p style={{ color: isDragging ? theme.accentPrimary : theme.textSecondary, fontSize: 13, fontWeight: isDragging ? 600 : 400 }}>
-                  {isDragging ? "Solte o arquivo aqui!" : "Arraste o Excel aqui ou clique para selecionar"}
+                <p
+                  style={{
+                    color: isDragging
+                      ? theme.accentPrimary
+                      : theme.textSecondary,
+                    fontSize: 13,
+                    fontWeight: isDragging ? 600 : 400,
+                  }}
+                >
+                  {isDragging
+                    ? "Solte o arquivo aqui!"
+                    : "Arraste o Excel aqui ou clique para selecionar"}
                 </p>
-                <p style={{ color: theme.textTertiary, fontSize: 11, marginTop: 4 }}>
+                <p
+                  style={{
+                    color: theme.textTertiary,
+                    fontSize: 11,
+                    marginTop: 4,
+                  }}
+                >
                   Aceita .xlsx e .xls
                 </p>
               </>
@@ -364,13 +447,19 @@ const DataIngestion = () => {
                   fontSize: 13,
                 }}
               >
-                {error ? "Corrigir arquivo" : selectedFile ? "Estrutura aceita" : "Pendente"}
+                {error
+                  ? "Corrigir arquivo"
+                  : selectedFile
+                    ? "Estrutura aceita"
+                    : "Pendente"}
               </strong>
             </div>
             <div style={ig.infoCard}>
               <span style={ig.infoLabel}>Prévia</span>
               <strong style={{ color: theme.textPrimary, fontSize: 13 }}>
-                {previewRows.length > 0 ? `${previewRows.length} linhas exibidas` : "Sem dados"}
+                {previewRows.length > 0
+                  ? `${previewRows.length} linhas exibidas`
+                  : "Sem dados"}
               </strong>
             </div>
           </div>
@@ -378,15 +467,46 @@ const DataIngestion = () => {
           {/* Preview da tabela */}
           {previewRows.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <p style={{ color: theme.textSecondary, fontSize: 11, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <p
+                style={{
+                  color: theme.textSecondary,
+                  fontSize: 11,
+                  marginBottom: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
                 <FaTable size={11} /> PRÉ-VISUALIZAÇÃO (primeiras linhas)
               </p>
-              <div style={{ overflowX: "auto", borderRadius: 6, border: `1px solid ${theme.border}` }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "monospace" }}>
+              <div
+                style={{
+                  overflowX: "auto",
+                  borderRadius: 6,
+                  border: `1px solid ${theme.border}`,
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                  }}
+                >
                   <thead>
                     <tr style={{ background: `${theme.accentPrimary}18` }}>
                       {previewCols.map((col) => (
-                        <th key={col} style={{ padding: "6px 10px", color: theme.accentPrimary, textAlign: "left", whiteSpace: "nowrap", borderBottom: `1px solid ${theme.border}` }}>
+                        <th
+                          key={col}
+                          style={{
+                            padding: "6px 10px",
+                            color: theme.accentPrimary,
+                            textAlign: "left",
+                            whiteSpace: "nowrap",
+                            borderBottom: `1px solid ${theme.border}`,
+                          }}
+                        >
                           {col}
                         </th>
                       ))}
@@ -394,9 +514,22 @@ const DataIngestion = () => {
                   </thead>
                   <tbody>
                     {previewRows.map((row, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : `${theme.border}20` }}>
+                      <tr
+                        key={i}
+                        style={{
+                          background:
+                            i % 2 === 0 ? "transparent" : `${theme.border}20`,
+                        }}
+                      >
                         {previewCols.map((col) => (
-                          <td key={col} style={{ padding: "5px 10px", color: theme.textSecondary, borderBottom: `1px solid ${theme.border}20` }}>
+                          <td
+                            key={col}
+                            style={{
+                              padding: "5px 10px",
+                              color: theme.textSecondary,
+                              borderBottom: `1px solid ${theme.border}20`,
+                            }}
+                          >
                             {String(row[col] ?? "—")}
                           </td>
                         ))}
@@ -456,9 +589,15 @@ const DataIngestion = () => {
               }
               onClick={handleUpload}
             >
-              {status === "uploading" || status === "processing"
-                ? <><FaSpinner /> VALIDANDO E GERANDO...</>
-                : <><FaPlay /> VALIDAR E GERAR</>}
+              {status === "uploading" || status === "processing" ? (
+                <>
+                  <FaSpinner /> VALIDANDO E GERANDO...
+                </>
+              ) : (
+                <>
+                  <FaPlay /> VALIDAR E GERAR
+                </>
+              )}
             </button>
             {result && result.project_ids && result.project_ids.length > 0 && (
               <button

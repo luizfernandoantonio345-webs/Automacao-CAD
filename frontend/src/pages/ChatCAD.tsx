@@ -346,7 +346,9 @@ const STARTER_PROMPTS = [
 ];
 
 function extractAssistantSections(content: string) {
-  const codeBlocks = [...content.matchAll(/```(?:lisp|elisp|clisp|autolisp)?\s*([\s\S]*?)```/gi)]
+  const codeBlocks = [
+    ...content.matchAll(/```(?:lisp|elisp|clisp|autolisp)?\s*([\s\S]*?)```/gi),
+  ]
     .map((match) => match[1].trim())
     .filter(Boolean);
   const stripped = content.replace(/```[\s\S]*?```/g, "").trim();
@@ -539,7 +541,15 @@ const ChatCAD: React.FC = () => {
         setLoading(false);
       }
     },
-    [loading, consumeAiQuery, addMsg, autoExecute, updateMsg, addToast, handleApiError],
+    [
+      loading,
+      consumeAiQuery,
+      addMsg,
+      autoExecute,
+      updateMsg,
+      addToast,
+      handleApiError,
+    ],
   );
 
   const handleSend = async () => {
@@ -1113,7 +1123,8 @@ const ChatCAD: React.FC = () => {
                             />
                           ))}
                         </div>
-                      ) : responseSections.hasStructuredContent && responseSections.lispCode ? (
+                      ) : responseSections.hasStructuredContent &&
+                        responseSections.lispCode ? (
                         <div style={{ display: "grid", gap: "12px" }}>
                           <div
                             style={{
@@ -1175,7 +1186,9 @@ const ChatCAD: React.FC = () => {
                                 Código LISP
                               </div>
                               <button
-                                onClick={() => handleCopy(msg.id, responseSections.lispCode)}
+                                onClick={() =>
+                                  handleCopy(msg.id, responseSections.lispCode)
+                                }
                                 style={{
                                   padding: "4px 8px",
                                   background: "transparent",
@@ -1189,7 +1202,11 @@ const ChatCAD: React.FC = () => {
                                   gap: "4px",
                                 }}
                               >
-                                {msg.copiedId ? <FaCheck size={10} /> : <FaCopy size={10} />}
+                                {msg.copiedId ? (
+                                  <FaCheck size={10} />
+                                ) : (
+                                  <FaCopy size={10} />
+                                )}
                                 {msg.copiedId ? "Copiado!" : "Copiar código"}
                               </button>
                             </div>
@@ -1200,7 +1217,8 @@ const ChatCAD: React.FC = () => {
                                 fontSize: "12px",
                                 lineHeight: 1.65,
                                 color: "#dff3ff",
-                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                                fontFamily:
+                                  "'JetBrains Mono', 'Fira Code', monospace",
                               }}
                             >
                               {responseSections.lispCode}
@@ -1308,27 +1326,32 @@ const ChatCAD: React.FC = () => {
                       </button>
                     )}
 
-                    {!msg.plano && !msg.execucao && !msg.loading && responseSections.lispCode && (
-                      <button
-                        onClick={() => handleExecuteLisp(responseSections.lispCode)}
-                        style={{
-                          marginTop: "10px",
-                          padding: "8px 14px",
-                          background: "rgba(0,161,255,0.15)",
-                          border: "1px solid rgba(0,161,255,0.4)",
-                          borderRadius: "8px",
-                          color: "#00A1FF",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <FaPlay size={11} /> Executar no AutoCAD
-                      </button>
-                    )}
+                    {!msg.plano &&
+                      !msg.execucao &&
+                      !msg.loading &&
+                      responseSections.lispCode && (
+                        <button
+                          onClick={() =>
+                            handleExecuteLisp(responseSections.lispCode)
+                          }
+                          style={{
+                            marginTop: "10px",
+                            padding: "8px 14px",
+                            background: "rgba(0,161,255,0.15)",
+                            border: "1px solid rgba(0,161,255,0.4)",
+                            borderRadius: "8px",
+                            color: "#00A1FF",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          <FaPlay size={11} /> Executar no AutoCAD
+                        </button>
+                      )}
 
                     {/* Suggestions */}
                     {msg.sugestoes &&
@@ -1393,71 +1416,58 @@ const ChatCAD: React.FC = () => {
                     )}
 
                     {/* Quick actions for assistant messages */}
-                    {!msg.loading && msg.role === "assistant" && msg.content && (
-                      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "6px", marginTop: "10px" }}>
-                        {/* Gerar novamente */}
-                        {idx > 0 && messages[idx - 1]?.role === "user" && (
-                          <button
-                            onClick={() => {
-                              const prev = messages[idx - 1];
-                              if (!prev) return;
-                              submitPrompt(prev.content, { echoUser: false });
-                            }}
-                            title="Gerar novamente"
-                            style={{
-                              padding: "5px 10px",
-                              background: "rgba(99,102,241,0.12)",
-                              border: "1px solid rgba(99,102,241,0.3)",
-                              borderRadius: "6px",
-                              color: "#818cf8",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            🔄 Gerar novamente
-                          </button>
-                        )}
-                        {/* Melhorar desenho */}
-                        <button
-                          onClick={() => {
-                            if (loading) return;
-                            submitPrompt("Melhore e otimize o desenho anterior com mais detalhes técnicos");
-                          }}
-                          title="Melhorar desenho"
+                    {!msg.loading &&
+                      msg.role === "assistant" &&
+                      msg.content && (
+                        <div
                           style={{
-                            padding: "5px 10px",
-                            background: "rgba(16,185,129,0.1)",
-                            border: "1px solid rgba(16,185,129,0.3)",
-                            borderRadius: "6px",
-                            color: "#10B981",
-                            cursor: "pointer",
-                            fontSize: "11px",
-                            fontWeight: 600,
                             display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
+                            flexWrap: "wrap" as const,
+                            gap: "6px",
+                            marginTop: "10px",
                           }}
                         >
-                          ✨ Melhorar desenho
-                        </button>
-                        {/* Explicar código */}
-                        {msg.content.includes("(") && msg.content.includes(")") && (
+                          {/* Gerar novamente */}
+                          {idx > 0 && messages[idx - 1]?.role === "user" && (
+                            <button
+                              onClick={() => {
+                                const prev = messages[idx - 1];
+                                if (!prev) return;
+                                submitPrompt(prev.content, { echoUser: false });
+                              }}
+                              title="Gerar novamente"
+                              style={{
+                                padding: "5px 10px",
+                                background: "rgba(99,102,241,0.12)",
+                                border: "1px solid rgba(99,102,241,0.3)",
+                                borderRadius: "6px",
+                                color: "#818cf8",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                              }}
+                            >
+                              🔄 Gerar novamente
+                            </button>
+                          )}
+                          {/* Melhorar desenho */}
                           <button
                             onClick={() => {
                               if (loading) return;
-                              submitPrompt("Explique o código LISP gerado na resposta anterior, passo a passo");
+                              submitPrompt(
+                                "Melhore e otimize o desenho anterior com mais detalhes técnicos",
+                              );
                             }}
-                            title="Explicar código"
+                            title="Melhorar desenho"
                             style={{
                               padding: "5px 10px",
-                              background: "rgba(245,158,11,0.1)",
-                              border: "1px solid rgba(245,158,11,0.3)",
+                              background: "rgba(16,185,129,0.1)",
+                              border: "1px solid rgba(16,185,129,0.3)",
                               borderRadius: "6px",
-                              color: "#F59E0B",
+                              color: "#10B981",
                               cursor: "pointer",
                               fontSize: "11px",
                               fontWeight: 600,
@@ -1466,41 +1476,70 @@ const ChatCAD: React.FC = () => {
                               gap: "5px",
                             }}
                           >
-                            📖 Explicar código
+                            ✨ Melhorar desenho
                           </button>
-                        )}
-                        {/* Executar no AutoCAD — sempre visível para qualquer assistente */}
-                        {!msg.plano && (
-                          <button
-                            onClick={() => {
-                              if (loading) return;
-                              if (responseSections.lispCode) {
-                                handleExecuteLisp(responseSections.lispCode);
-                                return;
-                              }
-                              setInput(`Execute no AutoCAD: ${msg.content.slice(0, 120)}`);
-                              inputRef.current?.focus();
-                            }}
-                            title="Executar no AutoCAD"
-                            style={{
-                              padding: "5px 10px",
-                              background: "rgba(0,161,255,0.1)",
-                              border: "1px solid rgba(0,161,255,0.3)",
-                              borderRadius: "6px",
-                              color: "#00A1FF",
-                              cursor: "pointer",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "5px",
-                            }}
-                          >
-                            <FaPlay size={9} /> Executar no AutoCAD
-                          </button>
-                        )}
-                      </div>
-                    )}
+                          {/* Explicar código */}
+                          {msg.content.includes("(") &&
+                            msg.content.includes(")") && (
+                              <button
+                                onClick={() => {
+                                  if (loading) return;
+                                  submitPrompt(
+                                    "Explique o código LISP gerado na resposta anterior, passo a passo",
+                                  );
+                                }}
+                                title="Explicar código"
+                                style={{
+                                  padding: "5px 10px",
+                                  background: "rgba(245,158,11,0.1)",
+                                  border: "1px solid rgba(245,158,11,0.3)",
+                                  borderRadius: "6px",
+                                  color: "#F59E0B",
+                                  cursor: "pointer",
+                                  fontSize: "11px",
+                                  fontWeight: 600,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                }}
+                              >
+                                📖 Explicar código
+                              </button>
+                            )}
+                          {/* Executar no AutoCAD — sempre visível para qualquer assistente */}
+                          {!msg.plano && (
+                            <button
+                              onClick={() => {
+                                if (loading) return;
+                                if (responseSections.lispCode) {
+                                  handleExecuteLisp(responseSections.lispCode);
+                                  return;
+                                }
+                                setInput(
+                                  `Execute no AutoCAD: ${msg.content.slice(0, 120)}`,
+                                );
+                                inputRef.current?.focus();
+                              }}
+                              title="Executar no AutoCAD"
+                              style={{
+                                padding: "5px 10px",
+                                background: "rgba(0,161,255,0.1)",
+                                border: "1px solid rgba(0,161,255,0.3)",
+                                borderRadius: "6px",
+                                color: "#00A1FF",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                              }}
+                            >
+                              <FaPlay size={9} /> Executar no AutoCAD
+                            </button>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </motion.div>
               );
@@ -1654,7 +1693,8 @@ const ChatCAD: React.FC = () => {
             marginRight: "auto",
           }}
         >
-          Enter para enviar • Shift+Enter para nova linha • Cada resposta traz explicação curta, código LISP e ação de execução
+          Enter para enviar • Shift+Enter para nova linha • Cada resposta traz
+          explicação curta, código LISP e ação de execução
         </p>
       </div>
     </div>

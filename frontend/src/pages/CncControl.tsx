@@ -358,7 +358,9 @@ const CncControl: React.FC = () => {
     } else {
       if (simIntervalRef.current) clearInterval(simIntervalRef.current);
     }
-    return () => { if (simIntervalRef.current) clearInterval(simIntervalRef.current); };
+    return () => {
+      if (simIntervalRef.current) clearInterval(simIntervalRef.current);
+    };
   }, [simPlaying, simSpeed]);
 
   // ── Modo de operação ──
@@ -4069,21 +4071,54 @@ M02 (Fim do programa)
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: "11px", color: theme.textTertiary, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          <div
+                            style={{
+                              fontSize: "11px",
+                              color: theme.textTertiary,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.08em",
+                            }}
+                          >
                             Timeline interativa
                           </div>
-                          <div style={{ fontSize: "14px", color: theme.textPrimary, fontWeight: 700 }}>
+                          <div
+                            style={{
+                              fontSize: "14px",
+                              color: theme.textPrimary,
+                              fontWeight: 700,
+                            }}
+                          >
                             Etapa atual: {currentSimulationStage}
                           </div>
                         </div>
-                        <div style={{ fontSize: "12px", color: theme.textSecondary }}>
-                          {simPlaying ? "Simulação em andamento" : "Simulação pronta para inspeção"}
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: theme.textSecondary,
+                          }}
+                        >
+                          {simPlaying
+                            ? "Simulação em andamento"
+                            : "Simulação pronta para inspeção"}
                         </div>
                       </div>
 
                       {/* Barra de progresso */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                        <span style={{ fontSize: "11px", color: theme.textTertiary, minWidth: "28px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: theme.textTertiary,
+                            minWidth: "28px",
+                          }}
+                        >
                           {Math.round(simProgress)}%
                         </span>
                         <div
@@ -4096,8 +4131,16 @@ M02 (Fim do programa)
                             position: "relative",
                           }}
                           onClick={(e) => {
-                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                            const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                            const rect = (
+                              e.currentTarget as HTMLElement
+                            ).getBoundingClientRect();
+                            const pct = Math.max(
+                              0,
+                              Math.min(
+                                100,
+                                ((e.clientX - rect.left) / rect.width) * 100,
+                              ),
+                            );
                             setSimProgress(pct);
                           }}
                         >
@@ -4112,8 +4155,19 @@ M02 (Fim do programa)
                           />
                         </div>
                         {gcode && (
-                          <span style={{ fontSize: "11px", color: theme.textTertiary, minWidth: "36px", textAlign: "right" }}>
-                            {((simProgress / 100) * (gcode.estimatedTime || 2.5)).toFixed(1)}min
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: theme.textTertiary,
+                              minWidth: "36px",
+                              textAlign: "right",
+                            }}
+                          >
+                            {(
+                              (simProgress / 100) *
+                              (gcode.estimatedTime || 2.5)
+                            ).toFixed(1)}
+                            min
                           </span>
                         )}
                       </div>
@@ -4135,13 +4189,29 @@ M02 (Fim do programa)
                                 padding: "8px 10px",
                                 borderRadius: 8,
                                 border: `1px solid ${active ? `${theme.accentPrimary}55` : theme.border}`,
-                                background: active ? `${theme.accentPrimary}12` : "transparent",
+                                background: active
+                                  ? `${theme.accentPrimary}12`
+                                  : "transparent",
                               }}
                             >
-                              <div style={{ fontSize: "11px", color: active ? theme.accentPrimary : theme.textTertiary, fontWeight: 700 }}>
+                              <div
+                                style={{
+                                  fontSize: "11px",
+                                  color: active
+                                    ? theme.accentPrimary
+                                    : theme.textTertiary,
+                                  fontWeight: 700,
+                                }}
+                              >
                                 {milestone.label}
                               </div>
-                              <div style={{ fontSize: "10px", color: theme.textSecondary, marginTop: 4 }}>
+                              <div
+                                style={{
+                                  fontSize: "10px",
+                                  color: theme.textSecondary,
+                                  marginTop: 4,
+                                }}
+                              >
                                 {milestone.threshold}%
                               </div>
                             </div>
@@ -4150,7 +4220,13 @@ M02 (Fim do programa)
                       </div>
 
                       {/* Controles */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
                         {/* Retroceder */}
                         <button
                           onClick={() => setSimProgress(0)}
@@ -4194,7 +4270,13 @@ M02 (Fim do programa)
                         </button>
 
                         {/* Velocidade */}
-                        <span style={{ fontSize: "11px", color: theme.textSecondary, marginLeft: "auto" }}>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: theme.textSecondary,
+                            marginLeft: "auto",
+                          }}
+                        >
                           Velocidade:
                         </span>
                         {[0.5, 1, 2, 4].map((s) => (
@@ -4205,8 +4287,14 @@ M02 (Fim do programa)
                               padding: "4px 8px",
                               borderRadius: "5px",
                               border: `1px solid ${simSpeed === s ? theme.accentPrimary : theme.border}`,
-                              background: simSpeed === s ? `${theme.accentPrimary}22` : "transparent",
-                              color: simSpeed === s ? theme.accentPrimary : theme.textSecondary,
+                              background:
+                                simSpeed === s
+                                  ? `${theme.accentPrimary}22`
+                                  : "transparent",
+                              color:
+                                simSpeed === s
+                                  ? theme.accentPrimary
+                                  : theme.textSecondary,
                               cursor: "pointer",
                               fontSize: "11px",
                               fontWeight: simSpeed === s ? 700 : 400,
