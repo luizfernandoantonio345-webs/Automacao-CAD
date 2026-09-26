@@ -82,3 +82,6 @@ migrate_*.py
 *.db-wal
 .vercel
 .env*.local
+
+# Segredos de produção nunca devem ser versionados
+.env.production
